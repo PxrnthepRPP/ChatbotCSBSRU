@@ -12,29 +12,29 @@ const MOCK_TIMETABLE_SEMESTERS = [
     {
         label: 'Term 2/2566',
         schedule: [
-            { day: 0, startSlot: 2, span: 3, text: 'SC17351, D1, 423' },       // Monday 09:00-12:00
-            { day: 2, startSlot: 5, span: 3, text: 'SC17411, D1, 6121' },      // Wednesday 12:00-15:00
-            { day: 2, startSlot: 8, span: 3, text: 'SC17402, D1, 6125' },      // Wednesday 15:00-18:00
-            { day: 4, startSlot: 7, span: 3, text: 'SC17353, D2, 6123' },      // Friday 14:00-17:00
+            { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'SC17351', subjectName: 'Object-Oriented Programming', teacherName: 'Dr. Somchai', room: 'Room 423' },
+            { day: 2, startTime: '12:00', endTime: '15:00', subjectCode: 'SC17411', subjectName: 'Web Development', teacherName: 'Dr. Suda', room: 'Room 6121' },
+            { day: 2, startTime: '15:00', endTime: '18:00', subjectCode: 'SC17402', subjectName: 'Software Engineering', teacherName: 'Prof. Anan', room: 'Room 6125' },
+            { day: 4, startTime: '14:00', endTime: '17:00', subjectCode: 'SC17353', subjectName: 'Data Structures', teacherName: 'Dr. Wicha', room: 'Room 6123' },
         ],
     },
     {
         label: 'Term 1/2566',
         schedule: [
-            { day: 0, startSlot: 2, span: 3, text: 'CS2101, D1, CS-301' },     // Monday 09:00-12:00
-            { day: 0, startSlot: 6, span: 3, text: 'CS2102, D1, CS-205' },     // Monday 13:00-16:00
-            { day: 1, startSlot: 2, span: 3, text: 'CS2201, D1, CS-Lab2' },    // Tuesday 09:00-12:00
-            { day: 3, startSlot: 2, span: 3, text: 'CS2103, D2, CS-Lab1' },    // Thursday 09:00-12:00
-            { day: 4, startSlot: 2, span: 3, text: 'GE1201, D3, LA-402' },     // Friday 09:00-12:00
+            { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2101', subjectName: 'Data Structures', teacherName: 'Dr. Wicha', room: 'CS-301' },
+            { day: 0, startTime: '13:00', endTime: '16:00', subjectCode: 'CS2102', subjectName: 'Algorithms', teacherName: 'Prof. Anan', room: 'CS-205' },
+            { day: 1, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2201', subjectName: 'Computer Architecture', teacherName: 'Dr. Somchai', room: 'CS-Lab2' },
+            { day: 3, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2103', subjectName: 'Operating Systems', teacherName: 'Dr. Suda', room: 'CS-Lab1' },
+            { day: 4, startTime: '09:00', endTime: '12:00', subjectCode: 'GE1201', subjectName: 'English for IT', teacherName: 'Aj. Sarah', room: 'LA-402' },
         ],
     },
     {
         label: 'Term 2/2565',
         schedule: [
-            { day: 1, startSlot: 2, span: 3, text: 'CS2301, D1, CS-Lab2' },    // Tuesday 09:00-12:00
-            { day: 2, startSlot: 2, span: 3, text: 'CS2302, D1, CS-Lab3' },    // Wednesday 09:00-12:00
-            { day: 3, startSlot: 6, span: 3, text: 'CS2401, D1, CS-205' },     // Thursday 13:00-16:00
-            { day: 4, startSlot: 2, span: 3, text: 'GE1301, D3, LA-301' },     // Friday 09:00-12:00
+            { day: 1, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2301', subjectName: 'Database Systems', teacherName: 'Dr. Manop', room: 'CS-Lab2' },
+            { day: 2, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2302', subjectName: 'Web Programming', teacherName: 'Aj. Suda', room: 'CS-Lab3' },
+            { day: 3, startTime: '13:00', endTime: '16:00', subjectCode: 'CS2401', subjectName: 'Requirements Engineering', teacherName: 'Prof. Anan', room: 'CS-205' },
+            { day: 4, startTime: '09:00', endTime: '12:00', subjectCode: 'GE1301', subjectName: 'General Psychology', teacherName: 'Aj. Yupa', room: 'LA-301' },
         ],
     },
 ];
@@ -194,68 +194,60 @@ function renderBibliography(s) {
    TIMETABLE — with Semester Filter
    ============================================================ */
 
-/** Build a single 15-column schedule table body from a semester's schedule array */
+/** Build the vertical/agenda grid layout from a semester's schedule array */
 function buildTimetableHTML(schedule) {
     const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const TOTAL_SLOTS = 14;
-
-    let tbody = '';
+    
+    let gridHTML = '<div class="vt-grid">';
+    
     DAYS.forEach((dayName, dayIdx) => {
-        const isWeekend = dayIdx >= 5;
-        const dayClass = isWeekend ? 'day-col weekend' : 'day-col';
-
-        // Collect entries for this day, sorted by startSlot
+        // Collect and sort entries by start time
         const entries = schedule
             .filter(e => e.day === dayIdx)
-            .sort((a, b) => a.startSlot - b.startSlot);
-
-        let cells = '';
-        let cursor = 0; // current slot position (0-based, 0 = 07:00-08:00)
-
-        for (const entry of entries) {
-            // Fill empty slots before this entry
-            while (cursor < entry.startSlot) {
-                cells += '<td></td>';
-                cursor++;
-            }
-            // The scheduled class cell
-            cells += `<td colspan="${entry.span}" class="subject">${esc(entry.text)}</td>`;
-            cursor += entry.span;
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+            
+        const emptyClass = entries.length === 0 ? ' vt-empty-day' : '';
+        const weekendClass = dayIdx >= 5 ? ' vt-weekend' : '';
+        
+        let dayColumn = `
+            <div class="vt-day-col${emptyClass}${weekendClass}">
+                <div class="vt-day-header">${dayName}</div>
+                <div class="vt-cards-container">`;
+                
+        if (entries.length === 0) {
+            dayColumn += `<div class="vt-empty-msg">ไม่มีเรียน</div>`;
+        } else {
+            entries.forEach(e => {
+                dayColumn += `
+                    <div class="vt-card">
+                        <div class="vt-time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            ${esc(e.startTime)} - ${esc(e.endTime)}
+                        </div>
+                        <div class="vt-subject">
+                            <span class="vt-code">${esc(e.subjectCode)}</span>
+                            <span class="vt-name">${esc(e.subjectName)}</span>
+                        </div>
+                        <div class="vt-details">
+                            <div class="vt-detail-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                ${esc(e.teacherName)}
+                            </div>
+                            <div class="vt-detail-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                ${esc(e.room)}
+                            </div>
+                        </div>
+                    </div>`;
+            });
         }
-        // Fill remaining empty slots
-        while (cursor < TOTAL_SLOTS) {
-            cells += '<td></td>';
-            cursor++;
-        }
-
-        tbody += `<tr><td class="${dayClass}">${dayName}</td>${cells}</tr>`;
+        
+        dayColumn += `</div></div>`;
+        gridHTML += dayColumn;
     });
-
-    return `
-        <div class="timetable-wrapper">
-            <table class="schedule-table data-table">
-                <thead>
-                    <tr>
-                        <th>Day/Time</th>
-                        <th>07:00-08:00</th>
-                        <th>08:00-09:00</th>
-                        <th>09:00-10:00</th>
-                        <th>10:00-11:00</th>
-                        <th>11:00-12:00</th>
-                        <th>12:00-13:00</th>
-                        <th>13:00-14:00</th>
-                        <th>14:00-15:00</th>
-                        <th>15:00-16:00</th>
-                        <th>16:00-17:00</th>
-                        <th>17:00-18:00</th>
-                        <th>18:00-19:00</th>
-                        <th>19:00-20:00</th>
-                        <th>20:00-21:00</th>
-                    </tr>
-                </thead>
-                <tbody>${tbody}</tbody>
-            </table>
-        </div>`;
+    
+    gridHTML += '</div>';
+    return gridHTML;
 }
 
 /** Build the semester <select> options for timetable */
