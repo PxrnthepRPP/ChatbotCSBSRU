@@ -1,0 +1,72 @@
+/* ============================================================
+   ADVISOR ROLE — Specific Styles
+   ============================================================
+   Loaded dynamically when an advisor user logs in.
+   Contains advisee card layout, batch filter, and impersonation.
+   ============================================================ */
+
+/* ── Advisor Active Nav Accent ── */
+.role-advisor ~ .sidebar-nav .nav-link.active {
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-600));
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* ── Advisee Cards Enhancement ── */
+#mod-my-advisees .advisee-card {
+    border-left: 4px solid transparent;
+    transition: all var(--t-fast);
+}
+
+#mod-my-advisees .advisee-card:hover {
+    border-left-color: var(--blue-500);
+}
+
+/* ── Advisor Dashboard Cards ── */
+#mod-advisor-dashboard .stat-card {
+    border-top: 3px solid transparent;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+#mod-advisor-dashboard .stat-card:hover {
+    border-top-color: var(--blue-500);
+    box-shadow: var(--sh-md);
+}
+
+/* ── Batch Filter Bar Enhancement ── */
+#mod-my-advisees .batch-filter-bar {
+    border-left: 4px solid var(--blue-500);
+}
+
+/* ── Impersonation Button ── */
+#mod-my-advisees .adv-imp-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#mod-my-advisees .adv-imp-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+#mod-my-advisees .adv-imp-btn:hover::after {
+    width: 200%;
+    height: 200%;
+}
+
+/* ── Advisor Search Bar ── */
+#mod-my-advisees .toolbar-search {
+    border-color: var(--blue-200);
+}
+
+#mod-my-advisees .toolbar-search:focus-within {
+    border-color: var(--blue-400);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}

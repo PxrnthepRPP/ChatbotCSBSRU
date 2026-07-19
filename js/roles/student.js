@@ -191,63 +191,188 @@ function renderBibliography(s) {
 }
 
 /* ============================================================
-   TIMETABLE — with Semester Filter
+   TIMETABLE — CSS Grid Schedule Matrix + Mobile Agenda
    ============================================================ */
 
-/** Build the vertical/agenda grid layout from a semester's schedule array */
-function buildTimetableHTML(schedule) {
-    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
-    let gridHTML = '<div class="vt-grid">';
-    
-    DAYS.forEach((dayName, dayIdx) => {
-        // Collect and sort entries by start time
+const DAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const TIME_SLOTS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+const COLOR_CLASSES = ['color-1','color-2','color-3','color-4','color-5','color-6'];
+
+/** Convert time string "HH:MM" to slot index (0-based from 07:00) */
+function timeToSlot(t) {
+    const h = parseInt(t.split(':')[0], 10);
+    return Math.max(0, h - 7);
+}
+
+/** Build desktop CSS Grid schedule matrix */
+function buildTimetableDesktopHTML(schedule) {
+    // Determine which time slots are actually used
+    let minSlot = 14, maxSlot = 0;
+    schedule.forEach(e => {
+        const s = timeToSlot(e.startTime);
+        const end = timeToSlot(e.endTime);
+        if (s < minSlot) minSlot = s;
+        if (end > maxSlot) maxSlot = end;
+    });
+    if (minSlot >= maxSlot) { minSlot = 2; maxSlot = 12; } // default 09:00-19:00
+
+    const usedSlots = [];
+    for (let i = minSlot; i < maxSlot; i++) usedSlots.push(i);
+    const totalRows = usedSlots.length + 1; // +1 for header row
+
+    // Build color map per subject code
+    const subjectCodes = [...new Set(schedule.map(e => e.subjectCode))];
+    const colorMap = {};
+    subjectCodes.forEach((code, i) => { colorMap[code] = COLOR_CLASSES[i % COLOR_CLASSES.length]; });
+
+    let html = `<div class="tt-schedule-grid" style="grid-template-rows: auto repeat(${usedSlots.length}, minmax(60px, auto));">`;
+
+    // Corner cell
+    html += `<div class="tt-corner">เวลา / วัน</div>`;
+
+    // Day headers
+    DAYS_FULL.forEach((day, i) => {
+        const weekend = i >= 5 ? ' tt-weekend' : '';
+        html += `<div class="tt-day-header${weekend}" style="grid-column:${i + 2}; grid-row:1;">
+            <span class="tt-day-full">${day}</span>
+            <span class="tt-day-short">${DAYS_SHORT[i]}</span>
+        </div>`;
+    });
+
+    // Time labels (left column)
+    usedSlots.forEach((slot, ri) => {
+        const t = TIME_SLOTS[slot];
+        const tEnd = TIME_SLOTS[slot + 1] || '';
+        html += `<div class="tt-time-label" style="grid-column:1; grid-row:${ri + 2};">${t}<br>${tEnd}</div>`;
+    });
+
+    // Empty cells (background grid)
+    usedSlots.forEach((_, ri) => {
+        for (let di = 0; di < 7; di++) {
+            html += `<div class="tt-cell" style="grid-column:${di + 2}; grid-row:${ri + 2};"></div>`;
+        }
+    });
+
+    // Place class cards into the grid
+    schedule.forEach(e => {
+        const colStart = e.day + 2;
+        const rowStart = (timeToSlot(e.startTime) - minSlot) + 2;
+        const rowEnd = (timeToSlot(e.endTime) - minSlot) + 2;
+        const color = colorMap[e.subjectCode] || 'color-1';
+
+        html += `<div class="tt-class-card ${color}" style="grid-column:${colStart}; grid-row:${rowStart}/${rowEnd};">
+            <span class="tt-class-code">${esc(e.subjectCode)}</span>
+            <span class="tt-class-name">${esc(e.subjectName)}</span>
+            <div class="tt-class-meta">
+                <div class="tt-class-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    ${esc(e.startTime)} - ${esc(e.endTime)}
+                </div>
+                <div class="tt-class-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ${esc(e.teacherName)}
+                </div>
+                <div class="tt-class-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    ${esc(e.room)}
+                </div>
+            </div>
+        </div>`;
+    });
+
+    html += `</div>`;
+
+    // Build mobile agenda view (hidden on desktop via CSS)
+    html += buildTimetableAgendaHTML(schedule, colorMap);
+
+    return html;
+}
+
+/** Build mobile agenda view — stacked list grouped by day */
+function buildTimetableAgendaHTML(schedule, colorMap) {
+    let html = `<div class="tt-agenda-view">`;
+
+    DAYS_FULL.forEach((dayName, dayIdx) => {
         const entries = schedule
             .filter(e => e.day === dayIdx)
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
-            
-        const emptyClass = entries.length === 0 ? ' vt-empty-day' : '';
-        const weekendClass = dayIdx >= 5 ? ' vt-weekend' : '';
-        
-        let dayColumn = `
-            <div class="vt-day-col${emptyClass}${weekendClass}">
-                <div class="vt-day-header">${dayName}</div>
-                <div class="vt-cards-container">`;
-                
-        if (entries.length === 0) {
-            dayColumn += `<div class="vt-empty-msg">ไม่มีเรียน</div>`;
-        } else {
-            entries.forEach(e => {
-                dayColumn += `
-                    <div class="vt-card">
-                        <div class="vt-time">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                            ${esc(e.startTime)} - ${esc(e.endTime)}
-                        </div>
-                        <div class="vt-subject">
-                            <span class="vt-code">${esc(e.subjectCode)}</span>
-                            <span class="vt-name">${esc(e.subjectName)}</span>
-                        </div>
-                        <div class="vt-details">
-                            <div class="vt-detail-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                ${esc(e.teacherName)}
-                            </div>
-                            <div class="vt-detail-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                ${esc(e.room)}
-                            </div>
-                        </div>
-                    </div>`;
-            });
-        }
-        
-        dayColumn += `</div></div>`;
-        gridHTML += dayColumn;
+
+        if (entries.length === 0) return; // Skip empty days
+
+        const color = entries.length > 0 ? (colorMap[entries[0].subjectCode] || 'color-1') : 'color-1';
+        html += `<div class="tt-agenda-day">
+            <div class="tt-agenda-day-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${dayName}
+                <span class="tt-agenda-day-count">${entries.length} วิชา</span>
+            </div>
+            <div class="tt-agenda-cards">`;
+
+        entries.forEach(e => {
+            const cColor = colorMap[e.subjectCode] || 'color-1';
+            // Extract background color for code badge from color class
+            const bgMap = { 'color-1': 'var(--p-600)', 'color-2': 'var(--blue-600)', 'color-3': 'var(--green-600)', 'color-4': 'var(--amber-600)', 'color-5': 'var(--red-600)', 'color-6': 'var(--orange-600)' };
+            const codeBg = bgMap[cColor] || 'var(--p-600)';
+
+            html += `<div class="tt-agenda-card">
+                <div class="tt-agenda-time">
+                    <span class="tt-agenda-time-start">${esc(e.startTime)}</span>
+                    <span class="tt-agenda-time-divider"></span>
+                    <span class="tt-agenda-time-end">${esc(e.endTime)}</span>
+                </div>
+                <div class="tt-agenda-info">
+                    <span class="tt-agenda-code" style="background:${codeBg}">${esc(e.subjectCode)}</span>
+                    <div class="tt-agenda-name">${esc(e.subjectName)}</div>
+                    <div class="tt-agenda-details">
+                        <span class="tt-agenda-detail">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            ${esc(e.teacherName)}
+                        </span>
+                        <span class="tt-agenda-detail">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            ${esc(e.room)}
+                        </span>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        html += `</div></div>`;
     });
-    
-    gridHTML += '</div>';
-    return gridHTML;
+
+    html += `</div>`;
+    return html;
+}
+
+/** Build exam schedule cards */
+function buildExamHTML() {
+    let html = `<div class="tt-exam-list">`;
+    MOCK_EXAMS.forEach(ex => {
+        html += `<div class="tt-exam-card">
+            <div class="tt-exam-header">
+                <span class="tt-exam-code">${esc(ex.code)}</span>
+                ${ex.seat !== '-' ? `<span class="tt-exam-seat">ที่นั่ง: ${esc(ex.seat)}</span>` : ''}
+            </div>
+            <div class="tt-exam-name">${esc(ex.name)}</div>
+            <div class="tt-exam-details">
+                <span class="tt-exam-detail-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${esc(ex.date)}
+                </span>
+                <span class="tt-exam-detail-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    ${esc(ex.time)}
+                </span>
+                <span class="tt-exam-detail-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    ${esc(ex.room)}
+                </span>
+            </div>
+        </div>`;
+    });
+    html += `</div>`;
+    return html;
 }
 
 /** Build the semester <select> options for timetable */
@@ -259,14 +384,13 @@ function buildTimetableSemesterOptions(selectedIdx) {
 
 function renderTimetable() {
     const container = document.getElementById('timetableContent');
-    // Default to the first (most recent) semester
     let currentIdx = 0;
 
     function render(idx) {
         const sem = MOCK_TIMETABLE_SEMESTERS[idx];
         container.innerHTML = `
             <div class="card">
-                <div class="card-title">📖 Study/Exams Timetable</div>
+                <div class="card-title">📖 ตารางเรียน Study Timetable</div>
                 <div class="batch-filter-bar" style="margin-bottom:16px">
                     <label>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -278,11 +402,14 @@ function renderTimetable() {
                     <span class="filter-result-count">Showing: <strong>${esc(sem.label)}</strong></span>
                 </div>
                 <div id="timetableTableBody">
-                    ${buildTimetableHTML(sem.schedule)}
+                    ${buildTimetableDesktopHTML(sem.schedule)}
                 </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📝 ตารางสอบ Exam Schedule</div>
+                ${buildExamHTML()}
             </div>`;
 
-        // Attach change listener
         document.getElementById('timetableSemesterSelect').addEventListener('change', (e) => {
             currentIdx = parseInt(e.target.value, 10);
             render(currentIdx);

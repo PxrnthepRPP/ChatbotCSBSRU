@@ -1,4 +1,13 @@
+/* ================================================================
+   BSRU Student Portal — Main Entry Point (State-Driven)
+   ================================================================
+   Uses centralized state store for routing, role management,
+   and module switching. Loads CSS modules on-demand.
+   ================================================================ */
+
+import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
+import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot } from './components/chatbot.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
@@ -73,21 +82,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const impBanner = document.getElementById('impersonationBanner');
     const allModules = document.querySelectorAll('.module');
 
-    const authState = getAuthState();
+    // ── Read initial state ──
+    const initialState = getState();
 
-    if (authState.role) {
+    if (initialState.currentRole) {
         loginOverlay.style.display = 'none';
         dashboard.style.display = 'flex';
         initDashboard();
     }
 
+    // ── Login Form ──
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const username = loginUsername.value.trim();
         if (!username) return;
 
         login(username);
-        
+
         document.getElementById('loginCard').style.animation = 'cardExit 0.4s ease forwards';
         setTimeout(() => {
             loginOverlay.style.display = 'none';
@@ -96,9 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 350);
     });
 
+    // ── Logout ──
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const state = getAuthState();
+        const state = getState();
         if (state.isImpersonating) exitImpersonation();
         logout();
         window.location.reload();
@@ -108,12 +120,43 @@ document.addEventListener('DOMContentLoaded', () => {
         exitImpBtn.addEventListener('click', exitImpersonation);
     }
 
+    // ── State subscriber: active module changes ──
+    subscribe('activeModule', (modId) => {
+        if (!modId) return;
+
+        // Update sidebar active link
+        sidebarNav.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const activeLink = sidebarNav.querySelector(`[data-module="${modId}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        // Show/hide modules
+        allModules.forEach(m => m.style.display = 'none');
+        const mod = document.getElementById(`mod-${modId}`);
+        if (mod) {
+            mod.style.display = 'block';
+            mod.style.animation = 'none';
+            mod.offsetHeight; // reflow
+            mod.style.animation = '';
+        }
+
+        // Update topbar title
+        topbarTitle.textContent = MODULE_TITLES[modId] || '';
+
+        // Load component CSS on demand
+        if (modId === 'timetable') {
+            loadComponentCSS('timetable');
+        }
+
+        closeMobileSidebar();
+    });
+
     // Initialize Chatbot Widget
     initChatbot();
 
-    function initDashboard() {
-        const state = getAuthState();
-        
+    async function initDashboard() {
+        const state = getState();
+
+        // ── Impersonation banner ──
         if (state.isImpersonating) {
             document.body.classList.add('impersonating');
             impBanner.classList.add('visible');
@@ -121,31 +164,37 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('impStudentId').textContent = state.impersonatedStudent.studentId;
         }
 
+        // ── Determine effective role ──
+        const effectiveRole = state.isImpersonating ? 'STUDENT' : state.currentRole;
+
+        // ── Load role-specific CSS ──
+        await loadRoleCSS(effectiveRole);
+
+        // ── Build sidebar ──
         buildSidebar(state);
-        
+
+        // ── Topbar user name ──
         topbarUserName.textContent = state.user.displayName;
 
-        // Route to appropriate logic
-        let effectiveRole = state.isImpersonating ? 'STUDENT' : state.role;
-        
+        // ── Initialize role dashboard ──
         if (effectiveRole === 'ADMIN') {
             initAdminDashboard();
         } else if (effectiveRole === 'ADVISOR') {
             initAdvisorDashboard();
         } else {
-            const studentId = state.isImpersonating ? state.impersonatedStudent.studentId : '6421100042'; // default for mockup
+            const studentId = state.isImpersonating ? state.impersonatedStudent.studentId : '6421100042';
             initStudentDashboard(studentId);
         }
 
+        // ── Navigate to first module ──
         const firstLink = sidebarNav.querySelector('.nav-link');
         if (firstLink) {
-            switchModule(firstLink.dataset.module);
-            firstLink.classList.add('active');
+            setState({ activeModule: firstLink.dataset.module });
         }
     }
 
     function buildSidebar(state) {
-        const role = state.isImpersonating ? 'STUDENT' : state.role;
+        const role = state.isImpersonating ? 'STUDENT' : state.currentRole;
         sidebarRole.className = 'sidebar-role role-' + role.toLowerCase();
         const roleLabels = { ADMIN: '🔑 ADMINISTRATOR', ADVISOR: '👩‍🏫 ADVISOR', STUDENT: '🎓 STUDENT' };
         sidebarRole.textContent = roleLabels[role];
@@ -158,27 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebarNav.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                switchModule(link.dataset.module);
+                setState({ activeModule: link.dataset.module });
             });
         });
-    }
-
-    function switchModule(modId) {
-        sidebarNav.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        const activeLink = sidebarNav.querySelector(`[data-module="${modId}"]`);
-        if (activeLink) activeLink.classList.add('active');
-
-        allModules.forEach(m => m.style.display = 'none');
-        const mod = document.getElementById(`mod-${modId}`);
-        if (mod) {
-            mod.style.display = 'block';
-            mod.style.animation = 'none';
-            mod.offsetHeight; // reflow
-            mod.style.animation = '';
-        }
-
-        topbarTitle.textContent = MODULE_TITLES[modId] || '';
-        closeMobileSidebar();
     }
 
     // Mobile Sidebar Handling

@@ -1,0 +1,52 @@
+/* ============================================================
+   ADMIN ROLE — Specific Styles
+   ============================================================
+   Loaded dynamically when an admin user logs in.
+   Contains admin-specific dashboard, toolbar, and table enhancements.
+   ============================================================ */
+
+/* ── Admin Dashboard Stat Overrides ── */
+.role-admin ~ .sidebar-nav .nav-link.active {
+    background: linear-gradient(135deg, var(--red-500), var(--red-600));
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.35);
+}
+
+/* ── Admin Toolbar ── */
+#mod-manage-advisors .toolbar,
+#mod-manage-students .batch-filter-bar {
+    border-left: 4px solid var(--red-500);
+}
+
+/* ── Admin Action Buttons Emphasis ── */
+#mod-manage-students .admin-imp-btn,
+#mod-manage-advisors .edit-advisor-btn {
+    transition: all var(--t-fast);
+}
+
+#mod-manage-students .admin-imp-btn:hover,
+#mod-manage-advisors .edit-advisor-btn:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Admin Dashboard Cards ── */
+#mod-admin-dashboard .stat-card {
+    border-top: 3px solid transparent;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+#mod-admin-dashboard .stat-card:hover {
+    border-top-color: var(--red-500);
+    box-shadow: var(--sh-md);
+}
+
+/* ── Admin Data Table Enhancements ── */
+#mod-manage-advisors .data-table thead,
+#mod-manage-students .data-table thead {
+    background: linear-gradient(135deg, var(--red-50), var(--p-50));
+}
+
+#mod-manage-advisors .data-table th,
+#mod-manage-students .data-table th {
+    color: var(--red-600);
+    border-bottom-color: var(--red-100);
+}
