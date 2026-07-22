@@ -457,7 +457,7 @@ function buildGradesBody(idx) {
     ).join('');
 
     return `
-        <div class="table-wrap">
+        <div class="table-wrap" style="overflow-x: hidden;">
             <table class="data-table">
                 <thead><tr><th>รหัส</th><th>ชื่อวิชา</th><th style="text-align:center">หน่วยกิต</th><th style="text-align:center">เกรด</th><th style="text-align:center">คะแนน</th></tr></thead>
                 <tbody>${rows}</tbody>

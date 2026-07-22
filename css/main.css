@@ -60,7 +60,6 @@
     --bg-card: #ffffff;
     --text-main: #1f2037;
     --text-muted: #6b7280;
-    --text-on-dark: #f3f4f6;
 
     /* Layout & Sizing */
     --sidebar-w: 260px;
@@ -81,26 +80,6 @@
     --t-fast: 0.15s var(--ease);
     --t-base: 0.25s var(--ease);
     --t-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ── Dark Theme Overrides ── */
-body.dark-theme {
-    --bg-body: #121212;
-    --bg-sidebar: #0a1225;
-    --bg-card: #1e1e1e;
-    --text-main: #e4e4e7;
-    --text-muted: #9ca3af;
-
-    --g-50: #1f2937;
-    --g-100: #374151;
-    --g-200: #4b5563;
-    --g-300: #6b7280;
-    --g-400: #9ca3af;
-    --g-500: #d1d5db;
-    --g-600: #e5e7eb;
-    --g-700: #f3f4f6;
-    --g-800: #f9fafb;
-    --g-900: #ffffff;
 }
 
 /* ── Reset ── */
@@ -1712,7 +1691,6 @@ body.impersonating .chatbot-fab {
     .chatbot-fab,
     .chatbot-window,
     .impersonation-banner,
-    #themeToggleBtn,
     .batch-filter-bar {
         display: none !important;
     }

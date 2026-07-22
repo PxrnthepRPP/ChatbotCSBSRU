@@ -30,8 +30,6 @@ const _state = {
     // Chatbot
     chatbotOpen: false,
 
-    // Theme (Light/Dark mode)
-    theme: 'light',
 
     // CSS modules loaded
     loadedCSS: [],
