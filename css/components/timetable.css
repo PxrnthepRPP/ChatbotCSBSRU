@@ -26,7 +26,7 @@
 .tt-corner {
     grid-column: 1;
     grid-row: 1;
-    background: var(--p-700);
+    background: var(--brand-700);
     color: rgba(255, 255, 255, 0.7);
     display: flex;
     align-items: center;
@@ -43,14 +43,14 @@
 /* ── Day Headers (top row) ── */
 .tt-day-header {
     grid-row: 1;
-    background: linear-gradient(180deg, var(--p-700), var(--p-800));
+    background: linear-gradient(180deg, var(--brand-700), var(--brand-800));
     color: #fff;
     font-weight: 700;
     font-size: 0.82rem;
     text-align: center;
     padding: 12px 8px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 2px solid var(--p-400);
+    border-bottom: 2px solid var(--brand-400);
     letter-spacing: 0.02em;
 }
 
@@ -71,14 +71,14 @@
 .tt-time-label {
     grid-column: 1;
     background: var(--g-50);
-    border-right: 2px solid var(--p-100);
+    border-right: 2px solid var(--brand-100);
     border-bottom: 1px solid var(--g-100);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.72rem;
     font-weight: 700;
-    color: var(--p-600);
+    color: var(--brand-600);
     padding: 8px 6px;
     min-height: 60px;
     text-align: center;
@@ -104,14 +104,14 @@
 }
 
 .tt-cell:hover {
-    background: var(--p-50);
+    background: var(--brand-50);
 }
 
 /* ── Class Card (inside grid cells) ── */
 .tt-class-card {
-    background: linear-gradient(135deg, var(--p-50), #fff);
-    border: 1.5px solid var(--p-200);
-    border-left: 4px solid var(--p-500);
+    background: linear-gradient(135deg, var(--brand-50), #fff);
+    border: 1.5px solid var(--brand-200);
+    border-left: 4px solid var(--brand-500);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
     height: 100%;
@@ -125,15 +125,15 @@
 
 .tt-class-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
-    border-color: var(--p-400);
+    box-shadow: 0 4px 12px rgba(31, 71, 133, 0.15);
+    border-color: var(--brand-400);
 }
 
 .tt-class-code {
     font-size: 0.65rem;
     font-weight: 800;
     color: #fff;
-    background: var(--p-600);
+    background: var(--brand-600);
     padding: 2px 7px;
     border-radius: 4px;
     align-self: flex-start;
@@ -170,17 +170,17 @@
 .tt-class-meta-item svg {
     width: 11px;
     height: 11px;
-    color: var(--p-400);
+    color: var(--brand-400);
     flex-shrink: 0;
 }
 
 
 /* ── Color Variants for Different Subjects ── */
 .tt-class-card.color-1 {
-    border-left-color: var(--p-500);
-    background: linear-gradient(135deg, var(--p-50), #fff);
+    border-left-color: var(--brand-500);
+    background: linear-gradient(135deg, var(--brand-50), #fff);
 }
-.tt-class-card.color-1 .tt-class-code { background: var(--p-600); }
+.tt-class-card.color-1 .tt-class-code { background: var(--brand-600); }
 
 .tt-class-card.color-2 {
     border-left-color: var(--blue-500);
@@ -258,8 +258,8 @@
 .tt-exam-seat {
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--p-600);
-    background: var(--p-50);
+    color: var(--brand-600);
+    background: var(--brand-50);
     padding: 2px 8px;
     border-radius: 4px;
 }
@@ -310,7 +310,7 @@
     }
 
     .tt-agenda-day-header {
-        background: linear-gradient(135deg, var(--p-600), var(--p-500));
+        background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
         color: #fff;
         font-weight: 700;
         font-size: 0.95rem;
@@ -353,7 +353,7 @@
     }
 
     .tt-agenda-card:hover {
-        background: var(--p-50);
+        background: var(--brand-50);
     }
 
     .tt-agenda-time {
@@ -368,13 +368,13 @@
     .tt-agenda-time-start {
         font-size: 0.9rem;
         font-weight: 800;
-        color: var(--p-600);
+        color: var(--brand-600);
     }
 
     .tt-agenda-time-divider {
         width: 16px;
         height: 2px;
-        background: var(--p-200);
+        background: var(--brand-200);
         border-radius: 1px;
     }
 
@@ -424,7 +424,7 @@
     .tt-agenda-detail svg {
         width: 13px;
         height: 13px;
-        color: var(--p-400);
+        color: var(--brand-400);
     }
 
     .tt-exam-list {

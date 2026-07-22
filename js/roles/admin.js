@@ -1,5 +1,6 @@
 import { esc, statusBadge, getBatch } from '../main.js';
 import { impersonateStudent } from '../auth.js';
+import { debounce } from '../utils.js';
 
 export const MOCK_ADVISORS = [
     { id: 'ADV001', nameTh: 'ผศ.ดร.วิชัย เทคโนโลยี', nameEn: 'Asst.Prof.Dr. Wichai Technology', email: 'wichai.t@bsru.ac.th', phone: '02-473-7000 ต่อ 4001', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 12 },
@@ -30,6 +31,7 @@ export const MOCK_STUDENTS_POOL = [
 ];
 
 let adminLastSelectedBatch = 'all';
+let adminSearchQuery = '';
 
 export function initAdminDashboard() {
     renderAdminDashboard();
@@ -147,9 +149,14 @@ function renderManageStudents() {
         }),
     ].join('');
 
-    const filtered = adminLastSelectedBatch === 'all'
+    let filtered = adminLastSelectedBatch === 'all'
         ? MOCK_STUDENTS_POOL
         : MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === adminLastSelectedBatch);
+
+    if (adminSearchQuery) {
+        const q = adminSearchQuery.toLowerCase();
+        filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
+    }
 
     const rows = filtered.map((s) => {
         const realIdx = MOCK_STUDENTS_POOL.indexOf(s);
@@ -176,7 +183,11 @@ function renderManageStudents() {
             <label>กรองตามรุ่น</label>
             <select class="batch-select" id="adminBatchFilter">${filterOpts}</select>
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${MOCK_STUDENTS_POOL.length} คน</div>
-            <button class="btn btn-success" id="addStudentBtn" style="margin-left:auto">เพิ่มนักศึกษา</button>
+            <div class="toolbar-search" style="margin-left:auto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="adminStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
+            </div>
+            <button class="btn btn-success" id="addStudentBtn" style="margin-left:14px">เพิ่มนักศึกษา</button>
         </div>
         <div class="card">
             <div class="table-wrap">
@@ -192,6 +203,18 @@ function renderManageStudents() {
         adminLastSelectedBatch = e.target.value;
         renderManageStudents();
     });
+
+    const searchInput = document.getElementById('adminStudentSearch');
+    searchInput.addEventListener('input', debounce((e) => {
+        adminSearchQuery = e.target.value.trim();
+        renderManageStudents();
+        // Restore focus to input after re-render
+        const newSearchInput = document.getElementById('adminStudentSearch');
+        if (newSearchInput) {
+            newSearchInput.focus();
+            newSearchInput.setSelectionRange(adminSearchQuery.length, adminSearchQuery.length);
+        }
+    }, 300));
 
     document.getElementById('addStudentBtn').addEventListener('click', () => openStudentModal('add'));
     document.querySelectorAll('.edit-student-btn').forEach(b => b.addEventListener('click', () => openStudentModal('edit', parseInt(b.dataset.idx))));

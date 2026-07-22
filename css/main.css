@@ -5,20 +5,25 @@
 
 /* ── Design Tokens ── */
 :root {
-    --p-50: #f5f3ff;
-    --p-100: #ede9fe;
-    --p-200: #ddd6fe;
-    --p-300: #c4b5fd;
-    --p-400: #a78bfa;
-    --p-500: #8b5cf6;
-    --p-600: #7c3aed;
-    --p-700: #6d28d9;
-    --p-800: #5b21b6;
-    --p-900: #4c1d95;
-    --gold-300: #fde68a;
-    --gold-400: #facc15;
-    --gold-500: #eab308;
-    --gold-600: #ca8a04;
+    /* CS Department Brand Colors (Deep Navy to Light Blue) */
+    --brand-50: #eef5fd;
+    --brand-100: #d4e6fb;
+    --brand-200: #9dc4f5;
+    --brand-300: #5a9aed;
+    --brand-400: #2e6bc4;
+    --brand-500: #1f4785;
+    --brand-600: #1a3a6b;
+    --brand-700: #152e56;
+    --brand-800: #0f2241;
+    --brand-900: #0a1628;
+
+    /* Accent Circuit Colors */
+    --accent-300: #b3e5fc;
+    --accent-400: #81d4fa;
+    --accent-500: #4fc3f7;
+    --accent-600: #03a9f4;
+
+    /* Status Colors */
     --green-50: #f0fdf4;
     --green-100: #dcfce7;
     --green-500: #22c55e;
@@ -36,6 +41,8 @@
     --blue-600: #2563eb;
     --orange-500: #f97316;
     --orange-600: #ea580c;
+
+    /* Grays */
     --g-50: #f9fafb;
     --g-100: #f3f4f6;
     --g-200: #e5e7eb;
@@ -47,13 +54,15 @@
     --g-800: #1f2937;
     --g-900: #111827;
 
-    --bg-body: #f0edf6;
-    --bg-sidebar: #1e1145;
+    /* Theme Assignments (Light default) */
+    --bg-body: #f0f4f8;
+    --bg-sidebar: #0f2241;
     --bg-card: #ffffff;
     --text-main: #1f2037;
     --text-muted: #6b7280;
     --text-on-dark: #f3f4f6;
 
+    /* Layout & Sizing */
     --sidebar-w: 260px;
     --topbar-h: 64px;
     --imp-banner-h: 52px;
@@ -65,12 +74,33 @@
     --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
     --sh-md: 0 4px 14px rgba(0, 0, 0, 0.07);
     --sh-lg: 0 8px 30px rgba(0, 0, 0, 0.10);
-    --sh-purple: 0 4px 20px rgba(124, 58, 237, 0.25);
+    --sh-brand: 0 4px 20px rgba(31, 71, 133, 0.25);
 
+    /* Transitions */
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
     --t-fast: 0.15s var(--ease);
     --t-base: 0.25s var(--ease);
     --t-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Dark Theme Overrides ── */
+body.dark-theme {
+    --bg-body: #121212;
+    --bg-sidebar: #0a1225;
+    --bg-card: #1e1e1e;
+    --text-main: #e4e4e7;
+    --text-muted: #9ca3af;
+
+    --g-50: #1f2937;
+    --g-100: #374151;
+    --g-200: #4b5563;
+    --g-300: #6b7280;
+    --g-400: #9ca3af;
+    --g-500: #d1d5db;
+    --g-600: #e5e7eb;
+    --g-700: #f3f4f6;
+    --g-800: #f9fafb;
+    --g-900: #ffffff;
 }
 
 /* ── Reset ── */
@@ -237,7 +267,7 @@ body.impersonating .chatbot-fab {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1e1145 0%, #2d1b69 40%, #4c1d95 100%);
+    background: linear-gradient(135deg, #0f2241 0%, #152e56 40%, #0a1628 100%);
     padding: 20px;
     overflow: hidden;
 }
@@ -253,7 +283,7 @@ body.impersonating .chatbot-fab {
     position: absolute;
     border-radius: 50%;
     opacity: 0.08;
-    background: var(--p-400);
+    background: var(--brand-400);
     animation: shapeFloat 20s ease-in-out infinite;
 }
 
@@ -271,7 +301,7 @@ body.impersonating .chatbot-fab {
     bottom: -80px;
     left: -60px;
     animation-delay: -7s;
-    background: var(--gold-400)
+    background: var(--accent-400)
 }
 
 .shape-3 {
@@ -343,7 +373,7 @@ body.impersonating .chatbot-fab {
     font-family: 'Inter', 'Noto Sans Thai', sans-serif;
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--p-700);
+    color: var(--brand-700);
     letter-spacing: -0.02em
 }
 
@@ -394,8 +424,8 @@ body.impersonating .chatbot-fab {
 }
 
 .input-icon-wrap input:focus {
-    border-color: var(--p-400);
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+    border-color: var(--brand-400);
+    box-shadow: 0 0 0 4px rgba(31, 71, 133, 0.08);
     background: #fff
 }
 
@@ -427,8 +457,8 @@ body.impersonating .chatbot-fab {
 .role-hint code {
     font-family: 'Inter', monospace;
     font-weight: 700;
-    color: var(--p-600);
-    background: var(--p-50);
+    color: var(--brand-600);
+    background: var(--brand-50);
     padding: 1px 6px;
     border-radius: 4px;
     font-size: 0.72rem;
@@ -459,7 +489,7 @@ body.impersonating .chatbot-fab {
     width: 100%;
     padding: 13px;
     margin-top: 8px;
-    background: linear-gradient(135deg, var(--p-600), var(--p-500));
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
     color: #fff;
     font-size: 0.95rem;
     font-weight: 700;
@@ -469,12 +499,12 @@ body.impersonating .chatbot-fab {
     justify-content: center;
     gap: 8px;
     transition: transform var(--t-fast), box-shadow var(--t-fast);
-    box-shadow: var(--sh-purple);
+    box-shadow: var(--sh-brand);
 }
 
 .login-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.35)
+    box-shadow: 0 6px 24px rgba(31, 71, 133, 0.35)
 }
 
 .login-btn:active {
@@ -532,7 +562,7 @@ body.impersonating .chatbot-fab {
     font-family: 'Inter', sans-serif;
     font-size: 1.1rem;
     font-weight: 900;
-    color: var(--gold-400);
+    color: var(--accent-400);
     letter-spacing: 0.06em
 }
 
@@ -603,10 +633,10 @@ body.impersonating .chatbot-fab {
 }
 
 .nav-link.active {
-    background: linear-gradient(135deg, var(--p-600), var(--p-500));
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 2px 12px rgba(31, 71, 133, 0.4);
 }
 
 .sidebar-footer {
@@ -644,7 +674,7 @@ body.impersonating .chatbot-fab {
 .topbar-title {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--p-700)
+    color: var(--brand-700)
 }
 
 .hamburger {
@@ -668,7 +698,7 @@ body.impersonating .chatbot-fab {
 }
 
 .hamburger:hover span {
-    background: var(--p-600)
+    background: var(--brand-600)
 }
 
 .topbar-user {
@@ -687,7 +717,7 @@ body.impersonating .chatbot-fab {
     width: 34px;
     height: 34px;
     border-radius: var(--radius-sm);
-    background: var(--p-100);
+    background: var(--brand-100);
     display: flex;
     align-items: center;
     justify-content: center
@@ -696,7 +726,7 @@ body.impersonating .chatbot-fab {
 .topbar-avatar svg {
     width: 18px;
     height: 18px;
-    color: var(--p-500)
+    color: var(--brand-500)
 }
 
 .sidebar-overlay {
@@ -788,8 +818,8 @@ body.impersonating .chatbot-fab {
 }
 
 .badge-purple {
-    background: var(--p-100);
-    color: var(--p-700)
+    background: var(--brand-100);
+    color: var(--brand-700)
 }
 
 .badge-green {
@@ -844,7 +874,7 @@ body.impersonating .chatbot-fab {
 }
 
 .stat-icon.purple {
-    background: var(--p-100)
+    background: var(--brand-100)
 }
 
 .stat-icon.green {
@@ -890,15 +920,15 @@ body.impersonating .chatbot-fab {
 }
 
 .data-table thead {
-    background: var(--p-50)
+    background: var(--brand-50)
 }
 
 .data-table th {
     padding: 12px 16px;
     text-align: left;
     font-weight: 600;
-    color: var(--p-700);
-    border-bottom: 2px solid var(--p-100);
+    color: var(--brand-700);
+    border-bottom: 2px solid var(--brand-100);
     white-space: nowrap
 }
 
@@ -913,7 +943,7 @@ body.impersonating .chatbot-fab {
 }
 
 .data-table tbody tr:hover {
-    background: var(--p-50)
+    background: var(--brand-50)
 }
 
 .data-table tbody tr:last-child td {
@@ -981,7 +1011,7 @@ body.impersonating .chatbot-fab {
     height: 100%;
     border-radius: var(--radius-full);
     transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-    background: linear-gradient(90deg, var(--p-500), var(--p-400))
+    background: linear-gradient(90deg, var(--brand-500), var(--brand-400))
 }
 
 .progress-fill.green {
@@ -1008,19 +1038,19 @@ body.impersonating .chatbot-fab {
     width: 120px;
     height: 120px;
     border-radius: var(--radius-xl);
-    background: linear-gradient(135deg, var(--p-200), var(--p-100));
+    background: linear-gradient(135deg, var(--brand-200), var(--brand-100));
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     overflow: hidden;
-    border: 3px solid var(--p-300)
+    border: 3px solid var(--brand-300)
 }
 
 .profile-avatar-wrap svg {
     width: 60px;
     height: 60px;
-    color: var(--p-500)
+    color: var(--brand-500)
 }
 
 .profile-info {
@@ -1037,7 +1067,7 @@ body.impersonating .chatbot-fab {
 
 .profile-id {
     font-size: 0.85rem;
-    color: var(--p-600);
+    color: var(--brand-600);
     font-weight: 600;
     margin-bottom: 12px
 }
@@ -1066,12 +1096,12 @@ body.impersonating .chatbot-fab {
 
 /* Finance summary */
 .finance-summary {
-    background: linear-gradient(135deg, var(--p-700), var(--p-500));
+    background: linear-gradient(135deg, var(--brand-700), var(--brand-500));
     color: #fff;
     border-radius: var(--radius-xl);
     padding: 28px;
     margin-bottom: 24px;
-    box-shadow: var(--sh-purple)
+    box-shadow: var(--sh-brand)
 }
 
 .finance-summary h3 {
@@ -1113,15 +1143,15 @@ body.impersonating .chatbot-fab {
 }
 
 .sem-tab:hover {
-    border-color: var(--p-300);
-    color: var(--p-600)
+    border-color: var(--brand-300);
+    color: var(--brand-600)
 }
 
 .sem-tab.active {
-    background: var(--p-600);
+    background: var(--brand-600);
     color: #fff;
-    border-color: var(--p-600);
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3)
+    border-color: var(--brand-600);
+    box-shadow: 0 2px 8px rgba(31, 71, 133, 0.3)
 }
 
 /* Activity cards */
@@ -1207,7 +1237,7 @@ body.impersonating .chatbot-fab {
 .batch-filter-bar label svg {
     width: 18px;
     height: 18px;
-    color: var(--p-500)
+    color: var(--brand-500)
 }
 
 .batch-select {
@@ -1227,13 +1257,13 @@ body.impersonating .chatbot-fab {
 }
 
 .batch-select:focus {
-    border-color: var(--p-400);
+    border-color: var(--brand-400);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+    box-shadow: 0 0 0 4px rgba(31, 71, 133, 0.08);
 }
 
 .batch-select:hover {
-    border-color: var(--p-300)
+    border-color: var(--brand-300)
 }
 
 .filter-result-count {
@@ -1246,7 +1276,7 @@ body.impersonating .chatbot-fab {
 }
 
 .filter-result-count strong {
-    color: var(--p-600);
+    color: var(--brand-600);
     font-weight: 700
 }
 
@@ -1259,8 +1289,8 @@ body.impersonating .chatbot-fab {
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    background: var(--p-100);
-    color: var(--p-700);
+    background: var(--brand-100);
+    color: var(--brand-700);
 }
 
 /* ============================================================
@@ -1286,14 +1316,14 @@ body.impersonating .chatbot-fab {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--p-600), var(--p-500));
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
     color: #fff;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25)
+    box-shadow: 0 2px 8px rgba(31, 71, 133, 0.25)
 }
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35)
+    box-shadow: 0 4px 14px rgba(31, 71, 133, 0.35)
 }
 
 .btn-success {
@@ -1433,7 +1463,7 @@ body.impersonating .chatbot-fab {
     width: 48px;
     height: 48px;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--p-200), var(--p-100));
+    background: linear-gradient(135deg, var(--brand-200), var(--brand-100));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1443,7 +1473,7 @@ body.impersonating .chatbot-fab {
 .advisee-avatar svg {
     width: 24px;
     height: 24px;
-    color: var(--p-500)
+    color: var(--brand-500)
 }
 
 .advisee-info {
@@ -1577,7 +1607,7 @@ body.impersonating .chatbot-fab {
 
 .modal-field input:focus,
 .modal-field select:focus {
-    border-color: var(--p-400);
+    border-color: var(--brand-400);
     background: #fff
 }
 
@@ -1662,8 +1692,61 @@ body.impersonating .chatbot-fab {
 /* Desktop polish */
 @media(min-width:861px) {
     body {
-        background-image: radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.04) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.04) 0%, transparent 50%)
+        background-image: radial-gradient(circle at 20% 30%, rgba(31, 71, 133, 0.04) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(46, 107, 196, 0.04) 0%, transparent 50%)
     }
 }
 
-
+
+/* ============================================================
+   PRINT STYLESHEET (Optimized for Academic Tables)
+   ============================================================ */
+@media print {
+    body {
+        background: #fff;
+        color: #000;
+    }
+    
+    .sidebar,
+    .topbar,
+    .sidebar-overlay,
+    .chatbot-fab,
+    .chatbot-window,
+    .impersonation-banner,
+    #themeToggleBtn,
+    .batch-filter-bar {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+    
+    .module-header h2 {
+        color: #000;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        padding: 0;
+        margin-bottom: 20px;
+    }
+    
+    /* Ensure tables do not break awkwardly */
+    .data-table,
+    .tt-schedule-grid,
+    table,
+    .advisee-card,
+    .profile-top {
+        page-break-inside: avoid;
+    }
+    
+    .badge {
+        border: 1px solid #ccc;
+        color: #000 !important;
+        background: transparent !important;
+    }
+}

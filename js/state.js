@@ -30,11 +30,14 @@ const _state = {
     // Chatbot
     chatbotOpen: false,
 
+    // Theme (Light/Dark mode)
+    theme: 'light',
+
     // CSS modules loaded
     loadedCSS: [],
 };
 
-// ── Hydrate from sessionStorage on startup ──
+// ── Hydrate from sessionStorage & localStorage on startup ──
 try {
     const persisted = JSON.parse(sessionStorage.getItem('authState'));
     if (persisted) {
@@ -42,6 +45,10 @@ try {
         _state.user = persisted.user || null;
         _state.isImpersonating = !!persisted.isImpersonating;
         _state.impersonatedStudent = persisted.impersonatedStudent || null;
+    }
+    const persistedTheme = localStorage.getItem('themeState');
+    if (persistedTheme) {
+        _state.theme = persistedTheme;
     }
 } catch { /* ignore corrupt storage */ }
 
@@ -92,6 +99,11 @@ export function setState(partial) {
     // Persist auth-related keys to sessionStorage
     if (changed.some(k => ['currentRole', 'user', 'isImpersonating', 'impersonatedStudent'].includes(k))) {
         _persistAuth();
+    }
+    
+    // Persist theme to localStorage
+    if (changed.includes('theme')) {
+        localStorage.setItem('themeState', _state.theme);
     }
 
     // Notify global listeners

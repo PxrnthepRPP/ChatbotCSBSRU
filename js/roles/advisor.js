@@ -1,8 +1,10 @@
 import { esc, statusBadge, getBatch } from '../main.js';
 import { MOCK_STUDENTS_POOL } from './admin.js';
 import { impersonateStudent } from '../auth.js';
+import { debounce } from '../utils.js';
 
 let lastSelectedBatch = 'all';
+let advisorSearchQuery = '';
 
 export function initAdvisorDashboard() {
     renderAdvisorDashboard();
@@ -40,7 +42,12 @@ function renderMyAdvisees() {
         ...batches.map(b => `<option value="${b}" ${lastSelectedBatch === b ? 'selected' : ''}>รุ่น ${b} (Batch ${b})</option>`)
     ].join('');
     
-    const filtered = lastSelectedBatch === 'all' ? myStudents : myStudents.filter(s => getBatch(s.studentId) === lastSelectedBatch);
+    let filtered = lastSelectedBatch === 'all' ? myStudents : myStudents.filter(s => getBatch(s.studentId) === lastSelectedBatch);
+
+    if (advisorSearchQuery) {
+        const q = advisorSearchQuery.toLowerCase();
+        filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
+    }
 
     const cards = filtered.map(s => `
         <div class="advisee-card">
@@ -66,7 +73,7 @@ function renderMyAdvisees() {
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${myStudents.length} คน</div>
             <div class="toolbar-search" style="margin-left:auto">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="ค้นหารหัสนักศึกษา, ชื่อ...">
+                <input type="text" id="advStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
             </div>
         </div>
         <div class="card" style="background:transparent;box-shadow:none;border:none;padding:0">
@@ -78,6 +85,17 @@ function renderMyAdvisees() {
         lastSelectedBatch = e.target.value;
         renderMyAdvisees();
     });
+
+    const searchInput = document.getElementById('advStudentSearch');
+    searchInput.addEventListener('input', debounce((e) => {
+        advisorSearchQuery = e.target.value.trim();
+        renderMyAdvisees();
+        const newSearchInput = document.getElementById('advStudentSearch');
+        if (newSearchInput) {
+            newSearchInput.focus();
+            newSearchInput.setSelectionRange(advisorSearchQuery.length, advisorSearchQuery.length);
+        }
+    }, 300));
 
     document.querySelectorAll('.adv-imp-btn').forEach(b => {
         b.addEventListener('click', () => impersonateStudent(b.dataset.sid, b.dataset.sname));

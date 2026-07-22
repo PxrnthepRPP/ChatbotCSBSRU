@@ -42,7 +42,7 @@
 /* ── Admin Data Table Enhancements ── */
 #mod-manage-advisors .data-table thead,
 #mod-manage-students .data-table thead {
-    background: linear-gradient(135deg, var(--red-50), var(--p-50));
+    background: linear-gradient(135deg, var(--red-50), var(--brand-50));
 }
 
 #mod-manage-advisors .data-table th,

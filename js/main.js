@@ -85,6 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Read initial state ──
     const initialState = getState();
 
+    // ── Apply Initial Theme ──
+    if (initialState.theme === 'dark') {
+        document.body.classList.add('dark-theme');
+    } else {
+        document.body.classList.remove('dark-theme');
+    }
+
     if (initialState.currentRole) {
         loginOverlay.style.display = 'none';
         dashboard.style.display = 'flex';
@@ -149,6 +156,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         closeMobileSidebar();
     });
+
+    // ── State subscriber: theme changes ──
+    subscribe('theme', (newTheme) => {
+        if (newTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
+    });
+
+    // ── Theme Toggle Button ──
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = getState().theme;
+            setState({ theme: currentTheme === 'light' ? 'dark' : 'light' });
+        });
+    }
 
     // Initialize Chatbot Widget
     initChatbot();

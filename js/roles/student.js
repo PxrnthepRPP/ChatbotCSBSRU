@@ -312,8 +312,8 @@ function buildTimetableAgendaHTML(schedule, colorMap) {
         entries.forEach(e => {
             const cColor = colorMap[e.subjectCode] || 'color-1';
             // Extract background color for code badge from color class
-            const bgMap = { 'color-1': 'var(--p-600)', 'color-2': 'var(--blue-600)', 'color-3': 'var(--green-600)', 'color-4': 'var(--amber-600)', 'color-5': 'var(--red-600)', 'color-6': 'var(--orange-600)' };
-            const codeBg = bgMap[cColor] || 'var(--p-600)';
+            const bgMap = { 'color-1': 'var(--brand-600)', 'color-2': 'var(--blue-600)', 'color-3': 'var(--green-600)', 'color-4': 'var(--amber-600)', 'color-5': 'var(--red-600)', 'color-6': 'var(--orange-600)' };
+            const codeBg = bgMap[cColor] || 'var(--brand-600)';
 
             html += `<div class="tt-agenda-card">
                 <div class="tt-agenda-time">
@@ -465,7 +465,7 @@ function buildGradesBody(idx) {
         </div>
         <div style="display:flex;justify-content:flex-end;gap:24px;margin-top:12px;font-size:0.85rem">
             <span>หน่วยกิตลงทะเบียน: <strong>${sem.courses.reduce((a, c) => a + c.credits, 0)}</strong></span>
-            <span>GPA: <strong style="color:var(--p-600)">${semGpa}</strong></span>
+            <span>GPA: <strong style="color:var(--brand-600)">${semGpa}</strong></span>
         </div>`;
 }
 
@@ -549,7 +549,7 @@ function renderActivity() {
     const passed = MOCK_ACTIVITIES.filter(a => a.status === 'ผ่าน').length;
     const cards = MOCK_ACTIVITIES.map(a => `
         <div class="activity-card">
-            <div class="activity-icon" style="background:var(--p-50)">${a.icon}</div>
+            <div class="activity-icon" style="background:var(--brand-50)">${a.icon}</div>
             <div class="activity-body"><div class="activity-title">${esc(a.name)}</div><div class="activity-meta">${esc(a.date)} · ${esc(a.type)} · ${a.hours} ชม.</div></div>
             <span class="activity-status badge ${statusBadge(a.status)}">${esc(a.status)}</span>
         </div>`).join('');
