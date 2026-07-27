@@ -6,8 +6,13 @@
    ============================================================ */
 
 /* ── Desktop: show grid, hide agenda ── */
-.tt-agenda-view { display: none; }
-.tt-schedule-grid { display: grid; }
+.tt-agenda-view {
+    display: none;
+}
+
+.tt-schedule-grid {
+    display: grid;
+}
 
 /* ── Schedule Grid Container ── */
 .tt-schedule-grid {
@@ -17,9 +22,10 @@
     gap: 0;
     border: 1px solid var(--g-200);
     border-radius: var(--radius-lg);
-    overflow: hidden;
+    overflow: visible;
     margin-top: 16px;
     background: var(--bg-card);
+    position: relative;
 }
 
 /* ── Corner Cell (top-left) ── */
@@ -38,6 +44,7 @@
     padding: 10px;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-top-left-radius: var(--radius-lg);
 }
 
 /* ── Day Headers (top row) ── */
@@ -56,6 +63,7 @@
 
 .tt-day-header:last-child {
     border-right: none;
+    border-top-right-radius: var(--radius-lg);
 }
 
 .tt-day-header.tt-weekend {
@@ -87,6 +95,7 @@
 
 .tt-time-label:last-of-type {
     border-bottom: none;
+    border-bottom-left-radius: var(--radius-lg);
 }
 
 /* ── Grid Cells ── */
@@ -94,21 +103,17 @@
     border-right: 1px solid var(--g-100);
     border-bottom: 1px solid var(--g-100);
     min-height: 60px;
-    position: relative;
     padding: 4px;
-    transition: background var(--t-fast);
 }
 
 .tt-cell:last-child {
     border-right: none;
 }
 
-.tt-cell:hover {
-    background: var(--brand-50);
-}
-
 /* ── Class Card (inside grid cells) ── */
 .tt-class-card {
+    position: relative;
+    z-index: 1;
     background: linear-gradient(135deg, var(--brand-50), #fff);
     border: 1.5px solid var(--brand-200);
     border-left: 4px solid var(--brand-500);
@@ -118,15 +123,24 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    transition: transform var(--t-fast), box-shadow var(--t-fast);
+    transition: transform var(--t-fast), box-shadow var(--t-fast), border-color var(--t-fast), z-index var(--t-fast);
     cursor: default;
     overflow: hidden;
 }
 
 .tt-class-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(31, 71, 133, 0.15);
+    position: relative;
+    z-index: 999 !important;
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(31, 71, 133, 0.2);
     border-color: var(--brand-400);
+    overflow: visible;
+}
+
+.tt-class-card:hover .tt-class-name {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
 }
 
 .tt-class-code {
@@ -180,37 +194,55 @@
     border-left-color: var(--brand-500);
     background: linear-gradient(135deg, var(--brand-50), #fff);
 }
-.tt-class-card.color-1 .tt-class-code { background: var(--brand-600); }
+
+.tt-class-card.color-1 .tt-class-code {
+    background: var(--brand-600);
+}
 
 .tt-class-card.color-2 {
     border-left-color: var(--blue-500);
     background: linear-gradient(135deg, var(--blue-50), #fff);
 }
-.tt-class-card.color-2 .tt-class-code { background: var(--blue-600); }
+
+.tt-class-card.color-2 .tt-class-code {
+    background: var(--blue-600);
+}
 
 .tt-class-card.color-3 {
     border-left-color: var(--green-500);
     background: linear-gradient(135deg, var(--green-50), #fff);
 }
-.tt-class-card.color-3 .tt-class-code { background: var(--green-600); }
+
+.tt-class-card.color-3 .tt-class-code {
+    background: var(--green-600);
+}
 
 .tt-class-card.color-4 {
     border-left-color: var(--amber-500);
     background: linear-gradient(135deg, #fffbeb, #fff);
 }
-.tt-class-card.color-4 .tt-class-code { background: var(--amber-600); }
+
+.tt-class-card.color-4 .tt-class-code {
+    background: var(--amber-600);
+}
 
 .tt-class-card.color-5 {
     border-left-color: var(--red-500);
     background: linear-gradient(135deg, var(--red-50), #fff);
 }
-.tt-class-card.color-5 .tt-class-code { background: var(--red-600); }
+
+.tt-class-card.color-5 .tt-class-code {
+    background: var(--red-600);
+}
 
 .tt-class-card.color-6 {
     border-left-color: var(--orange-500);
     background: linear-gradient(135deg, #fff7ed, #fff);
 }
-.tt-class-card.color-6 .tt-class-code { background: var(--orange-600); }
+
+.tt-class-card.color-6 .tt-class-code {
+    background: var(--orange-600);
+}
 
 
 /* ── Exam Schedule Cards ── */
@@ -235,8 +267,8 @@
 }
 
 .tt-exam-card:hover {
-    transform: translateY(-2px);
     box-shadow: var(--sh-md);
+    border-color: var(--g-300);
 }
 
 .tt-exam-header {
@@ -295,9 +327,15 @@
    MOBILE AGENDA VIEW (< 860px)
    ============================================================ */
 @media (max-width: 860px) {
+
     /* Mobile: hide grid matrix, show agenda */
-    .tt-schedule-grid { display: none !important; }
-    .tt-agenda-view { display: block; }
+    .tt-schedule-grid {
+        display: none !important;
+    }
+
+    .tt-agenda-view {
+        display: block;
+    }
 
     /* Agenda day group container */
     .tt-agenda-day {
