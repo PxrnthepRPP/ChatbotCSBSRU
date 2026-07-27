@@ -100,7 +100,7 @@ Bash
 ┃ ┣ 📜 chatbot.css
 ┃ ┗ 📂 roles        # CSS แยกตาม Role (admin, advisor, student)
 ┗ 📂 js
-┣ 📜 main.js      # App Initialization & Routing
+┣ 📜 main.js      # App Initialization &   Routing
 ┣ 📜 state.js     # Centralized State Management
 ┣ 📜 auth.js      # Login & Impersonation Logic
 ┣ 📂 components   # Chatbot UI Logic
