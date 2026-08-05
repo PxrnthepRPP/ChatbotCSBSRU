@@ -813,36 +813,54 @@ body.impersonating .chatbot-fab {
     flex-wrap: wrap
 }
 
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    flex-shrink: 0;
+    transition: all var(--t-fast);
+}
+
 .card-title .badge {
     font-size: 0.68rem;
     padding: 3px 10px;
-    border-radius: var(--radius-full);
-    font-weight: 600
 }
 
 .badge-purple {
     background: var(--brand-100);
-    color: var(--brand-700)
+    color: var(--brand-700);
+    border: 1px solid rgba(42, 94, 168, 0.15);
 }
 
 .badge-green {
-    background: var(--green-100);
-    color: var(--green-600)
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .badge-amber {
-    background: var(--amber-100);
-    color: var(--amber-600)
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .badge-red {
-    background: var(--red-100);
-    color: var(--red-500)
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .badge-blue {
-    background: var(--blue-100);
-    color: var(--blue-500)
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .stat-row {

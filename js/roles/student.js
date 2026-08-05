@@ -90,7 +90,7 @@ const MOCK_GRADES = {
 };
 
 const MOCK_FINANCE = {
-    totalPaid: 142500, currentOwed: 18750,
+    totalPaid: 75000, currentOwed: 18750,
     scholarship: 'ทุน กยศ. (กองทุนเงินให้กู้ยืมเพื่อการศึกษา)', scholarshipAmount: 40000,
     payments: [
         { semester: '1/2565', amount: 18750, status: 'ชำระแล้ว', date: '15 มิ.ย. 2565', method: 'ธนาคารกรุงไทย' },
@@ -136,7 +136,7 @@ function getStudentFullData(studentId) {
         phone: '08' + Math.floor(10000000 + Math.random() * 90000000),
         credits: creditsMap[base.year] || 48,
         admitYear: admitMap[base.year] || 2565,
-        birthDate: Math.floor(1 + Math.random() * 28) + ' ' + ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][Math.floor(Math.random() * 12)] + ' 2546',
+        birthDate: Math.floor(1 + Math.random() * 28) + ' ' + ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][Math.floor(Math.random() * 12)] + ' 2546',
         address: '123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600',
     };
 }
@@ -196,8 +196,8 @@ function renderBibliography(s) {
 
 const DAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const TIME_SLOTS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
-const COLOR_CLASSES = ['color-1','color-2','color-3','color-4','color-5','color-6'];
+const TIME_SLOTS = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+const COLOR_CLASSES = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
 
 /** Convert time string "HH:MM" to slot index (0-based from 07:00) */
 function timeToSlot(t) {

@@ -28,6 +28,8 @@ export function statusBadge(s) {
     if (s === 'ผ่าน' || s === 'ชำระแล้ว' || s === 'กำลังศึกษา') return 'badge-green';
     if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว') return 'badge-amber';
     if (s === 'ค้างชำระ' || s === 'พักการศึกษา') return 'badge-red';
+    if (s === 'จบการศึกษา') return 'badge-blue';
+    if (s === 'พ้นสภาพ') return 'badge-red';
     return 'badge-purple';
 }
 export function getBatch(studentId) { return studentId.substring(0, 2); }

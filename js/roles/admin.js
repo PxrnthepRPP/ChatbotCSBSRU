@@ -1,6 +1,9 @@
 import { esc, statusBadge, getBatch } from '../main.js';
 import { impersonateStudent } from '../auth.js';
 import { debounce } from '../utils.js';
+import { loadComponentCSS } from '../css-loader.js';
+import { renderStatusDonutChart } from '../components/statusChart.js';
+import { renderCareerDataList } from '../components/careerList.js';
 
 export const MOCK_ADVISORS = [
     { id: 'ADV001', nameTh: 'ผศ.ดร.วิชัย เทคโนโลยี', nameEn: 'Asst.Prof.Dr. Wichai Technology', email: 'wichai.t@bsru.ac.th', phone: '02-473-7000 ต่อ 4001', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 12 },
@@ -19,7 +22,7 @@ export const MOCK_STUDENTS_POOL = [
     { studentId: '6421100066', nameTh: 'กานต์ เน็ตเวิร์ค', nameEn: 'Kan Network', year: 3, gpa: 3.55, status: 'กำลังศึกษา', advisor: 'ADV001' },
     { studentId: '6521100010', nameTh: 'ธนา อัลกอริทึม', nameEn: 'Thana Algorithm', year: 2, gpa: 3.20, status: 'กำลังศึกษา', advisor: 'ADV001' },
     { studentId: '6521100028', nameTh: 'ปริญญา ซอฟต์แวร์', nameEn: 'Prinya Software', year: 2, gpa: 3.65, status: 'กำลังศึกษา', advisor: 'ADV001' },
-    { studentId: '6521100036', nameTh: 'มานี ฐานข้อมูล', nameEn: 'Manee Database', year: 2, gpa: 2.80, status: 'พักการศึกษา', advisor: 'ADV003' },
+    { studentId: '6521100036', nameTh: 'มานี ฐานข้อมูล', nameEn: 'Manee Database', year: 2, gpa: 2.80, status: 'พักการศึกษา', advisor: 'ADV001' },
     { studentId: '6521100044', nameTh: 'จิตรา เอไอ', nameEn: 'Jittra AI', year: 2, gpa: 3.90, status: 'กำลังศึกษา', advisor: 'ADV004' },
     { studentId: '6521100052', nameTh: 'นภา ไซเบอร์', nameEn: 'Napa Cyber', year: 2, gpa: 3.35, status: 'กำลังศึกษา', advisor: 'ADV001' },
     { studentId: '6521100060', nameTh: 'ศักดิ์ ลินุกซ์', nameEn: 'Sak Linux', year: 2, gpa: 3.10, status: 'กำลังศึกษา', advisor: 'ADV001' },
@@ -28,6 +31,28 @@ export const MOCK_STUDENTS_POOL = [
     { studentId: '6621100017', nameTh: 'ดวงใจ ฟูลสแตค', nameEn: 'Duangjai Fullstack', year: 1, gpa: 3.80, status: 'กำลังศึกษา', advisor: 'ADV001' },
     { studentId: '6621100025', nameTh: 'อรรถ บล็อกเชน', nameEn: 'Att Blockchain', year: 1, gpa: 2.90, status: 'กำลังศึกษา', advisor: 'ADV001' },
     { studentId: '6621100033', nameTh: 'ปิยะ ดีพเลิร์น', nameEn: 'Piya DeepLearn', year: 1, gpa: 3.25, status: 'กำลังศึกษา', advisor: 'ADV002' },
+    { studentId: '6321100005', nameTh: 'ประสิทธิ์ คอมไพล์', nameEn: 'Prasit Compile', year: 4, gpa: 3.50, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Full-Stack Developer' },
+    { studentId: '6321100013', nameTh: 'สุรีย์ ดีบัก', nameEn: 'Suree Debug', year: 4, gpa: 3.72, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'Data Analyst' },
+    { studentId: '6321100021', nameTh: 'วรวุฒิ เซิร์ฟเวอร์', nameEn: 'Worawut Server', year: 4, gpa: 3.30, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'DevOps Engineer' },
+    { studentId: '6221100008', nameTh: 'พิชญา แอปพลิเคชั่น', nameEn: 'Pitchaya Application', year: 5, gpa: 3.15, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'Full-Stack Developer' },
+    { studentId: '6221100016', nameTh: 'ธนากร เทสต์เคส', nameEn: 'Thanakorn Testcase', year: 5, gpa: 2.95, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Full-Stack Developer' },
+    { studentId: '6221100024', nameTh: 'รัตนา อินเทอร์เฟส', nameEn: 'Rattana Interface', year: 5, gpa: 3.60, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'UX/UI Designer' },
+    { studentId: '6221100032', nameTh: 'สมพงษ์ เซคิวริตี้', nameEn: 'Sompong Security', year: 5, gpa: 3.40, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'Cybersecurity Analyst' },
+    { studentId: '6221100040', nameTh: 'กิติพงษ์ สตาร์ทอัพ', nameEn: 'Kitipong Startup', year: 5, gpa: 3.05, status: 'จบการศึกษา', advisor: 'ADV005', careerPath: 'เจ้าของธุรกิจ' },
+    { studentId: '6221100058', nameTh: 'อาริยา คลาวด์เนทีฟ', nameEn: 'Ariya CloudNative', year: 5, gpa: 3.82, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'DevOps Engineer' },
+    { studentId: '6221100066', nameTh: 'พิมลรัตน์ แมชชีนเลิร์นนิ่ง', nameEn: 'Pimonrat MLearning', year: 5, gpa: 3.55, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Data Analyst' },
+    { studentId: '6221100074', nameTh: 'ณัฐวุฒิ โนโค้ด', nameEn: 'Nattawut NoCode', year: 5, gpa: 2.45, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'ว่างงาน' },
+    { studentId: '6221100082', nameTh: 'ศิริลักษณ์ โมไบล์แอป', nameEn: 'Sirilak MobileApp', year: 5, gpa: 2.70, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'ว่างงาน' },
+    { studentId: '6121100001', nameTh: 'พงศกร คลาวด์อาร์คิเทค', nameEn: 'Pongsakorn CloudArch', year: 6, gpa: 3.65, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'Cloud Architect' },
+    { studentId: '6121100012', nameTh: 'กุลนันท์ ไอโอเอส', nameEn: 'Kulanan iOS', year: 6, gpa: 3.48, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Mobile Developer' },
+    { studentId: '6121100023', nameTh: 'อนันตชัย เอไอโมเดล', nameEn: 'Anantachai AIModel', year: 6, gpa: 3.92, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'AI/ML Engineer' },
+    { studentId: '6121100034', nameTh: 'ภาวินี ออโตเมชั่น', nameEn: 'Pawinee Automation', year: 6, gpa: 3.28, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'QA Engineer' },
+    { studentId: '6121100045', nameTh: 'ชยุต ดีบีเอ', nameEn: 'Chayut DBA', year: 6, gpa: 3.10, status: 'จบการศึกษา', advisor: 'ADV005', careerPath: 'Database Administrator' },
+    { studentId: '6121100056', nameTh: 'ธนวัฒน์ ซิสแอดมิน', nameEn: 'Thanawat SysAdmin', year: 6, gpa: 3.00, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'System Administrator' },
+    { studentId: '6121100067', nameTh: 'ธีรเดช เกมเอนจิน', nameEn: 'Teeradet GameEngine', year: 6, gpa: 3.35, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Game Developer' },
+    { studentId: '6121100078', nameTh: 'ศศิธร คอนซัลแตนท์', nameEn: 'Sasithorn Consultant', year: 6, gpa: 3.75, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'IT Consultant' },
+    { studentId: '6421100074', nameTh: 'ชัยวัฒน์ โค้ดดิ้ง', nameEn: 'Chaiwat Coding', year: 3, gpa: 1.85, status: 'พ้นสภาพ', advisor: 'ADV001' },
+    { studentId: '6521100078', nameTh: 'ณัฐพล ไฟร์วอลล์', nameEn: 'Nuttapon Firewall', year: 2, gpa: 1.70, status: 'พ้นสภาพ', advisor: 'ADV004' },
 ];
 
 let adminLastSelectedBatch = 'all';
@@ -40,18 +65,33 @@ export function initAdminDashboard() {
 }
 
 function renderAdminDashboard() {
+    const studying = MOCK_STUDENTS_POOL.filter(s => s.status === 'กำลังศึกษา').length;
+    const graduated = MOCK_STUDENTS_POOL.filter(s => s.status === 'จบการศึกษา').length;
+    const onLeave = MOCK_STUDENTS_POOL.filter(s => s.status === 'พักการศึกษา').length;
+    const dismissed = MOCK_STUDENTS_POOL.filter(s => s.status === 'พ้นสภาพ').length;
+
     document.getElementById('adminDashboardContent').innerHTML = `
         <div class="stat-row">
             <div class="stat-card"><div class="stat-icon purple">👩‍🏫</div><div><div class="stat-value">${MOCK_ADVISORS.length}</div><div class="stat-label">อาจารย์ที่ปรึกษา</div></div></div>
             <div class="stat-card"><div class="stat-icon blue">👨‍🎓</div><div><div class="stat-value">${MOCK_STUDENTS_POOL.length}</div><div class="stat-label">นักศึกษาทั้งหมด</div></div></div>
-            <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${MOCK_STUDENTS_POOL.filter(s=>s.status==='กำลังศึกษา').length}</div><div class="stat-label">กำลังศึกษา</div></div></div>
-            <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${MOCK_STUDENTS_POOL.filter(s=>s.status!=='กำลังศึกษา').length}</div><div class="stat-label">พักการศึกษา</div></div></div>
+            <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${studying}</div><div class="stat-label">กำลังศึกษา</div></div></div>
+            <div class="stat-card"><div class="stat-icon amber">🎓</div><div><div class="stat-value">${graduated}</div><div class="stat-label">จบการศึกษา</div></div></div>
+        </div>
+        <div class="dashboard-grid">
+            <div id="statusChartContainer"></div>
+            <div id="careerListContainer"></div>
         </div>
         <div class="card">
             <div class="card-title">📊 ภาพรวมระบบ</div>
             <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7">ระบบสารสนเทศนักศึกษา BSRU สาขาวิทยาการคอมพิวเตอร์ — จัดการข้อมูลอาจารย์ที่ปรึกษาและนักศึกษาได้จากเมนูด้านซ้าย ระบบรองรับการเพิ่ม แก้ไข และลบข้อมูล</p>
         </div>
     `;
+
+    // Load chart CSS and render both components
+    loadComponentCSS('statusChart').then(() => {
+        renderStatusDonutChart('statusChartContainer', MOCK_STUDENTS_POOL);
+        renderCareerDataList('careerListContainer', MOCK_STUDENTS_POOL);
+    });
 }
 
 function renderManageAdvisors() {
@@ -245,8 +285,9 @@ function openStudentModal(mode, idx) {
         <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}"></div>
         <div class="modal-field"><label>ชั้นปี</label><input id="mfSyear" type="number" min="1" max="6" value="${s.year || 1}"></div>
         <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
-        <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
+        <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
         <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
+        <div class="modal-field"><label>สายอาชีพ (เฉพาะจบการศึกษา)</label><input id="mfScareer" placeholder="เช่น Full-Stack Developer, DevOps..." value="${esc(s.careerPath || '')}"></div>
     `;
     
     const saveBtn = document.getElementById('modalSave');
@@ -262,6 +303,7 @@ function openStudentModal(mode, idx) {
             gpa: parseFloat(document.getElementById('mfSgpa').value) || 0,
             status: document.getElementById('mfSstatus').value,
             advisor: document.getElementById('mfSadvisor').value,
+            careerPath: document.getElementById('mfScareer').value.trim() || undefined,
         };
         if (!data.studentId || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
         if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = data; }
