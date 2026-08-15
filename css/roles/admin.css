@@ -12,41 +12,50 @@
 }
 
 /* ── Admin Toolbar ── */
+#mod-admin-dashboard .admin-dashboard-filter-bar,
 #mod-manage-advisors .toolbar,
-#mod-manage-students .batch-filter-bar {
+#mod-manage-students .batch-filter-bar,
+#mod-manage-petitions .petition-filter-bar {
     border-left: 4px solid var(--red-500);
 }
 
 /* ── Admin Action Buttons Emphasis ── */
 #mod-manage-students .admin-imp-btn,
-#mod-manage-advisors .edit-advisor-btn {
+#mod-manage-advisors .edit-advisor-btn,
+#mod-manage-petitions .view-petition-btn {
     transition: all var(--t-fast);
 }
 
 #mod-manage-students .admin-imp-btn:hover,
-#mod-manage-advisors .edit-advisor-btn:hover {
+#mod-manage-advisors .edit-advisor-btn:hover,
+#mod-manage-petitions .view-petition-btn:hover {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Admin Dashboard Cards ── */
-#mod-admin-dashboard .stat-card {
+#mod-admin-dashboard .stat-card,
+#mod-manage-petitions .stat-card {
     border-top: 3px solid transparent;
     transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-#mod-admin-dashboard .stat-card:hover {
+#mod-admin-dashboard .stat-card:hover,
+#mod-manage-petitions .stat-card:hover {
     border-top-color: var(--red-500);
     box-shadow: var(--sh-md);
 }
 
 /* ── Admin Data Table Enhancements ── */
 #mod-manage-advisors .data-table thead,
-#mod-manage-students .data-table thead {
+#mod-manage-students .data-table thead,
+#mod-manage-petitions .data-table thead {
     background: linear-gradient(135deg, var(--red-50), var(--brand-50));
 }
 
 #mod-manage-advisors .data-table th,
-#mod-manage-students .data-table th {
+#mod-manage-students .data-table th,
+#mod-manage-petitions .data-table th {
     color: var(--red-600);
     border-bottom-color: var(--red-100);
 }
+

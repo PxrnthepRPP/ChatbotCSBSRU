@@ -55,42 +55,201 @@ export const MOCK_STUDENTS_POOL = [
     { studentId: '6521100078', nameTh: 'ณัฐพล ไฟร์วอลล์', nameEn: 'Nuttapon Firewall', year: 2, gpa: 1.70, status: 'พ้นสภาพ', advisor: 'ADV004' },
 ];
 
+export const MOCK_PETITIONS_LOG = [
+    {
+        id: 'PET-2567-001',
+        studentId: '6421100042',
+        studentName: 'สมชาย ใจดี',
+        type: 'ยื่นขอสอบหัวข้อโปรเจคจบ',
+        title: 'ระบบจัดการข้อมูลนักศึกษาด้วย AI Chatbot',
+        details: 'ขอยื่นสอบหัวข้อโปรเจคจบ สาขาวิทยาการคอมพิวเตอร์ ภาคเรียนที่ 2/2566 โดยมี ผศ.ดร.วิชัย เทคโนโลยี เป็นอาจารย์ที่ปรึกษา',
+        attachment: 'proposal_6421100042.pdf',
+        submittedAt: '15 ม.ค. 2567 10:30',
+        status: 'อนุมัติ',
+        adminComment: 'เอกสารครบถ้วน อนุมัติให้สอบหัวข้อได้',
+    },
+    {
+        id: 'PET-2567-002',
+        studentId: '6421100015',
+        studentName: 'สมหญิง รักเรียน',
+        type: 'ยื่นสอบจบปริญญานิพนธ์',
+        title: 'ระบบวิเคราะห์การทำนายแนวโน้มอาชีพด้วย Machine Learning',
+        details: 'ขอยื่นสอบจบปริญญานิพนธ์ พัฒนาระบบและทดสอบผลการทดลองเรียบร้อยแล้ว',
+        attachment: 'final_defense_somying.pdf',
+        submittedAt: '20 ม.ค. 2567 14:15',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+    {
+        id: 'PET-2567-003',
+        studentId: '6521100028',
+        studentName: 'ปริญญา ซอฟต์แวร์',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอเลื่อนสอบปลายภาควิชา CS2301',
+        details: 'เนื่องจากติดภารกิจแข่งขันวิชาการระดับชาติของมหาวิทยาลัย แนบหนังสือรับรอง',
+        attachment: 'exam_reschedule_doc.pdf',
+        submittedAt: '28 ก.พ. 2567 09:00',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+    {
+        id: 'PET-2567-004',
+        studentId: '6421100023',
+        studentName: 'วิชัย โปรแกรมเมอร์',
+        type: 'ยื่นขอสอบหัวข้อโปรเจคจบ',
+        title: 'แอปพลิเคชันจัดการขยะรีไซเคิลด้วยเทคโนโลยี Computer Vision',
+        details: 'ขอยื่นเสนอหัวข้อปริญญานิพนธ์ รอบที่ 2',
+        attachment: 'cv_garbage_proposal.pdf',
+        submittedAt: '05 มี.ค. 2567 11:20',
+        status: 'อนุมัติ',
+        adminComment: 'ผ่านการพิจารณาเบื้องต้น',
+    },
+    {
+        id: 'PET-2567-005',
+        studentId: '6521100036',
+        studentName: 'มานี ฐานข้อมูล',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอพักการศึกษา ภาคเรียนที่ 2/2566',
+        details: 'ขอพักการศึกษาเนื่องจากเหตุผลความจำเป็นทางครอบครัว',
+        attachment: 'leave_request_signed.pdf',
+        submittedAt: '12 มี.ค. 2567 16:45',
+        status: 'ปฏิเสธ',
+        adminComment: 'เอกสารลายเซ็นผู้ปกครองไม่ครบถ้วน กรุณายื่นเอกสารเพิ่มเติม',
+    },
+    {
+        id: 'PET-2567-006',
+        studentId: '6621100001',
+        studentName: 'ภัทร คลาวด์',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอเทียบโอนรายวิชาหมวดศึกษาทั่วไป',
+        details: 'ขอยื่นเทียบโอนรายวิชา GE1101 จากสถาบันเดิม',
+        attachment: 'transcript_transfer.pdf',
+        submittedAt: '18 มี.ค. 2567 13:10',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+];
+
+let adminDashboardSelectedBatch = 'all';
 let adminLastSelectedBatch = 'all';
 let adminSearchQuery = '';
+let adminPetitionsBatch = 'all';
+let adminPetitionsType = 'all';
+let adminPetitionsStatus = 'all';
+let adminPetitionsSearch = '';
 
 export function initAdminDashboard() {
     renderAdminDashboard();
     renderManageAdvisors();
     renderManageStudents();
+    renderManagePetitions();
 }
 
 function renderAdminDashboard() {
-    const studying = MOCK_STUDENTS_POOL.filter(s => s.status === 'กำลังศึกษา').length;
-    const graduated = MOCK_STUDENTS_POOL.filter(s => s.status === 'จบการศึกษา').length;
-    const onLeave = MOCK_STUDENTS_POOL.filter(s => s.status === 'พักการศึกษา').length;
-    const dismissed = MOCK_STUDENTS_POOL.filter(s => s.status === 'พ้นสภาพ').length;
+    const container = document.getElementById('adminDashboardContent');
+    if (!container) return;
 
-    document.getElementById('adminDashboardContent').innerHTML = `
-        <div class="stat-row">
-            <div class="stat-card"><div class="stat-icon purple">👩‍🏫</div><div><div class="stat-value">${MOCK_ADVISORS.length}</div><div class="stat-label">อาจารย์ที่ปรึกษา</div></div></div>
-            <div class="stat-card"><div class="stat-icon blue">👨‍🎓</div><div><div class="stat-value">${MOCK_STUDENTS_POOL.length}</div><div class="stat-label">นักศึกษาทั้งหมด</div></div></div>
-            <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${studying}</div><div class="stat-label">กำลังศึกษา</div></div></div>
-            <div class="stat-card"><div class="stat-icon amber">🎓</div><div><div class="stat-value">${graduated}</div><div class="stat-label">จบการศึกษา</div></div></div>
+    const batches = [...new Set(MOCK_STUDENTS_POOL.map(s => getBatch(s.studentId)))].sort().reverse();
+    
+    const batchOpts = [
+        `<option value="all" ${adminDashboardSelectedBatch === 'all' ? 'selected' : ''}>ทุกรุ่น / ทุกปีการศึกษา (All Batches) — รวม ${MOCK_STUDENTS_POOL.length} คน</option>`,
+        ...batches.map(b => {
+            const count = MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === b).length;
+            const yearBE = 2500 + parseInt(b, 10);
+            return `<option value="${b}" ${adminDashboardSelectedBatch === b ? 'selected' : ''}>รุ่น ${b} (เข้าปีการศึกษา ${yearBE}) — ${count} คน</option>`;
+        }),
+    ].join('');
+
+    const filteredStudents = adminDashboardSelectedBatch === 'all'
+        ? MOCK_STUDENTS_POOL
+        : MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === adminDashboardSelectedBatch);
+
+    const totalStudents = filteredStudents.length;
+    const studying = filteredStudents.filter(s => s.status === 'กำลังศึกษา').length;
+    const graduated = filteredStudents.filter(s => s.status === 'จบการศึกษา').length;
+    const onLeave = filteredStudents.filter(s => s.status === 'พักการศึกษา').length;
+    const dismissed = filteredStudents.filter(s => s.status === 'พ้นสภาพ').length;
+    
+    const advisorsCount = adminDashboardSelectedBatch === 'all'
+        ? MOCK_ADVISORS.length
+        : new Set(filteredStudents.map(s => s.advisor)).size;
+
+    const selectedBatchText = adminDashboardSelectedBatch === 'all'
+        ? 'ทุกรุ่น / ทุกปีการศึกษา (All Batches)'
+        : `รุ่น ${adminDashboardSelectedBatch} (เข้าปีการศึกษา 25${adminDashboardSelectedBatch})`;
+
+    container.innerHTML = `
+        <div class="batch-filter-bar admin-dashboard-filter-bar" style="margin-bottom:20px">
+            <label>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                เลือกดูตามรุ่น / ปีการศึกษา
+            </label>
+            <select class="batch-select" id="adminDashboardBatchSelect">${batchOpts}</select>
+            <span class="filter-result-count">
+                กำลังแสดงข้อมูล: <strong>${selectedBatchText}</strong> (จำนวน <strong>${totalStudents}</strong> คน)
+            </span>
         </div>
+
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-icon purple">👩‍🏫</div>
+                <div>
+                    <div class="stat-value">${advisorsCount}</div>
+                    <div class="stat-label">อาจารย์ที่ปรึกษา${adminDashboardSelectedBatch !== 'all' ? ' (ประจำรุ่น)' : ''}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">👨‍🎓</div>
+                <div>
+                    <div class="stat-value">${totalStudents}</div>
+                    <div class="stat-label">นักศึกษา${adminDashboardSelectedBatch !== 'all' ? 'รุ่นนี้' : 'ทั้งหมด'}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div>
+                    <div class="stat-value">${studying}</div>
+                    <div class="stat-label">กำลังศึกษา</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">🎓</div>
+                <div>
+                    <div class="stat-value">${graduated}</div>
+                    <div class="stat-label">จบการศึกษา</div>
+                </div>
+            </div>
+            ${(onLeave > 0 || dismissed > 0) ? `
+            <div class="stat-card">
+                <div class="stat-icon red">⚠️</div>
+                <div>
+                    <div class="stat-value">${onLeave + dismissed}</div>
+                    <div class="stat-label">พัก/พ้นสภาพ</div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+
         <div class="dashboard-grid">
             <div id="statusChartContainer"></div>
             <div id="careerListContainer"></div>
         </div>
+
         <div class="card">
-            <div class="card-title">📊 ภาพรวมระบบ</div>
-            <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7">ระบบสารสนเทศนักศึกษา BSRU สาขาวิทยาการคอมพิวเตอร์ — จัดการข้อมูลอาจารย์ที่ปรึกษาและนักศึกษาได้จากเมนูด้านซ้าย ระบบรองรับการเพิ่ม แก้ไข และลบข้อมูล</p>
+            <div class="card-title">📊 ภาพรวมระบบ — ${selectedBatchText}</div>
+            <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7">ระบบสารสนเทศนักศึกษา BSRU สาขาวิทยาการคอมพิวเตอร์ — สถิติของ <strong>${selectedBatchText}</strong> รวมทั้งสิ้น <strong>${totalStudents}</strong> คน (กำลังศึกษา ${studying} คน, จบการศึกษา ${graduated} คน, พักการศึกษา ${onLeave} คน, พ้นสภาพ ${dismissed} คน)</p>
         </div>
     `;
 
+    document.getElementById('adminDashboardBatchSelect').addEventListener('change', (e) => {
+        adminDashboardSelectedBatch = e.target.value;
+        renderAdminDashboard();
+    });
+
     // Load chart CSS and render both components
     loadComponentCSS('statusChart').then(() => {
-        renderStatusDonutChart('statusChartContainer', MOCK_STUDENTS_POOL);
-        renderCareerDataList('careerListContainer', MOCK_STUDENTS_POOL);
+        renderStatusDonutChart('statusChartContainer', filteredStudents);
+        renderCareerDataList('careerListContainer', filteredStudents);
     });
 }
 
@@ -327,3 +486,286 @@ document.addEventListener('DOMContentLoaded', () => {
     if(modalCancel) modalCancel.addEventListener('click', closeModal);
     if(crudModal) crudModal.addEventListener('click', (e) => { if (e.target === crudModal) closeModal(); });
 });
+
+/* ============================================================
+   MANAGE PETITIONS (Admin Petition Logs)
+   ============================================================ */
+function renderManagePetitions() {
+    const container = document.getElementById('managePetitionsContent');
+    if (!container) return;
+
+    const totalCount = MOCK_PETITIONS_LOG.length;
+    const pendingCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'รอดำเนินการ').length;
+    const approvedCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'อนุมัติ').length;
+    const rejectedCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'ปฏิเสธ').length;
+
+    // Batches from student IDs in petitions
+    const batches = [...new Set(MOCK_PETITIONS_LOG.map(p => getBatch(p.studentId)))].sort().reverse();
+    const batchFilterOpts = [
+        `<option value="all" ${adminPetitionsBatch === 'all' ? 'selected' : ''}>ทุกรุ่น (All Batches)</option>`,
+        ...batches.map(b => `<option value="${b}" ${adminPetitionsBatch === b ? 'selected' : ''}>รุ่น ${b}</option>`),
+    ].join('');
+
+    // Types
+    const types = [...new Set(MOCK_PETITIONS_LOG.map(p => p.type))];
+    const typeFilterOpts = [
+        `<option value="all" ${adminPetitionsType === 'all' ? 'selected' : ''}>ทุกประเภทคำร้อง (All Types)</option>`,
+        ...types.map(t => `<option value="${t}" ${adminPetitionsType === t ? 'selected' : ''}>${esc(t)}</option>`),
+    ].join('');
+
+    // Filter logic
+    let filtered = MOCK_PETITIONS_LOG.filter(p => {
+        const matchBatch = adminPetitionsBatch === 'all' || getBatch(p.studentId) === adminPetitionsBatch;
+        const matchType = adminPetitionsType === 'all' || p.type === adminPetitionsType;
+        const matchStatus = adminPetitionsStatus === 'all' || p.status === adminPetitionsStatus;
+        return matchBatch && matchType && matchStatus;
+    });
+
+    if (adminPetitionsSearch) {
+        const q = adminPetitionsSearch.toLowerCase();
+        filtered = filtered.filter(p =>
+            p.id.toLowerCase().includes(q) ||
+            p.studentId.includes(q) ||
+            p.studentName.toLowerCase().includes(q) ||
+            p.title.toLowerCase().includes(q)
+        );
+    }
+
+    const rows = filtered.map((p) => {
+        const realIdx = MOCK_PETITIONS_LOG.indexOf(p);
+        const batch = getBatch(p.studentId);
+        return `
+        <tr>
+            <td><strong class="petition-log-id">${esc(p.id)}</strong></td>
+            <td><span class="petition-log-date">${esc(p.submittedAt)}</span></td>
+            <td>
+                <div class="petition-student-info">
+                    <strong>${esc(p.studentName)}</strong>
+                    <div class="petition-student-meta">
+                        <span>${esc(p.studentId)}</span>
+                        <span class="batch-tag">รุ่น ${batch}</span>
+                    </div>
+                </div>
+            </td>
+            <td><span class="petition-type-badge">${esc(p.type)}</span></td>
+            <td><span class="petition-log-title" title="${esc(p.title)}">${esc(p.title)}</span></td>
+            <td style="text-align:center">
+                ${p.attachment ? `
+                    <span class="petition-pdf-badge" title="${esc(p.attachment)}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        PDF
+                    </span>
+                ` : '<span style="color:var(--g-400)">-</span>'}
+            </td>
+            <td><span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info view-petition-btn" data-idx="${realIdx}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ดู/จัดการ
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-icon purple">📑</div>
+                <div>
+                    <div class="stat-value">${totalCount}</div>
+                    <div class="stat-label">คำร้องทั้งหมด</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">⏳</div>
+                <div>
+                    <div class="stat-value">${pendingCount}</div>
+                    <div class="stat-label">รอดำเนินการ</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div>
+                    <div class="stat-value">${approvedCount}</div>
+                    <div class="stat-label">อนุมัติแล้ว</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">❌</div>
+                <div>
+                    <div class="stat-value">${rejectedCount}</div>
+                    <div class="stat-label">ปฏิเสธ/ไม่อนุมัติ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="batch-filter-bar petition-filter-bar">
+            <div class="filter-group">
+                <label>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    รุ่น
+                </label>
+                <select class="batch-select" id="adminPetBatchFilter">${batchFilterOpts}</select>
+            </div>
+
+            <div class="filter-group">
+                <label>ประเภท</label>
+                <select class="batch-select" id="adminPetTypeFilter">${typeFilterOpts}</select>
+            </div>
+
+            <div class="filter-group">
+                <label>สถานะ</label>
+                <select class="batch-select" id="adminPetStatusFilter">
+                    <option value="all" ${adminPetitionsStatus === 'all' ? 'selected' : ''}>ทุกสถานะ (All Status)</option>
+                    <option value="รอดำเนินการ" ${adminPetitionsStatus === 'รอดำเนินการ' ? 'selected' : ''}>⏳ รอดำเนินการ</option>
+                    <option value="อนุมัติ" ${adminPetitionsStatus === 'อนุมัติ' ? 'selected' : ''}>✅ อนุมัติ</option>
+                    <option value="ปฏิเสธ" ${adminPetitionsStatus === 'ปฏิเสธ' ? 'selected' : ''}>❌ ปฏิเสธ</option>
+                </select>
+            </div>
+
+            <div class="filter-result-count">
+                แสดง <strong>${filtered.length}</strong> จาก ${totalCount} รายการ
+            </div>
+
+            <div class="toolbar-search" style="margin-left:auto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="adminPetSearchInput" placeholder="ค้นหารหัสคำร้อง, นศ., ชื่อเรื่อง..." value="${esc(adminPetitionsSearch)}">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>รหัสคำร้อง</th>
+                            <th>วันที่ยื่น</th>
+                            <th>นักศึกษา</th>
+                            <th>ประเภทคำร้อง</th>
+                            <th>ชื่อหัวข้อ / เรื่อง</th>
+                            <th style="text-align:center">เอกสาร</th>
+                            <th>สถานะ</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.length > 0 ? rows : `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">ไม่พบข้อมูลคำร้องที่ตรงกับเงื่อนไขการค้นหา</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    // Event listeners
+    document.getElementById('adminPetBatchFilter').addEventListener('change', (e) => {
+        adminPetitionsBatch = e.target.value;
+        renderManagePetitions();
+    });
+
+    document.getElementById('adminPetTypeFilter').addEventListener('change', (e) => {
+        adminPetitionsType = e.target.value;
+        renderManagePetitions();
+    });
+
+    document.getElementById('adminPetStatusFilter').addEventListener('change', (e) => {
+        adminPetitionsStatus = e.target.value;
+        renderManagePetitions();
+    });
+
+    const searchInput = document.getElementById('adminPetSearchInput');
+    searchInput.addEventListener('input', debounce((e) => {
+        adminPetitionsSearch = e.target.value.trim();
+        renderManagePetitions();
+        const newSearchInput = document.getElementById('adminPetSearchInput');
+        if (newSearchInput) {
+            newSearchInput.focus();
+            newSearchInput.setSelectionRange(adminPetitionsSearch.length, adminPetitionsSearch.length);
+        }
+    }, 300));
+
+    document.querySelectorAll('.view-petition-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.idx, 10);
+            openPetitionDetailModal(idx);
+        });
+    });
+}
+
+function openPetitionDetailModal(idx) {
+    const p = MOCK_PETITIONS_LOG[idx];
+    if (!p) return;
+
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const crudModal = document.getElementById('crudModal');
+
+    // Find student info if available
+    const student = MOCK_STUDENTS_POOL.find(s => s.studentId === p.studentId);
+    const advisor = student ? (MOCK_ADVISORS.find(a => a.id === student.advisor)?.nameTh || student.advisor) : '-';
+
+    modalTitle.innerHTML = `<span>รายละเอียดคำร้อง: <strong>${esc(p.id)}</strong></span>`;
+    modalBody.innerHTML = `
+        <div class="petition-detail-modal">
+            <div class="profile-detail-grid" style="margin-bottom:16px">
+                <div class="profile-item"><span class="label">รหัสคำร้อง</span><span class="value"><strong>${esc(p.id)}</strong></span></div>
+                <div class="profile-item"><span class="label">วันที่ยื่น</span><span class="value">${esc(p.submittedAt)}</span></div>
+                <div class="profile-item"><span class="label">นักศึกษา</span><span class="value">${esc(p.studentName)} (${esc(p.studentId)})</span></div>
+                <div class="profile-item"><span class="label">อาจารย์ที่ปรึกษา</span><span class="value">${esc(advisor)}</span></div>
+                <div class="profile-item" style="grid-column: 1 / -1"><span class="label">ประเภทคำร้อง</span><span class="value">${esc(p.type)}</span></div>
+                <div class="profile-item" style="grid-column: 1 / -1"><span class="label">ชื่อหัวข้อ/เรื่อง</span><span class="value"><strong>${esc(p.title)}</strong></span></div>
+            </div>
+
+            <div class="modal-field">
+                <label>รายละเอียด / เหตุผล</label>
+                <div class="petition-detail-box">${esc(p.details || 'ไม่มีรายละเอียดเพิ่มเติม')}</div>
+            </div>
+
+            ${p.attachment ? `
+            <div class="modal-field">
+                <label>ไฟล์แนบ</label>
+                <div class="petition-file-selected" style="pointer-events:all;cursor:pointer;" onclick="alert('จำลองการเปิดไฟล์: ${esc(p.attachment)}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>${esc(p.attachment)}</span>
+                    <span class="btn btn-sm btn-ghost" style="margin-left:auto">เปิดดูไฟล์ PDF</span>
+                </div>
+            </div>
+            ` : ''}
+
+            <hr style="border:0;border-top:1px solid var(--g-200);margin:16px 0">
+
+            <div class="modal-field">
+                <label for="adminPetitionStatusSelect"><strong>การพิจารณา / ปรับเปลี่ยนสถานะ</strong></label>
+                <select id="adminPetitionStatusSelect" style="width:100%;padding:10px 14px;border:2px solid var(--g-200);border-radius:var(--radius-md);font-size:0.9rem">
+                    <option value="รอดำเนินการ" ${p.status === 'รอดำเนินการ' ? 'selected' : ''}>⏳ รอดำเนินการ (Pending)</option>
+                    <option value="อนุมัติ" ${p.status === 'อนุมัติ' ? 'selected' : ''}>✅ อนุมัติ (Approved)</option>
+                    <option value="ปฏิเสธ" ${p.status === 'ปฏิเสธ' ? 'selected' : ''}>❌ ปฏิเสธ (Rejected)</option>
+                </select>
+            </div>
+
+            <div class="modal-field">
+                <label for="adminPetitionComment">หมายเหตุ / ความเห็นของแอดมิน</label>
+                <textarea id="adminPetitionComment" rows="3" placeholder="ระบุเหตุผลหรือข้อความแจ้งนักศึกษา..." style="width:100%;padding:10px 14px;border:2px solid var(--g-200);border-radius:var(--radius-md);font-family:inherit;font-size:0.88rem">${esc(p.adminComment || '')}</textarea>
+            </div>
+        </div>
+    `;
+
+    const saveBtn = document.getElementById('modalSave');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    newSaveBtn.textContent = 'บันทึกการพิจารณา';
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+    newSaveBtn.addEventListener('click', () => {
+        const newStatus = document.getElementById('adminPetitionStatusSelect').value;
+        const newComment = document.getElementById('adminPetitionComment').value.trim();
+
+        p.status = newStatus;
+        p.adminComment = newComment;
+
+        crudModal.classList.remove('open');
+        renderManagePetitions();
+        alert(`บันทึกสถานะคำร้อง ${p.id} เป็น "${newStatus}" เรียบร้อยแล้ว`);
+    });
+
+    crudModal.classList.add('open');
+}
+
