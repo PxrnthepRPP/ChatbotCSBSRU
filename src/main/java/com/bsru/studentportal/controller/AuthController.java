@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -43,7 +44,7 @@ public class AuthController {
             displayName = "ผู้ดูแลระบบ (System Admin)";
         } else if ("advisor".equalsIgnoreCase(username) || username.startsWith("ADV")) {
             role = "ROLE_ADVISOR";
-            Advisor adv = advisorRepository.findById(username).orElse(null);
+            Advisor adv = advisorRepository.findById(Objects.requireNonNull(username)).orElse(null);
             if (adv != null) {
                 displayName = adv.getNameTh();
                 userId = adv.getId();
@@ -54,7 +55,7 @@ public class AuthController {
             // Default to student (matching 10-digit ID or 'student')
             role = "ROLE_STUDENT";
             String studentId = ("student".equalsIgnoreCase(username)) ? "6421100042" : username;
-            Student student = studentRepository.findById(studentId).orElse(null);
+            Student student = studentRepository.findById(Objects.requireNonNull(studentId)).orElse(null);
             if (student != null) {
                 displayName = student.getNameTh();
                 userId = student.getStudentId();

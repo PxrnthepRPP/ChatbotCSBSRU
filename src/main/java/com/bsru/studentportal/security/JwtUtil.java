@@ -43,7 +43,7 @@ public class JwtUtil {
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractClaim(token, claims -> claims.getSubject());
     }
 
     public String extractRole(String token) {
@@ -65,8 +65,8 @@ public class JwtUtil {
 
     public boolean isTokenValid(String token) {
         try {
-            final Date expiration = extractClaim(token, Claims::getExpiration);
-            return expiration.after(new Date());
+            final Date expiration = extractClaim(token, claims -> claims.getExpiration());
+            return expiration != null && expiration.after(new Date());
         } catch (Exception e) {
             return false;
         }

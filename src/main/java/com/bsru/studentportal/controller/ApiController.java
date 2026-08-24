@@ -18,6 +18,7 @@ import java.time.Year;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api")
@@ -47,7 +48,7 @@ public class ApiController {
 
     @GetMapping("/students/{studentId}")
     public ResponseEntity<Student> getStudentById(@PathVariable String studentId) {
-        return studentRepository.findById(studentId)
+        return studentRepository.findById(Objects.requireNonNull(studentId))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -68,8 +69,9 @@ public class ApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "studentId, title, and type are required"));
         }
 
+        String studentId = request.getStudentId();
         // Fetch student or fallback to first student
-        Student student = studentRepository.findById(request.getStudentId())
+        Student student = studentRepository.findById(Objects.requireNonNull(studentId))
                 .orElse(null);
 
         if (student == null) {
@@ -78,7 +80,7 @@ public class ApiController {
                 student = all.get(0);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Student not found with ID: " + request.getStudentId()));
+                        .body(Map.of("error", "Student not found with ID: " + studentId));
             }
         }
 
@@ -105,7 +107,7 @@ public class ApiController {
             @PathVariable String id,
             @RequestBody PetitionStatusUpdateRequest request) {
 
-        AcademicPetition petition = petitionRepository.findById(id).orElse(null);
+        AcademicPetition petition = petitionRepository.findById(Objects.requireNonNull(id)).orElse(null);
         if (petition == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Petition not found with ID: " + id));
