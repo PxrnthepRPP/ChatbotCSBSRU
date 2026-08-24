@@ -1,6 +1,7 @@
 import { esc, statusBadge, getBatch } from '../main.js';
 import { impersonateStudent } from '../auth.js';
-import { debounce } from '../utils.js';
+import { debounce, showToast } from '../utils.js';
+import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { renderStatusDonutChart } from '../components/statusChart.js';
 import { renderCareerDataList } from '../components/careerList.js';
@@ -138,11 +139,63 @@ let adminPetitionsType = 'all';
 let adminPetitionsStatus = 'all';
 let adminPetitionsSearch = '';
 
-export function initAdminDashboard() {
+export async function initAdminDashboard() {
+    // 1. Initial render with local/fallback data
     renderAdminDashboard();
     renderManageAdvisors();
     renderManageStudents();
     renderManagePetitions();
+
+    // 2. Fetch live data from Spring Boot REST API
+    try {
+        console.log('🔄 [Admin] Connecting to Spring Boot Backend API...');
+        const [liveStudents, livePetitions] = await Promise.all([
+            fetchAPI('/students').catch(() => null),
+            fetchAPI('/petitions').catch(() => null),
+        ]);
+
+        if (Array.isArray(liveStudents) && liveStudents.length > 0) {
+            console.log('✅ [Admin] Loaded Live Students from Backend API:', liveStudents);
+            const formatted = liveStudents.map(s => ({
+                studentId: s.studentId,
+                nameTh: s.nameTh,
+                nameEn: s.nameEn,
+                year: s.year,
+                gpa: s.gpa,
+                status: s.status,
+                careerPath: s.careerPath || '',
+                advisor: (s.advisor && typeof s.advisor === 'object') ? s.advisor.id : (s.advisor || 'ADV001'),
+            }));
+            MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...formatted);
+            renderAdminDashboard();
+            renderManageStudents();
+        }
+
+        if (Array.isArray(livePetitions) && livePetitions.length > 0) {
+            console.log('✅ [Admin] Loaded Live Petitions from Backend API:', livePetitions);
+            const formattedPetitions = livePetitions.map(p => {
+                const now = p.submittedAt ? new Date(p.submittedAt) : new Date();
+                const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                return {
+                    id: p.id,
+                    studentId: p.student ? p.student.studentId : '6421100042',
+                    studentName: p.student ? p.student.nameTh : 'นักศึกษา',
+                    type: p.type,
+                    title: p.title,
+                    details: p.details,
+                    attachment: p.attachment,
+                    submittedAt: dateStr,
+                    status: p.status || 'รอดำเนินการ',
+                    adminComment: p.adminComment || '',
+                };
+            });
+            MOCK_PETITIONS_LOG.splice(0, MOCK_PETITIONS_LOG.length, ...formattedPetitions);
+            renderManagePetitions();
+        }
+    } catch (err) {
+        console.warn('⚠️ [Admin] Could not connect to Spring Boot Backend, using fallback dataset:', err);
+    }
 }
 
 function renderAdminDashboard() {
@@ -746,6 +799,17 @@ function openPetitionDetailModal(idx) {
                 <label for="adminPetitionComment">หมายเหตุ / ความเห็นของแอดมิน</label>
                 <textarea id="adminPetitionComment" rows="3" placeholder="ระบุเหตุผลหรือข้อความแจ้งนักศึกษา..." style="width:100%;padding:10px 14px;border:2px solid var(--g-200);border-radius:var(--radius-md);font-family:inherit;font-size:0.88rem">${esc(p.adminComment || '')}</textarea>
             </div>
+
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+                <button type="button" class="btn btn-success" id="adminQuickApproveBtn" style="flex:1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>
+                    อนุมัติคำร้อง (Approve)
+                </button>
+                <button type="button" class="btn btn-danger" id="adminQuickRejectBtn" style="flex:1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    ปฏิเสธคำร้อง (Reject)
+                </button>
+            </div>
         </div>
     `;
 
@@ -754,16 +818,51 @@ function openPetitionDetailModal(idx) {
     newSaveBtn.textContent = 'บันทึกการพิจารณา';
     saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
 
+    async function handlePetitionStatusUpdate(newStatus, newComment) {
+        newSaveBtn.disabled = true;
+        newSaveBtn.innerHTML = `<span class="petition-spinner"></span> กำลังบันทึก...`;
+
+        try {
+            console.log(`📤 [Admin] Updating Petition ${p.id} status to "${newStatus}" in PostgreSQL...`);
+            const updated = await fetchAPI(`/petitions/${encodeURIComponent(p.id)}/status`, 'PATCH', {
+                status: newStatus,
+                adminComment: newComment,
+            });
+            console.log('✅ [Admin] Petition status updated successfully in PostgreSQL:', updated);
+
+            p.status = updated.status || newStatus;
+            p.adminComment = (updated.adminComment !== undefined) ? updated.adminComment : newComment;
+
+            crudModal.classList.remove('open');
+            renderManagePetitions();
+            renderAdminDashboard();
+
+            showToast('success', `อัปเดตสถานะคำร้อง ${p.id} เป็น "${p.status}" สำเร็จแล้ว ✅`);
+        } catch (err) {
+            console.error('❌ [Admin] Failed to update petition status in Backend:', err);
+            showToast('error', `ไม่สามารถอัปเดตสถานะได้: ${err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'}`);
+        } finally {
+            newSaveBtn.disabled = false;
+            newSaveBtn.textContent = 'บันทึกการพิจารณา';
+        }
+    }
+
     newSaveBtn.addEventListener('click', () => {
         const newStatus = document.getElementById('adminPetitionStatusSelect').value;
         const newComment = document.getElementById('adminPetitionComment').value.trim();
+        handlePetitionStatusUpdate(newStatus, newComment);
+    });
 
-        p.status = newStatus;
-        p.adminComment = newComment;
+    document.getElementById('adminQuickApproveBtn')?.addEventListener('click', () => {
+        const comment = document.getElementById('adminPetitionComment').value.trim() || 'อนุมัติตามที่เสนอ (เอกสารครบถ้วน)';
+        document.getElementById('adminPetitionStatusSelect').value = 'อนุมัติ';
+        handlePetitionStatusUpdate('อนุมัติ', comment);
+    });
 
-        crudModal.classList.remove('open');
-        renderManagePetitions();
-        alert(`บันทึกสถานะคำร้อง ${p.id} เป็น "${newStatus}" เรียบร้อยแล้ว`);
+    document.getElementById('adminQuickRejectBtn')?.addEventListener('click', () => {
+        const comment = document.getElementById('adminPetitionComment').value.trim() || 'ไม่อนุมัติ / เอกสารหรือข้อมูลไม่ครบถ้วน';
+        document.getElementById('adminPetitionStatusSelect').value = 'ปฏิเสธ';
+        handlePetitionStatusUpdate('ปฏิเสธ', comment);
     });
 
     crudModal.classList.add('open');

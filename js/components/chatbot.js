@@ -1,17 +1,19 @@
 /* ================================================================
-   BSRU Student Portal — Chatbot Component (Enhanced UX)
+   BSRU Student Portal — Chatbot Component (Google Gemini + RAG AI)
    ================================================================
    Features:
    - Capability Transparency: structured welcome with capability chips
    - Micro-Feedback: smooth typing indicator with label text
+   - Integration: Secure REST API call (POST /api/chat) with JWT Bearer Token
+   - Markdown & formatting support for AI responses
    - Unhappy Path: preserves user input on error for easy retry
    ================================================================ */
 
 import { getAuthState } from '../auth.js';
+import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 
 export function initChatbot() {
-    const API_URL = 'http://localhost:8080/api/chat';
     const chatbotFab = document.getElementById('chatbotFab');
     const chatbotWindow = document.getElementById('chatbotWindow');
     const cwCloseBtn = document.getElementById('cwCloseBtn');
@@ -37,7 +39,7 @@ export function initChatbot() {
         chatbotWindow.classList.toggle('open', chatbotOpen);
         chatbotFab.classList.toggle('open', chatbotOpen);
         if (chatbotOpen) {
-            fabBadge.classList.add('hidden');
+            if (fabBadge) fabBadge.classList.add('hidden');
             cwInput.focus();
             if (!welcomeShown) {
                 showWelcomeMessage();
@@ -58,28 +60,28 @@ export function initChatbot() {
                     <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.686 2 6 4.686 6 8V10H5C4.448 10 4 10.448 4 11V19C4 19.552 4.448 20 5 20H19C19.552 20 20 19.552 20 19V11C20 10.448 19.552 10 19 10H18V8C18 4.686 15.314 2 12 2ZM9 13C9.552 13 10 13.448 10 14V16C10 16.552 9.552 17 9 17C8.448 17 8 16.552 8 16V14C8 13.448 8.448 13 9 13ZM15 13C15.552 13 16 13.448 16 14V16C16 16.552 15.552 17 15 17C14.448 17 14 16.552 14 16V14C14 13.448 14.448 13 15 13ZM8 8C8 5.791 9.791 4 12 4C14.209 4 16 5.791 16 8V10H8V8Z" fill="currentColor"/></svg>
                 </div>
                 <div>
-                    <h4>สวัสดี! 👋 ฉันคือ BSRU CS Chatbot</h4>
-                    <p>ผู้ช่วยอัจฉริยะสำหรับนักศึกษาสาขาวิทยาการคอมพิวเตอร์</p>
+                    <h4>สวัสดีครับ! 👋 ผมคือ BSRU CS AI Assistant</h4>
+                    <p>ผู้ช่วยอัจฉริยะสาขาวิทยาการคอมพิวเตอร์ BSRU</p>
                 </div>
             </div>
             <div class="cw-welcome-body">
-                <span class="cw-welcome-label">ฉันช่วยอะไรคุณได้บ้าง:</span>
+                <span class="cw-welcome-label">สอบถามข้อมูลที่ต้องการได้เลยครับ:</span>
                 <div class="cw-capabilities">
-                    <button class="cw-capability-chip" data-query="ตารางเรียนของฉัน">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span>ตารางเรียน</span>
+                    <button class="cw-capability-chip" data-query="ขั้นตอนการยื่นคำร้องวิชาการ">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span>ยื่นคำร้องวิชาการ</span>
                     </button>
-                    <button class="cw-capability-chip" data-query="ผลการเรียนของฉัน">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <button class="cw-capability-chip" data-query="ตารางเรียนและตารางสอบ">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>ตารางเรียน/สอบ</span>
+                    </button>
+                    <button class="cw-capability-chip" data-query="ตรวจสอบผลการเรียนและ GPA">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                         <span>ผลการเรียน</span>
                     </button>
-                    <button class="cw-capability-chip" data-query="ค่าเล่าเรียนและทุนการศึกษา">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                        <span>ค่าเล่าเรียน</span>
-                    </button>
-                    <button class="cw-capability-chip" data-query="ข้อมูลทั่วไปเกี่ยวกับหลักสูตร">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <span>ข้อมูลทั่วไป</span>
+                    <button class="cw-capability-chip" data-query="รายนามอาจารย์ที่ปรึกษาสาขาวิทยาการคอมพิวเตอร์">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                        <span>อาจารย์ที่ปรึกษา</span>
                     </button>
                 </div>
             </div>
@@ -124,7 +126,7 @@ export function initChatbot() {
                 <span class="cw-typing-dot"></span>
                 <span class="cw-typing-dot"></span>
             </div>
-            <span class="cw-typing-label">Bot กำลังพิมพ์...</span>
+            <span class="cw-typing-label">AI กำลังประมวลผล...</span>
         `;
         cwMessages.appendChild(typing);
         cwMessages.scrollTop = cwMessages.scrollHeight;
@@ -134,22 +136,21 @@ export function initChatbot() {
 
         try {
             const state = getAuthState();
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, student_id: state.user?.username || 'test_123' }),
+            console.log('🤖 [Chatbot] Sending user query to Spring Boot AI Backend (/api/chat)...');
+
+            const data = await fetchAPI('/chat', 'POST', {
+                message: text,
+                sessionId: state.user?.username || 'student_guest',
             });
-            if (!res.ok) throw new Error(`Status ${res.status}`);
-            const data = await res.json();
-            reply = data.reply || data.message || data.response || JSON.stringify(data);
+
+            console.log('✨ [Chatbot] Received AI Response:', data);
+            reply = data.reply || data.message || 'ขออภัยครับ ไม่พบข้อมูลตอบกลับจากระบบ';
         } catch (err) {
-            console.warn('⚠️ Backend unreachable:', err.message);
+            console.warn('⚠️ [Chatbot Error] Could not connect to AI endpoint:', err.message);
             isError = true;
-            await new Promise(r => setTimeout(r, 800 + Math.random() * 700));
+            reply = 'ไม่สามารถเชื่อมต่อกับบริการ AI Chatbot ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
 
-            reply = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองอีกครั้ง';
-
-            // ── Unhappy Path: Restore user input for easy retry ──
+            // Unhappy Path: Restore user input for easy retry
             cwInput.value = savedInput;
         }
 
@@ -169,12 +170,27 @@ export function initChatbot() {
     }
 
     /**
-     * Add a standard chat message bubble.
+     * Add a standard chat message bubble with rich formatting support.
      */
     function addCwMsg(role, text) {
         const div = document.createElement('div');
         div.className = `cw-msg ${role}`;
-        div.textContent = text;
+
+        if (role === 'bot') {
+            // Render basic markdown formatting safely (bold, bullet points, linebreaks)
+            let formatted = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n\s*-\s*(.*?)(?=\n|$)/g, '<br>• $1')
+                .replace(/\n/g, '<br>');
+            div.innerHTML = formatted;
+        } else {
+            div.textContent = text;
+        }
+
         cwMessages.appendChild(div);
         cwMessages.scrollTop = cwMessages.scrollHeight;
     }

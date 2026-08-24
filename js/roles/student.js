@@ -1,6 +1,7 @@
 import { esc, fmt, gradeClass, statusBadge } from '../main.js';
 import { MOCK_STUDENTS_POOL, MOCK_ADVISORS, MOCK_PETITIONS_LOG } from './admin.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from './advisor.js';
+import { fetchAPI } from '../api.js';
 
 /* ============================================================
    MOCK DATA — Timetable schedules grouped by semester
@@ -2202,7 +2203,7 @@ function renderPetitions(student) {
         }
     });
 
-    // ── Form Submission ──
+    // ── Form Submission (Real Spring Boot REST API Integration) ──
     const form = document.getElementById('petitionForm');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2210,54 +2211,50 @@ function renderPetitions(student) {
         const submitBtn = document.getElementById('petitionSubmitBtn');
         const originalHTML = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span class="petition-spinner"></span> กำลังส่ง...`;
+        submitBtn.innerHTML = `<span class="petition-spinner"></span> กำลังส่งคำร้อง...`;
 
-        // Capture form data
-        const petitionData = {
-            petitionType: form.petitionType.value,
-            projectTitle: form.projectTitle.value.trim(),
+        const typeMap = {
+            'proposal-defense': 'ยื่นขอสอบหัวข้อโปรเจคจบ',
+            'final-defense': 'ยื่นสอบจบปริญญานิพนธ์',
+            'general': 'คำร้องทั่วไป',
+        };
+
+        const petitionPayload = {
+            type: typeMap[form.petitionType.value] || form.petitionType.value,
+            title: form.projectTitle.value.trim(),
             details: form.details.value.trim(),
-            attachment: fileInput.files[0] || null,
-            studentId: student.studentId,
-            studentName: student.nameTh,
-            submittedAt: new Date().toISOString(),
+            attachment: fileInput.files[0] ? fileInput.files[0].name : null,
+            studentId: student.studentId || '6421100042',
         };
 
         try {
-            // Mock fetch API call
-            const response = await mockPetitionSubmit(petitionData);
+            console.log('📤 [Student] Submitting Academic Petition to Spring Boot Backend...', petitionPayload);
+            const savedPetition = await fetchAPI('/petitions', 'POST', petitionPayload);
+            console.log('✅ [Student] Petition Saved Successfully in PostgreSQL:', savedPetition);
 
-            if (response.success) {
-                const typeMap = {
-                    'proposal-defense': 'ยื่นขอสอบหัวข้อโปรเจคจบ',
-                    'final-defense': 'ยื่นสอบจบปริญญานิพนธ์',
-                    'general': 'คำร้องทั่วไป',
-                };
-                const now = new Date();
-                const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-                const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                
-                const newEntry = {
-                    id: response.petitionId,
-                    studentId: student.studentId,
-                    studentName: student.nameTh,
-                    type: typeMap[petitionData.petitionType] || petitionData.petitionType,
-                    title: petitionData.projectTitle,
-                    details: petitionData.details,
-                    attachment: fileInput.files[0] ? fileInput.files[0].name : null,
-                    submittedAt: dateStr,
-                    status: 'รอดำเนินการ',
-                    adminComment: '',
-                };
-                MOCK_PETITIONS_LOG.unshift(newEntry);
+            const now = new Date();
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-                showPetitionToast('success', `คำร้อง ${response.petitionId} ถูกส่งเรียบร้อยแล้ว!`);
-                renderPetitions(student);
-            } else {
-                showPetitionToast('error', response.message || 'เกิดข้อผิดพลาดในการส่งคำร้อง');
-            }
+            const newEntry = {
+                id: savedPetition.id,
+                studentId: student.studentId || '6421100042',
+                studentName: student.nameTh,
+                type: savedPetition.type,
+                title: savedPetition.title,
+                details: savedPetition.details,
+                attachment: savedPetition.attachment,
+                submittedAt: dateStr,
+                status: savedPetition.status || 'รอดำเนินการ',
+                adminComment: savedPetition.adminComment || '',
+            };
+            MOCK_PETITIONS_LOG.unshift(newEntry);
+
+            showPetitionToast('success', `คำร้อง ${savedPetition.id} ถูกบันทึกลงฐานข้อมูลเรียบร้อยแล้ว ✅`);
+            renderPetitions(student);
         } catch (err) {
-            showPetitionToast('error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+            console.error('❌ [Student] Failed to submit petition to Backend:', err);
+            showPetitionToast('error', `ไม่สามารถส่งคำร้องได้: ${err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'}`);
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalHTML;
