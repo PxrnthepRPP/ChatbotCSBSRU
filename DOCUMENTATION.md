@@ -282,7 +282,7 @@ sequenceDiagram
     User->>Chat: POST /api/chat {message: "เกณฑ์การยื่นขอสอบหัวข้อโปรเจค"}
     Chat->>AI: เรียก ChatbotService.chat(sessionId, userMessage)
     AI->>Retriever: สืบค้นข้อมูลบริบทที่เกี่ยวข้อง
-    Retriever->>PGVector: Cosine Similarity Search (Top 3, Score >= 0.7)
+    Retriever->>PGVector: Cosine Similarity Search (Top 3, Score >= 0.5)
     PGVector-->>Retriever: ส่งคืน Text Segments ที่เกี่ยวข้อง
     AI->>Gemini: ส่ง System Prompt + Retrieved Context + User Query + Chat Memory
     Gemini-->>AI: สังเคราะห์คำตอบทางวิชาการที่ถูกต้องและสุภาพ
@@ -294,7 +294,7 @@ sequenceDiagram
 1. **ChatLanguageModel**: `GoogleAiGeminiChatModel` (Model: `gemini-1.5-flash`, Temperature: 0.2, Max Tokens: 1024)
 2. **EmbeddingModel**: `GoogleAiEmbeddingModel` (Model: `text-embedding-004`, Dimension: 768)
 3. **EmbeddingStore**: `PgVectorEmbeddingStore` เชื่อมต่อตาราง `bsru_embeddings` บน PostgreSQL 16
-4. **ContentRetriever**: `EmbeddingStoreContentRetriever` คัดกรอง 3 ชิ้นส่วนเอกสารที่มีคะแนนความคล้ายคลึง $\ge 0.7$
+4. **ContentRetriever**: `EmbeddingStoreContentRetriever` คัดกรอง 3 ชิ้นส่วนเอกสารที่มีคะแนนความคล้ายคลึง $\ge 0.5$
 5. **ChatMemoryProvider**: `MessageWindowChatMemory` จดจำบทสนทนาย้อนหลัง 20 ข้อความล่าสุดแยกตาม Session ของผู้ใช้
 6. **Resilient Fallback Mode**: ระบบมี Fallback อัจฉริยะรองรับการทำงานในสภาพแวดล้อม Development / Offline Mode โดยอัตโนมัติ
 
