@@ -1,43 +1,135 @@
-# BSRU Student Portal & AI Chatbot System
+# 🎓 BSRU Student Portal & AI Chatbot System
 
-ระบบสารสนเทศนักศึกษาและผู้ช่วย AI อัจฉริยะ (RAG Pipeline)  
+[![Java](https://img.shields.io/badge/Java-21%20LTS-orange.svg?style=flat-square&logo=openjdk)](https://adoptium.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-blue.svg?style=flat-square&logo=postgresql)](https://github.com/pgvector/pgvector)
+[![LangChain4j](https://img.shields.io/badge/LangChain4j-0.35.0-red.svg?style=flat-square)](https://github.com/langchain4j/langchain4j)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-1.5%20Flash-4285F4.svg?style=flat-square&logo=google)](https://aistudio.google.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=flat-square&logo=docker)](https://www.docker.com/)
+
+ระบบสารสนเทศบริการการศึกษาและผู้ช่วยปัญญาประดิษฐ์ให้คำปรึกษาทางวิชาการอัจฉริยะ (RAG Pipeline)  
 สาขาวิชาวิทยาการคอมพิวเตอร์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา
 
 ---
 
-## 📖 สารบัญเอกสาร (Documentation Index)
+## 🧭 แนะนำเอกสารในโปรเจกต์ (Documentation Hub)
 
-- 📘 **[คู่มือขั้นตอนการติดตั้งและใช้งานระบบ (USER_GUIDE.md)](USER_GUIDE.md)**: สรุปขั้นตอนการติดตั้ง สตาร์ท Docker, Spring Boot Backend, Apache XAMPP, ข้อมูลบัญชีผู้ใช้ทดสอบ และการแก้ปัญหาเบื้องต้น
-- 📑 **[เอกสารสรุปภาพรวมและสถาปัตยกรรมระบบฉบับสมบูรณ์ (DOCUMENTATION.md)](DOCUMENTATION.md)**: สถาปัตยกรรม Full-Stack, Spring Security 6, JWT, LangChain4j, Google Gemini, PGVector, Data DDL Schema และ REST API Reference ทั้งหมด
+เพื่อให้การศึกษาและใช้งานระบบเป็นไปอย่างมีประสิทธิภาพ เอกสารในโปรเจกต์ถูกแบ่งหน้าที่การทำงานออกเป็น 3 ส่วนหลักอย่างชัดเจน:
+
+| เอกสาร | กลุ่มเป้าหมาย | ขอบเขตและเนื้อหาหลัก |
+|---|---|---|
+| 📘 [**`README.md`**](README.md) *(หน้านี้)* | **ทุกคน (General / Evaluator)** | ภาพรวมระบบ, ฟีเจอร์เด่น, แผนผังสถาปัตยกรรมระดับสูง และวิธีเริ่มต้นใช้งานด่วนใน 3 นาที |
+| 🚀 [**`USER_GUIDE.md`**](USER_GUIDE.md) | **ผู้ใช้งาน / ผู้ทดสอบระบบ (User & Tester)** | ขั้นตอนการติดตั้งอย่างละเอียด, บัญชีทดสอบ (Credentials), คู่มือทดสอบฟังก์ชันทุกเมนู และตารางแก้ปัญหา (Troubleshooting) |
+| 📑 [**`DOCUMENTATION.md`**](DOCUMENTATION.md) | **นักพัฒนา / วิศวกร (Developer & Technical)** | สถาปัตยกรรมเชิงลึก, Spring Security 6 & JWT Lifecycle, LangChain4j RAG Pipeline, REST API Specs และ Database DDL Schema |
+
+---
+
+## ✨ จุดเด่นของระบบ (Key Features)
+
+- 🎓 **ระบบสารสนเทศนักศึกษาครบวงจร (Student Portal)**: ตรวจสอบประวัติ, อัปเดตข้อมูลและ Avatar, ตารางเรียน Matrix Grid พร้อมป้องกันวิชาชน, ตารางสอบอัตโนมัติ, ตรวจสอบจบ 8 เทอม (รองรับทั้ง Table View และ Mobile Cards View) และการยื่นคำร้องวิชาการ
+- 👩‍🏫 **ระบบอาจารย์ที่ปรึกษา (Advisor Portal)**: แดชบอร์ดสถิตินักศึกษาในความดูแล, จัดการรายวิชาที่สอน, ประกาศตารางสอบ และโหมดจำลองมุมมองนักศึกษา (Impersonation Mode)
+- 👑 **ระบบผู้ดูแลระบบ (Admin Portal)**: แดชบอร์ดวิเคราะห์สถิตินักศึกษาแยกตามรุ่น (Batch Filter), จัดการข้อมูลอาจารย์-นักศึกษา (CRUD) และระบบพิจารณาอนุมัติ/ปฏิเสธคำร้องวิชาการ (PATCH Status)
+- 🤖 **BSRU CS AI Assistant (RAG Pipeline)**: ผู้ช่วย AI ตอบคำถามหลักสูตรและระเบียบวิชาการแบบเรียลไทม์ ขับเคลื่อนด้วย Google Gemini 1.5 Flash ร่วมกับ Vector Database (PGVector) พร้อม Smart Local Fallback
+
+---
+
+## 🏗️ สถาปัตยกรรมระบบภาพรวม (High-Level Architecture)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      FRONTEND LAYER (Browser Port 80)                   │
+│   Vanilla JS (ES6 Modules) + Modern CSS Design System (Mobile Ready)    │
+│   [Student Portal]   [Advisor Portal]   [Admin Portal]   [AI Chatbot]   │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ REST API (JSON + JWT Bearer Token)
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                   BACKEND LAYER (Spring Boot Port 8080)                 │
+│   • Spring Security 6 (Stateless JWT Authentication & Strict CORS)      │
+│   • Spring Data JPA & Hibernate ORM (Domain Entities & Repositories)    │
+│   • LangChain4j 0.35 (Gemini 1.5 Flash + text-embedding-004 + RAG)     │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ PostgreSQL Protocol (Port 5432)
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                 DATABASE & VECTOR LAYER (Docker Port 5432)              │
+│   PostgreSQL 16 + pgvector:                                             │
+│   • Relational Tables: students, advisors, academic_petitions           │
+│   • Vector Store Table: bsru_embeddings (768-dim Embeddings + Metadata) │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## ⚡ เริ่มต้นใช้งานด่วน (Quick Start)
 
-### 1. สตาร์ทฐานข้อมูล PostgreSQL 16 + pgvector (Docker)
-> *โปรดตรวจสอบว่าได้เปิดโปรแกรม **Docker Desktop** ก่อนรันคำสั่ง*
+### 1. ตั้งค่า Environment Variables
+คัดลอกไฟล์แม่แบบและใส่ **Gemini API Key** ของคุณ (ขอรับฟรีได้ที่ [Google AI Studio](https://aistudio.google.com/apikey)):
+```powershell
+copy .env.example .env
+```
+เปิดไฟล์ `.env` แล้วระบุค่า:
+```env
+GEMINI_API_KEY=YOUR_ACTUAL_GEMINI_API_KEY
+```
+
+### 2. สตาร์ทฐานข้อมูล PostgreSQL + pgvector (Docker)
+> *โปรดตรวจสอบว่าได้เปิดโปรแกรม Docker Desktop ไว้แล้ว*
 ```powershell
 docker-compose up -d
 ```
 
-### 2. รันระบบหลังบ้าน Spring Boot Backend (Port 8080)
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot";
-$env:PATH = "$env:JAVA_HOME\bin;C:\Users\beria\apache-maven-3.9.9\bin;$env:PATH";
-.\mvnw.cmd spring-boot:run
-```
+### 3. รันระบบ Spring Boot Backend (Port 8080)
+- **PowerShell (แนะนำ):**
+  ```powershell
+  .\start-backend.ps1
+  ```
+- **Windows Command Prompt / ดับเบิลคลิก:** รันไฟล์ `start-backend.bat`  
+*(สคริปต์จะโหลดตัวแปรจาก `.env` ให้โดยอัตโนมัติ)*
 
-### 3. เข้าใช้งานผ่าน Web Browser (XAMPP Port 80)
+### 4. เข้าใช้งานผ่าน Web Browser (Port 80 / XAMPP Apache)
+เปิดเว็บเบราว์เซอร์แล้วเข้าใช้งานผ่าน URL:
 ```text
 http://localhost/ChatbotCSBSRU/
+```
+> ⚠️ **คำเตือนสำคัญ:** ห้ามดับเบิลคลิกเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้โมดูล JavaScript ES6 ซึ่งเบราว์เซอร์จะบล็อกตามนโยบายความปลอดภัย CORS ต้องเข้าผ่าน `http://localhost/ChatbotCSBSRU/` บน XAMPP เท่านั้น
+
+---
+
+## 🔑 ข้อมูลบัญชีสำหรับทดสอบระบบ (Test Accounts)
+
+| บทบาท (Role) | Username สำหรับเข้าสู่ระบบ | รหัสผ่าน (Password) | สิทธิ์ระบบ (JWT Role) |
+|---|---|---|---|
+| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `1234` | `ROLE_STUDENT` |
+| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `1234` | `ROLE_ADVISOR` |
+| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `1234` | `ROLE_ADMIN` |
+
+---
+
+## 📂 โครงสร้างโปรเจกต์สำคัญ (Key Project Structure)
+
+```
+ChatbotCSBSRU/
+├── README.md                 # หน้านี้: สรุปภาพรวมและ Quick Start
+├── USER_GUIDE.md             # คู่มือการติดตั้งและทดสอบฟังก์ชันฉบับละเอียด
+├── DOCUMENTATION.md          # เอกสารสถาปัตยกรรมและรายละเอียดเชิงเทคนิค
+├── .env.example              # ตัวอย่าง Environment Variables
+├── .env                      # ค่าจริง (Ignored by Git ปลอดภัยจากคีย์รั่วไหล)
+├── start-backend.ps1         # สคริปต์เริ่ม Backend สำหรับ PowerShell
+├── start-backend.bat         # สคริปต์เริ่ม Backend สำหรับ Windows CMD
+├── docker-compose.yml        # คอนฟิกูเรชัน PostgreSQL 16 + pgvector
+├── pom.xml                   # Maven Dependencies & Plugins
+├── index.html                # Single Page Application UI Entry Point
+├── js/                       # ES6 JavaScript Modules (Roles, Components, API, Auth)
+├── css/                      # Modular CSS Design System (Theme, Mobile Styles)
+└── src/                      # Java Spring Boot 3 Source Code & Resources
 ```
 
 ---
 
-## 🔑 บัญชีทดสอบระบบ (Test Accounts)
+## 👥 ผู้พัฒนาและลิขสิทธิ์ (Authors & License)
+- **สาขาวิชา**: วิทยาการคอมพิวเตอร์ (Computer Science)
+- **คณะ**: วิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU)
+- **ที่ปรึกษาโครงการ**: คณาจารย์ประจำสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU
 
-| บทบาท (Role) | Username | Password | สิทธิ์ (JWT Role) |
-|---|---|---|---|
-| 🎓 **Student** | `6421100042` หรือ `student` | `1234` | `ROLE_STUDENT` |
-| 👩‍🏫 **Advisor** | `ADV-01` หรือ `advisor` | `1234` | `ROLE_ADVISOR` |
-| 👑 **Admin** | `admin` | `1234` | `ROLE_ADMIN` |
+

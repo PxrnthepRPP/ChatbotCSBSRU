@@ -1,8 +1,12 @@
-# BSRU Student Portal & AI Chatbot — คู่มือและเอกสารสถาปัตยกรรมระบบฉบับสมบูรณ์ (System Documentation)
+# 📑 BSRU Student Portal & AI Chatbot — เอกสารสถาปัตยกรรมระบบและข้อมูลเชิงเทคนิค (Technical Documentation)
 
 ระบบสารสนเทศนักศึกษาและปัญญาประดิษฐ์ให้คำปรึกษาทางวิชาการ (RAG Pipeline)  
 สาขาวิชาวิทยาการคอมพิวเตอร์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา  
 **BSRU Computer Science Student Portal, REST API & Generative AI Assistant System**
+
+> **🎯 วัตถุประสงค์ของเอกสารนี้:**  
+> เอกสารฉบับนี้มีหน้าที่เป็น **เอกสารสถาปัตยกรรมและข้อกำหนดเชิงเทคนิคฉบับสมบูรณ์ (Technical Architecture & Developer Specs)** สำหรับ **นักพัฒนาซอฟต์แวร์ (Developers), วิศวกรระบบ (System Engineers) และผู้ประเมินเชิงเทคนิค** โดยรวบรวมรายละเอียดสถาปัตยกรรม Full-Stack, วงจรความปลอดภัย Spring Security 6 + JWT, ระบบ LangChain4j RAG Pipeline, รายละเอียด REST API Endpoints ทุกเส้นทาง และโครงสร้างฐานข้อมูล DDL Schema  
+> 🔗 *ย้อนกลับไปหน้าแรก: [README.md](README.md) | คู่มือการติดตั้งและทดสอบฟังก์ชัน: [USER_GUIDE.md](USER_GUIDE.md)*
 
 ---
 
@@ -52,17 +56,23 @@
 
 ```
 ChatbotCSBSRU/
+├── .env.example                           # ไฟล์แม่แบบตัวแปรสภาพแวดล้อม (Template Environment)
+├── .env                                   # ค่าจริง Environment Variables (ไม่ commit ใน Git)
+├── start-backend.bat                      # สคริปต์สตาร์ท Backend สำหรับ Windows CMD (อ่าน .env อัตโนมัติ)
+├── start-backend.ps1                      # สคริปต์สตาร์ท Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
 ├── docker-compose.yml                     # คอนฟิกูเรชัน Docker PostgreSQL 16 + pgvector
 ├── init.sql                               # สคริปต์เปิดใช้งานส่วนขยาย CREATE EXTENSION vector;
 ├── pom.xml                                # Maven Dependencies (Spring Boot, Security, JJWT, LangChain4j, Postgres)
-├── DOCUMENTATION.md                       # เอกสารสรุปภาพรวมและคู่มือระบบฉบับสมบูรณ์
+├── README.md                              # เอกสารแนะนำโปรเจกต์และเริ่มต้นใช้งานด่วน (Quick Start)
+├── USER_GUIDE.md                          # คู่มือขั้นตอนการติดตั้งและทดสอบฟังก์ชันระบบฉบับละเอียด
+├── DOCUMENTATION.md                       # เอกสารสรุปภาพรวมและคู่มือสถาปัตยกรรมระบบฉบับสมบูรณ์
 ├── index.html                             # หน้าเว็บหลัก SPA (Login, Sidebar, Main Modules, Modals, Chatbot)
 ├── assets/
 │   └── images/                            # รูปภาพ โลโก้สาขาวิชา และตรามหาวิทยาลัย BSRU
 ├── css/
 │   ├── main.css                           # ดีไซน์ซิสเต็ม ตัวแปรสี เลย์เอาต์ แถบเมนู Toast และสไตล์พื้นฐาน
 │   ├── components/                        # สไตล์เฉพาะของแต่ละ Component (Loaded On-Demand)
-│   │   ├── chatbot.css                    # หน้าต่างและการโต้ตอบของ Floating AI Chatbot Widget
+│   │   ├── chatbot.css                    # หน้าต่างและการโต้ตอบของ Floating AI Chatbot Widget (Responsive)
 │   │   ├── statusChart.css                # กราฟโดนัทแสดงสถิติสถานะนักศึกษา (Chart.js)
 │   │   ├── timetable.css                  # ตารางเรียนแบบ Matrix Grid และ Mobile Agenda
 │   │   └── petitions.css                  # ฟอร์มยื่นคำร้อง, Drag & Drop Upload, ตาราง Log คำร้อง
@@ -296,7 +306,8 @@ sequenceDiagram
 3. **EmbeddingStore**: `PgVectorEmbeddingStore` เชื่อมต่อตาราง `bsru_embeddings` บน PostgreSQL 16
 4. **ContentRetriever**: `EmbeddingStoreContentRetriever` คัดกรอง 3 ชิ้นส่วนเอกสารที่มีคะแนนความคล้ายคลึง $\ge 0.5$
 5. **ChatMemoryProvider**: `MessageWindowChatMemory` จดจำบทสนทนาย้อนหลัง 20 ข้อความล่าสุดแยกตาม Session ของผู้ใช้
-6. **Resilient Fallback Mode**: ระบบมี Fallback อัจฉริยะรองรับการทำงานในสภาพแวดล้อม Development / Offline Mode โดยอัตโนมัติ
+6. **Environment Configuration & API Key Injection**: รับค่า `GEMINI_API_KEY` จากไฟล์ `.env` ผ่านสคริปต์ `start-backend.ps1` หรือ `start-backend.bat` โดยอัตโนมัติ ช่วยให้ไม่ต้อง Hardcode กุญแจความลับลงซอร์สโค้ด
+7. **Resilient Multi-Tier Fallback Mode**: หากยังไม่ได้ระบุ API Key หรือบริการเครือข่ายขัดข้อง ระบบจะสลับเข้าสู่โหมดตอบกลับฉุกเฉิน (Smart Local Keyword Matching) อัตโนมัติทั้งฝั่ง Backend และ Frontend เพื่อให้ผู้ใช้งานยังคงได้รับคำแนะนำด้านระเบียบการศึกษาได้อย่างต่อเนื่อง
 
 ---
 
@@ -378,23 +389,48 @@ CREATE TABLE bsru_embeddings (
 
 ## 10. ขั้นตอนการติดตั้งและรันระบบ (Quickstart & Deployment)
 
-### 1. รันฐานข้อมูล PostgreSQL 16 + pgvector (Docker)
+### 1. ตั้งค่า Environment Variables (.env)
+คัดลอกไฟล์ `.env.example` ไปเป็น `.env` แล้วระบุค่า Google Gemini API Key:
+```powershell
+copy .env.example .env
+```
+เปิดไฟล์ `.env` แล้วแก้ไขค่า:
+```env
+GEMINI_API_KEY=AIzaSy...your-actual-api-key...
+```
+
+### 2. รันฐานข้อมูล PostgreSQL 16 + pgvector (Docker)
+ตรวจสอบว่าเปิดโปรแกรม **Docker Desktop** เรียบร้อยแล้ว จากนั้นรันคำสั่ง:
 ```powershell
 docker-compose up -d
 ```
 
-### 2. รันระบบหลังบ้าน Spring Boot Backend (Port 8080)
+### 3. รันระบบหลังบ้าน Spring Boot Backend (Port 8080)
+
+**วิธีที่ 1 — ใช้ Quick Start Script (แนะนำ):**
+- **PowerShell:**
+  ```powershell
+  .\start-backend.ps1
+  ```
+- **Windows Command Prompt / ดับเบิลคลิก:**  
+  ดับเบิลคลิกที่ไฟล์ `start-backend.bat`  
+  *(ระบบจะโหลดค่าตัวแปรจากไฟล์ `.env` ให้อัตโนมัติ)*
+
+**วิธีที่ 2 — รันด้วยคำสั่ง Maven เอง:**
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot";
-$env:PATH = "$env:JAVA_HOME\bin;C:\Users\beria\apache-maven-3.9.9\bin;$env:PATH";
-.\mvnw.cmd spring-boot:run
+$env:GEMINI_API_KEY = "your-api-key-here"
+mvn spring-boot:run
 ```
 
-### 3. รันระบบหน้าบ้าน Frontend (Port 80 / XAMPP)
-เปิดเว็บเบราว์เซอร์แล้วเข้าใช้งานผ่าน URL:
+### 4. รันระบบหน้าบ้าน Frontend (Port 80 / XAMPP)
+1. เปิดโปรแกรม **XAMPP Control Panel** และกด Start โมดูล **Apache**
+2. เปิดเว็บเบราว์เซอร์แล้วเข้าใช้งานผ่าน URL:
 ```text
 http://localhost/ChatbotCSBSRU/
 ```
 
+> ⚠️ **คำเตือนความปลอดภัย:**  
+> ห้ามเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้ JavaScript ES6 Modules ซึ่งจะถูกจำกัดสิทธิ์ CORS โดยเบราว์เซอร์ ต้องเปิดผ่าน `http://localhost/ChatbotCSBSRU/` เท่านั้น
+
 ---
-*เอกสารนี้ได้รับการปรับปรุงให้เป็นปัจจุบัน ครอบคลุมสถาปัตยกรรมทั้งฝั่ง Frontend, Backend REST API, Spring Security 6, JWT และ LangChain4j RAG Pipeline อย่างสมบูรณ์*
+*เอกสารนี้ได้รับการปรับปรุงให้เป็นปัจจุบัน ครอบคลุมสถาปัตยกรรมทั้งฝั่ง Frontend, Backend REST API, Spring Security 6, JWT, LangChain4j RAG Pipeline และคู่มือการติดตั้งด้วย Quick Start Scripts อย่างสมบูรณ์*

@@ -41,23 +41,29 @@ export const login = async (username, password = 'password') => {
         user = { username: cleanUsername, displayName: 'สมชาย ใจดี', role: 'STUDENT' };
     }
 
-    // Authenticate with Spring Boot JWT Backend in background/foreground
-    try {
-        const authData = await loginAPI(username.trim(), password);
-        if (authData && authData.token) {
-            console.log('🔑 [Auth] JWT Token acquired from Spring Boot Backend:', authData.token.substring(0, 20) + '...');
-            if (authData.displayName) user.displayName = authData.displayName;
-        }
-    } catch (err) {
-        console.warn('⚠️ [Auth] Could not authenticate with Spring Boot Backend, running in standalone mode:', err);
-    }
-
+    // Persist local auth state immediately so session is guaranteed
     setState({
         currentRole: role,
         user,
         isImpersonating: false,
         impersonatedStudent: null,
     });
+
+    // Authenticate with Spring Boot JWT Backend in background/foreground (1s max timeout)
+    try {
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Backend timeout')), 1000));
+        const authData = await Promise.race([loginAPI(username.trim(), password), timeoutPromise]);
+        if (authData && authData.token) {
+            console.log('🔑 [Auth] JWT Token acquired from Spring Boot Backend:', authData.token.substring(0, 20) + '...');
+            if (authData.displayName) {
+                user.displayName = authData.displayName;
+                setState({ user });
+            }
+        }
+    } catch (err) {
+        console.warn('⚠️ [Auth] Running in standalone mode:', err.message || err);
+    }
+
     return role;
 };
 

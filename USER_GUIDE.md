@@ -1,115 +1,166 @@
-# 🚀 คู่มือขั้นตอนการติดตั้งและใช้งานระบบ (Quickstart & User Guide)
+# 🚀 คู่มือขั้นตอนการติดตั้งและใช้งานระบบ (User & Tester Guide)
 ### BSRU Student Portal, REST API & AI Chatbot System
 สาขาวิชาวิทยาการคอมพิวเตอร์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา
+
+> **🎯 วัตถุประสงค์ของเอกสารนี้:**  
+> เอกสารฉบับนี้มีหน้าที่เป็น **คู่มือเชิงปฏิบัติการ (Practical Guide)** สำหรับ **ผู้ใช้งานทั่วไป, นักศึกษา, อาจารย์, ผู้ประเมินผลงาน และผู้ทดสอบระบบ (Testers)** โดยเน้นอธิบายวิธีติดตั้ง การรันระบบ การทดสอบฟังก์ชันใช้งานจริงของแต่ละบทบาท และแนวทางแก้ไขปัญหาที่พบบ่อย  
+> 🔗 *ย้อนกลับไปหน้าแรก: [README.md](README.md) | ศึกษาข้อมูลเชิงเทคนิคและสถาปัตยกรรม: [DOCUMENTATION.md](DOCUMENTATION.md)*
 
 ---
 
 ## 📋 1. สิ่งที่ต้องติดตั้งล่วงหน้า (Prerequisites)
 
 ก่อนเริ่มใช้งานระบบ กรุณาตรวจสอบว่าเครื่องของท่านติดตั้งซอฟต์แวร์ดังต่อไปนี้แล้ว:
-1. **Docker Desktop** (สำหรับรัน PostgreSQL 16 + pgvector)
+1. **Docker Desktop** (สำหรับรัน PostgreSQL 16 + pgvector บน Port 5432)
 2. **Java 21 LTS** (เช่น Microsoft JDK 21 หรือ OpenJDK 21)
-3. **Apache Maven 3.9+** (หรือใช้ Maven Wrapper `mvnw.cmd` ที่มีในโปรเจกต์)
-4. **XAMPP / Apache Web Server** (สำหรับโฮสต์ Frontend บน Port 80)
-5. **Google Chrome / Microsoft Edge / Web Browser รุ่นล่าสุด**
+3. **Apache Maven 3.9+** (หรือใช้ Maven Wrapper `mvnw.cmd` ในโฟลเดอร์โปรเจกต์)
+4. **XAMPP / Apache Web Server** (สำหรับโฮสต์หน้าเว็บ Frontend บน Port 80)
+5. **Google Gemini API Key** (รับฟรีได้ที่ [Google AI Studio](https://aistudio.google.com/apikey))
+6. **Web Browser รุ่นล่าสุด** (Google Chrome, Microsoft Edge, Firefox, Safari)
 
 ---
 
 ## 🛠️ 2. ขั้นตอนการเริ่มต้นระบบ (Step-by-Step Setup & Run)
 
 ```
-┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
-│       ขั้นตอนที่ 1       │     │       ขั้นตอนที่ 2       │     │       ขั้นตอนที่ 3       │
-│    เปิด Docker Desktop   │ ──> │  รัน Spring Boot Backend│ ──> │    เปิด Web Browser     │
-│   & รัน pgvector (5432) │     │      (Port 8080)        │     │  http://localhost/...   │
-└─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
+┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
+│       ขั้นตอนที่ 1       │     │       ขั้นตอนที่ 2       │     │       ขั้นตอนที่ 3       │     │       ขั้นตอนที่ 4       │
+│  คัดลอกและตั้งค่า .env  │ ──> │    เปิด Docker Desktop  │ ──> │  รัน Spring Boot Backend│ ──> │    เปิด Web Browser     │
+│   (ใส่ GEMINI_API_KEY)  │     │   & รัน pgvector (5432) │     │    (start-backend.ps1)  │     │  http://localhost/...   │
+└─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
 ```
 
-### ขั้นตอนที่ 1: สตาร์ทฐานข้อมูล PostgreSQL 16 + pgvector
+### ขั้นตอนที่ 1: ตั้งค่าตัวแปรสภาพแวดล้อม (.env)
+1. คัดลอกไฟล์แม่แบบ `.env.example` ไปเป็น `.env`:
+   ```powershell
+   copy .env.example .env
+   ```
+2. เปิดไฟล์ `.env` ด้วย Text Editor แล้วแก้ไขค่า `GEMINI_API_KEY` ด้วย API Key ของคุณ:
+   ```env
+   GEMINI_API_KEY=AIzaSy...your-actual-api-key...
+   ```
+   > 💡 **หมายเหตุ:** ไฟล์ `.env` ได้ถูกเพิ่มลงใน `.gitignore` เรียบร้อยแล้ว จึงปลอดภัยไม่ถูกอัปโหลดขึ้น Git Repository
+
+---
+
+### ขั้นตอนที่ 2: สตาร์ทฐานข้อมูล PostgreSQL 16 + pgvector (Port 5432)
 1. เปิดโปรแกรม **Docker Desktop** บนคอมพิวเตอร์ของคุณ และรอจนกระทั่งไอคอนด้านล่างซ้ายขึ้นสถานะ **Engine running (สีเขียว)**
-2. เปิด PowerShell หรือ Command Prompt เข้าไปที่โฟลเดอร์โปรเจกต์:
+2. เปิด PowerShell หรือ Terminal เข้าไปที่โฟลเดอร์โปรเจกต์:
    ```powershell
    cd c:\xampp\htdocs\ChatbotCSBSRU
    ```
-3. สตาร์ท Container ฐานข้อมูลด้วยคำสั่ง:
+3. สตาร์ทคอนเทนเนอร์ฐานข้อมูล:
    ```powershell
    docker-compose up -d
    ```
-4. ตรวจสอบว่าคอนเทนเนอร์ `bsru_vector_db` ทำงานเรียบร้อย:
+4. ตรวจสอบว่าคอนเทนเนอร์ `bsru_vector_db` ทำงานปกติ:
    ```powershell
    docker ps
    ```
 
 ---
 
-### ขั้นตอนที่ 2: รันระบบหลังบ้าน Spring Boot Backend (Port 8080)
-1. เปิดหน้าต่าง PowerShell ใหม่ในโฟลเดอร์โปรเจกต์
-2. กำหนด Path ของ Java 21 และสั่งรัน Spring Boot:
-   ```powershell
-   $env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot";
-   $env:PATH = "$env:JAVA_HOME\bin;C:\Users\beria\apache-maven-3.9.9\bin;$env:PATH";
-   .\mvnw.cmd spring-boot:run
-   ```
-3. เมื่อระบบสตาร์ทสำเร็จ จะแสดงข้อความ:
-   ```text
-   Started BsruStudentPortalApplication in X.XXX seconds
-   Tomcat started on port 8080 (http) with context path '/'
-   ```
-4. ตรวจสอบสถานะ Backend ผ่านเว็บเบราว์เซอร์ที่:
-   👉 **`http://localhost:8080/api/health`**  
-   (จะได้รับ JSON ตอบกลับสถานะ `UP` พร้อมจำนวนข้อมูลในฐานข้อมูล)
+### ขั้นตอนที่ 3: รันระบบหลังบ้าน Spring Boot Backend (Port 8080)
+
+**วิธีที่ 1 — ใช้ Quick Start Script (แนะนำที่สุด):**
+- **PowerShell:**
+  ```powershell
+  .\start-backend.ps1
+  ```
+- **Windows Command Prompt / ดับเบิลคลิก:**  
+  ดับเบิลคลิกที่ไฟล์ `start-backend.bat` ได้โดยตรง  
+  *(สคริปต์จะอ่านค่าจากไฟล์ `.env` และตั้งค่า Environment Variables ให้โดยอัตโนมัติ)*
+
+**วิธีที่ 2 — รันด้วย Maven Command เอง (Manual):**
+```powershell
+$env:GEMINI_API_KEY = "your-gemini-api-key"
+mvn spring-boot:run
+```
+*(หรือหากใช้ Maven Wrapper: `.\mvnw.cmd spring-boot:run`)*
+
+เมื่อระบบสตาร์ทสำเร็จ จะแสดงข้อความ:
+```text
+Started BsruStudentPortalApplication in X.XXX seconds
+Tomcat started on port 8080 (http) with context path '/'
+```
+
+> 🔍 **ตรวจสอบสถานะ Backend:**  
+> เปิดเบราว์เซอร์ไปที่: 👉 **`http://localhost:8080/api/health`**  
+> จะได้รับ JSON ตอบกลับสถานะ `UP` พร้อมจำนวนข้อมูลในฐานข้อมูล
 
 ---
 
-### ขั้นตอนที่ 3: เปิดใช้งานหน้าบ้าน Frontend (Port 80 / XAMPP)
+### ขั้นตอนที่ 4: เปิดใช้งานหน้าบ้าน Frontend (Port 80 / XAMPP)
 1. เปิดโปรแกรม **XAMPP Control Panel** แล้วคลิกปุ่ม **Start** ที่โมดูล **Apache**
-2. เปิดเบราว์เซอร์แล้วเข้าใช้งานระบบผ่าน URL:
+2. เปิดเว็บเบราว์เซอร์แล้วเข้าใช้งานระบบผ่าน URL:
    👉 **`http://localhost/ChatbotCSBSRU/`**
+
+> ⚠️ **คำเตือนสำคัญมาก:**  
+> **ห้าม** ดับเบิลคลิกเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้ JavaScript ES6 Modules (`import`/`export`) ซึ่งเบราว์เซอร์จะบล็อกด้วยนโยบายความปลอดภัย CORS — **ต้องเข้าผ่าน `http://localhost/ChatbotCSBSRU/` เท่านั้น**
 
 ---
 
 ## 🔑 3. บัญชีผู้ใช้งานสำหรับทดสอบระบบ (Test Accounts & Credentials)
 
-ระบบมีระบบ **DataSeeder** สร้างข้อมูลผู้ใช้งานจำลองลงฐานข้อมูล PostgreSQL ให้อัตโนมัติ:
+ระบบมี **DataSeeder** สร้างข้อมูลผู้ใช้งานจำลองลงฐานข้อมูล PostgreSQL ให้อัตโนมัติ:
 
 | บทบาท (Role) | Username สำหรับเข้าสู่ระบบ | รหัสผ่าน (Password) | สิทธิ์ระบบ (JWT Role) | วัตถุประสงค์ในการทดสอบ |
 |---|---|---|---|---|
-| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | อะไรก็ได้ (เช่น `1234`) | `ROLE_STUDENT` | • ดูและแก้ไขประวัตินักศึกษา + เปลี่ยนรูป Avatar<br>• ลงตารางเรียนเอง + ตรวจสอบตารางสอบอัตโนมัติ<br>• ตรวจสอบจบ 8 เทอม (Table & Mobile Cards View)<br>• ยื่นคำร้องวิชาการลง PostgreSQL<br>• สนทนากับ AI Chatbot อัจฉริยะ |
-| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | อะไรก็ได้ (เช่น `1234`) | `ROLE_ADVISOR` | • ดูแดชบอร์ดนักศึกษาในความดูแล<br>• ปุ่มจำลองมุมมอง (Impersonation Mode)<br>• จัดการรายวิชาที่สอน และประกาศตารางสอบ |
-| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | อะไรก็ได้ (เช่น `1234`) | `ROLE_ADMIN` | • แดชบอร์ดกรองตามรุ่น (Batch Filter) + Donut Chart<br>• จัดการข้อมูลอาจารย์และนักศึกษา (CRUD)<br>• พิจารณาอนุมัติ/ปฏิเสธคำร้องวิชาการ (PATCH)<br>• นำเข้าเอกสารความรู้ AI (Data Ingestion) |
+| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `1234` | `ROLE_STUDENT` | • ดูและแก้ไขประวัตินักศึกษา + อัปโหลดรูป Avatar ใหม่<br>• ลงตารางเรียนเอง + ตรวจสอบตารางสอบอัตโนมัติ<br>• ตรวจสอบจบ 8 เทอม (Table & Mobile Cards View)<br>• ยื่นคำร้องวิชาการลง PostgreSQL<br>• สนทนากับ AI Chatbot อัจฉริยะ (RAG Pipeline) |
+| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `1234` | `ROLE_ADVISOR` | • ดูแดชบอร์ดนักศึกษาในความดูแล<br>• ปุ่มจำลองมุมมองนักศึกษา (Impersonation Mode)<br>• จัดการรายวิชาที่สอน และประกาศตารางสอบ |
+| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `1234` | `ROLE_ADMIN` | • แดชบอร์ดกรองตามรุ่น (Batch Filter) + Donut Chart<br>• จัดการข้อมูลอาจารย์และนักศึกษา (CRUD)<br>• พิจารณาอนุมัติ/ปฏิเสธคำร้องวิชาการ (PATCH)<br>• นำเข้าเอกสารความรู้ AI (Data Ingestion) |
+
+> 💡 **หมายเหตุเกี่ยวกับการเข้าสู่ระบบ:**  
+> หากเปิดใช้งานระบบโดยที่ยังไม่ได้สตาร์ท Spring Boot Backend ระบบ Frontend มีระบบ **Mock / Fallback Authentication** รองรับให้สามารถทดสอบ UI ได้อย่างราบรื่น
 
 ---
 
 ## 🎯 4. คู่มือการทดสอบฟังก์ชันสำคัญ (Feature Walkthrough)
 
-### 4.1 การยื่นและพิจารณาคำร้องวิชาการ (Academic Petition Flow)
-1. **ฝั่งนักศึกษา**:
-   - เข้าสู่ระบบด้วย `6421100042`
-   - ไปที่เมนู **"ยื่นคำร้องวิชาการ"** ในแถบเมนูด้านซ้าย
-   - เลือกประเภทคำร้อง (เช่น *ยื่นขอสอบหัวข้อโปรเจคจบ*), พิมพ์ชื่อหัวข้อ, รายละเอียด และแนบไฟล์ `.pdf`
-   - กดปุ่ม **"ส่งคำร้องวิชาการ"** $\rightarrow$ ข้อมูลจะถูกบันทึกลงตาราง `academic_petitions` บน PostgreSQL
-2. **ฝั่งผู้ดูแลระบบ (Admin)**:
-   - เข้าสู่ระบบด้วย `admin`
-   - ไปที่เมนู **"รายการคำร้อง"**
-   - คลิกที่รายการคำร้องเพื่อเปิด **Modal ตรวจสอบคำร้อง**
-   - พิมพ์ความคิดเห็น และกดปุ่มลัด **"อนุมัติคำร้อง"** หรือ **"ปฏิเสธคำร้อง"** $\rightarrow$ ระบบจะยิง `PATCH /api/petitions/{id}/status` และซิงค์ผลไปยังหน้านักศึกษาทันที
-
----
-
-### 4.2 การใช้งาน BSRU AI Chatbot (RAG Assistant)
-1. คลิกที่ไอคอน **🤖 Floating Chatbot** บริเวณมุมขวาล่างของหน้าจอ
-2. พิมพ์คำถามเกี่ยวกับหลักสูตรและระเบียบวิชาการ เช่น:
+### 4.1 การใช้งานและทดสอบ BSRU AI Chatbot (RAG & Gemini 1.5 Flash)
+1. คลิกที่ไอคอน **🤖 Floating Chatbot** บริเวณมุมขวาล่างของหน้าจอ (รองรับทั้งจอคอมพิวเตอร์และจอมือถือ)
+2. **โหมดการตอบคำถาม 2 รูปแบบ:**
+   - **เมื่อมี GEMINI_API_KEY & Backend รันอยู่ (AI Mode สมบูรณ์):**  
+     AI จะนำคำถามไปค้นหาเวกเตอร์เนื้อหาหลักสูตรในตาราง `bsru_embeddings` บน PostgreSQL ผ่าน LangChain4j RAG Pipeline และให้ Google Gemini 1.5 Flash เรียบเรียงคำตอบที่สละสลวย ถูกต้องตามระเบียบมหาวิทยาลัย
+   - **เมื่อไม่มี API Key หรือ Backend ออฟไลน์ (Smart Fallback Mode):**  
+     ระบบจะสลับไปใช้ระบบค้นหาคำตอบจำลองอัตโนมัติ ตอบข้อซักถามพื้นฐานได้อย่างต่อเนื่องไม่สะดุด
+3. **ตัวอย่างคำถามที่แนะนำให้ทดสอบ:**
    - *"ขั้นตอนการยื่นคำร้องขอสอบหัวข้อปริญญานิพนธ์ทำอย่างไร"*
    - *"เกณฑ์การสำเร็จการศึกษาสาขาวิทยาการคอมพิวเตอร์ต้องเรียนกี่หน่วยกิต"*
    - *"ติดต่ออาจารย์ที่ปรึกษาได้ที่ห้องไหน"*
-3. AI จะดึงข้อมูลจากตาราง `bsru_embeddings` บน PostgreSQL ผ่าน **ContentRetriever** แล้วประมวลผลคำตอบที่แม่นยำออกมาแบบเรียลไทม์
+   - *"วิชาบังคับก่อนของวิชาโครงงานคืออะไร"*
 
 ---
 
-### 4.3 การนำเข้าเอกสารความรู้ใหม่เข้าสู่ AI Vector Database (Admin Ingestion)
+### 4.2 การยื่นและพิจารณาคำร้องวิชาการ (Academic Petition Flow)
+1. **ฝั่งนักศึกษา**:
+   - เข้าสู่ระบบด้วย `6421100042` (รหัสผ่าน `1234`)
+   - ไปที่เมนู **"ยื่นคำร้องวิชาการ"** ในแถบเมนูด้านซ้าย
+   - เลือกประเภทคำร้อง (เช่น *ยื่นขอสอบหัวข้อโปรเจคจบ*), กรอกรายละเอียด และแนบไฟล์เอกสาร
+   - กดปุ่ม **"ส่งคำร้องวิชาการ"** $\rightarrow$ ข้อมูลจะถูกบันทึกลงตาราง `academic_petitions` บน PostgreSQL
+2. **ฝั่งผู้ดูแลระบบ (Admin)**:
+   - เข้าสู่ระบบด้วย `admin` (รหัสผ่าน `1234`)
+   - ไปที่เมนู **"รายการคำร้อง"**
+   - คลิกที่รายการคำร้องเพื่อเปิด **Modal ตรวจสอบคำร้อง**
+   - พิมพ์ความคิดเห็น และกดปุ่ม **"อนุมัติคำร้อง"** หรือ **"ปฏิเสธคำร้อง"** $\rightarrow$ ระบบจะยิง `PATCH /api/petitions/{id}/status` และซิงค์ผลการพิจารณาแบบเรียลไทม์
+
+---
+
+### 4.3 การตรวจสอบจบและระบบการแสดงผลแบบ Responsive บนมือถือ (Mobile View)
+1. **มุมมองมือถือ (Mobile View Responsive):**
+   - หน้าเว็บรองรับการเปิดบนสมาร์ตโฟนและแท็บเล็ต โดยมี Navigation Drawer แบบสไลด์
+   - หน้าต่าง Chatbot ปรับขยายเต็มความกว้างอย่างเหมาะสม ไม่ล้นจอ
+2. **ระบบสลับมุมมองตรวจสอบจบ (Graduation Audit View Switcher):**
+   - ในหน้านักศึกษา เมนู **"ตรวจสอบจบ"** มีปุ่มสลับมุมมอง:
+     - **📊 ตารางเต็ม (Table View):** เหมาะสำหรับจอคอมพิวเตอร์ แสดงรายวิชา 8 ภาคเรียนครบถ้วน
+     - **📱 การ์ดสรุป (Mobile Cards View):** เหมาะสำหรับจอมือถือ แสดงการ์ดสรุปสถานะแต่ละหมวดหมู่วิชาอย่างกระชับและอ่านง่าย
+
+---
+
+### 4.4 การนำเข้าเอกสารความรู้ใหม่เข้าสู่ AI Vector Database (Admin Ingestion)
 ผู้ดูแลระบบสามารถส่งเอกสาร PDF / ข้อความคู่มือหลักสูตรใหม่เข้าสู่ระบบ RAG ได้ผ่าน REST API:
 ```powershell
-# 1. เข้าสู่ระบบเพื่อรับ Token
+# 1. เข้าสู่ระบบเพื่อรับ JWT Token
 $login = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method Post -Body (@{ username = "admin"; password = "password" } | ConvertTo-Json) -ContentType "application/json; charset=utf-8";
 
 # 2. ส่งเอกสารความรู้เข้าสู่ระบบ
@@ -125,12 +176,15 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/admin/knowledge/ingest" -Metho
 
 ## 🔧 5. การแก้ไขปัญหาที่พบบ่อย (Troubleshooting)
 
-| ปัญหาที่พบ | สาเหตุ | วิธีแก้ไข |
+| ปัญหาที่พบ | สาเหตุที่เป็นไปได้ | วิธีแก้ไข |
 |---|---|---|
-| **`failed to connect to docker API`** | ยังไม่ได้เปิดโปรแกรม Docker Desktop | เปิดโปรแกรม **Docker Desktop** และรอให้ Engine เริ่มทำงานก่อนรัน `docker-compose up -d` |
-| **`Connection to localhost:5432 refused`** | คอนเทนเนอร์ PostgreSQL ยังไม่เริ่มทำงาน | รันคำสั่ง `docker start bsru_vector_db` หรือ `docker-compose up -d` ในโฟลเดอร์โปรเจกต์ |
-| **`Port 8080 is already in use`** | มีโปรเซส Spring Boot เดิมค้างอยู่ | รันคำสั่งค้นหาและปิดโปรเซส: <br>`Get-Process -Id (Get-NetTCPConnection -LocalPort 8080).OwningProcess | Stop-Process -Force` |
-| **เข้าหน้าเว็บไม่ได้ (404 Not Found)** | ยังไม่ได้ Start Apache ใน XAMPP หรือโฟลเดอร์ไม่อยู่ใน htdocs | ตรวจสอบว่าโปรเจกต์อยู่ที่ `c:\xampp\htdocs\ChatbotCSBSRU` และเปิด Apache ใน XAMPP Control Panel |
+| **หน้าเว็บขาว / JavaScript ไม่ทำงาน** | เปิดไฟล์ผ่าน `file:///c:/.../index.html` โดยตรง | ต้องเปิดผ่านเว็บเซิร์ฟเวอร์ Apache: **`http://localhost/ChatbotCSBSRU/`** เท่านั้น |
+| **`failed to connect to docker API`** | ยังไม่ได้เปิดโปรแกรม Docker Desktop | เปิดโปรแกรม **Docker Desktop** และรอให้ Engine แสดงสีเขียว (Running) ก่อนรัน `docker-compose up -d` |
+| **`Connection to localhost:5432 refused`** | คอนเทนเนอร์ PostgreSQL ยังไม่เริ่มทำงาน | รันคำสั่ง `docker start bsru_vector_db` หรือ `docker-compose up -d` |
+| **`Port 8080 is already in use`** | มีโปรเซส Spring Boot เดิมค้างอยู่ | รันคำสั่งปิดโปรเซสใน PowerShell: <br>`Get-Process -Id (Get-NetTCPConnection -LocalPort 8080).OwningProcess | Stop-Process -Force` |
+| **เข้าหน้าเว็บไม่ได้ (404 Not Found)** | ยังไม่ได้ Start Apache ใน XAMPP หรือ Path โฟลเดอร์ไม่ถูกต้อง | ตรวจสอบว่าโปรเจกต์อยู่ที่ `c:\xampp\htdocs\ChatbotCSBSRU` และเปิดโมดูล Apache ใน XAMPP Control Panel |
+| **Chatbot ตอบคำตอบพื้นฐาน (Fallback Mode)** | ยังไม่ได้ใส่ `GEMINI_API_KEY` ใน `.env` หรือ Backend ไม่ได้รัน | คัดลอก `.env.example` ไปเป็น `.env` ใส่ API Key จริง แล้วรัน `.\start-backend.ps1` |
+| **เข้าสู่ระบบไม่ได้ (Login Error)** | URL ใน `js/api.js` ไม่ตรงกับ Port หรือ Backend ดับ | ตรวจสอบว่า Backend รันบนพอร์ต 8080 หรือหากทดสอบแบบออฟไลน์ ระบบจะ fallback อัตโนมัติ |
 
 ---
 
@@ -138,4 +192,6 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/admin/knowledge/ingest" -Metho
 - **สาขาวิชา**: วิทยาการคอมพิวเตอร์ (Computer Science)
 - **คณะ**: วิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU)
 - **เว็บไซต์หลัก**: [http://localhost/ChatbotCSBSRU/](http://localhost/ChatbotCSBSRU/)
-- **เอกสารสถาปัตยกรรมฉบับเต็ม**: ดูเพิ่มเติมได้ที่ [`DOCUMENTATION.md`](file:///c:/xampp/htdocs/ChatbotCSBSRU/DOCUMENTATION.md)
+- **เอกสารสถาปัตยกรรมฉบับเต็ม**: [`DOCUMENTATION.md`](file:///c:/xampp/htdocs/ChatbotCSBSRU/DOCUMENTATION.md)
+- **หน้าเริ่มต้นด่วน**: [`README.md`](file:///c:/xampp/htdocs/ChatbotCSBSRU/README.md)
+

@@ -8,10 +8,10 @@
 import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
-import { initChatbot } from './components/chatbot.js';
+import { initChatbot } from './components/chatbot.js?v=3.0';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
-import { initStudentDashboard } from './roles/student.js';
+import { initStudentDashboard } from './roles/student.js?v=3.0';
 
 // ================================================================
 // UTILITY FUNCTIONS (Exported for other modules)
@@ -70,7 +70,7 @@ const MODULE_TITLES = {
 // ================================================================
 // DOM REFERENCES & INITIALIZATION
 // ================================================================
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
     const loginOverlay = document.getElementById('loginOverlay');
     const loginForm = document.getElementById('loginForm');
     const loginUsername = document.getElementById('loginUsername');
@@ -98,19 +98,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Login Form ──
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = loginUsername.value.trim();
+        const passwordInput = document.getElementById('loginPassword');
+        const password = passwordInput ? passwordInput.value.trim() || 'password' : 'password';
         if (!username) return;
 
-        login(username);
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) loginBtn.disabled = true;
 
-        document.getElementById('loginCard').style.animation = 'cardExit 0.4s ease forwards';
-        setTimeout(() => {
+        await login(username, password);
+
+        const loginCard = document.getElementById('loginCard');
+        if (loginCard) loginCard.style.animation = 'cardExit 0.4s ease forwards';
+
+        setTimeout(async () => {
             loginOverlay.style.display = 'none';
             dashboard.style.display = 'flex';
-            window.location.reload();
-        }, 350);
+            await initDashboard();
+        }, 300);
+    });
+
+    // ── Role Hints Click Helper ──
+    document.querySelectorAll('.role-hint').forEach(hint => {
+        hint.style.cursor = 'pointer';
+        hint.addEventListener('click', () => {
+            const badge = hint.querySelector('.rh-badge');
+            if (!badge) return;
+            const text = badge.textContent.trim().toLowerCase();
+            if (text.includes('admin')) {
+                loginUsername.value = 'admin';
+            } else if (text.includes('advisor')) {
+                loginUsername.value = 'advisor';
+            } else {
+                loginUsername.value = 'student';
+            }
+            const passwordInput = document.getElementById('loginPassword');
+            if (passwordInput) passwordInput.value = 'password';
+            loginUsername.focus();
+        });
     });
 
     // ── Logout ──
@@ -222,18 +249,44 @@ document.addEventListener('DOMContentLoaded', () => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 setState({ activeModule: link.dataset.module });
+                closeMobileSidebar();
             });
         });
     }
 
-    // Mobile Sidebar Handling
-    hamburgerBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('visible');
-    });
-    sidebarOverlay.addEventListener('click', closeMobileSidebar);
-    function closeMobileSidebar() {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.remove('visible');
+    // ── Mobile Sidebar Handling ──
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+    function toggleMobileSidebar(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (sidebar) sidebar.classList.toggle('open');
+        if (sidebarOverlay) sidebarOverlay.classList.toggle('visible');
     }
-});
+
+    function closeMobileSidebar(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (sidebar) sidebar.classList.remove('open');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('visible');
+    }
+
+    window.toggleMobileSidebar = toggleMobileSidebar;
+    window.closeMobileSidebar = closeMobileSidebar;
+
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', toggleMobileSidebar);
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    }
+
+    if (sidebarCloseBtn) {
+        sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}

@@ -17,7 +17,7 @@ export const API_BASE_URL = 'http://localhost:8080/api';
  * @param {object|string|null} [body=null] - Request payload for POST/PUT/PATCH requests
  * @returns {Promise<any>} Parsed JSON response
  */
-export async function fetchAPI(endpoint, method = 'GET', body = null) {
+export async function fetchAPI(endpoint, method = 'GET', body = null, timeoutMs = 2500) {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_BASE_URL}${cleanEndpoint}`;
 
@@ -31,9 +31,13 @@ export async function fetchAPI(endpoint, method = 'GET', body = null) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     const options = {
         method: method.toUpperCase(),
         headers,
+        signal: controller.signal,
     };
 
     if (body && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
@@ -43,6 +47,7 @@ export async function fetchAPI(endpoint, method = 'GET', body = null) {
 
     try {
         const response = await fetch(url, options);
+        clearTimeout(timer);
         if (!response.ok) {
             const errorText = await response.text().catch(() => response.statusText);
             throw new Error(`HTTP ${response.status} (${response.statusText}): ${errorText}`);
@@ -50,6 +55,7 @@ export async function fetchAPI(endpoint, method = 'GET', body = null) {
         const data = await response.json();
         return data;
     } catch (error) {
+        clearTimeout(timer);
         console.warn(`[fetchAPI Error] ${method} ${url}:`, error.message);
         throw error;
     }

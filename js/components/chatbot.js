@@ -7,23 +7,33 @@
    - Integration: Secure REST API call (POST /api/chat) with JWT Bearer Token
    - Markdown & formatting support for AI responses
    - Unhappy Path: preserves user input on error for easy retry
+   - Expand/Collapse button for tall mode
+   - Desktop drag-to-resize via corner handle
+   - Mobile: swipe-to-dismiss via header drag
    ================================================================ */
 
 import { getAuthState } from '../auth.js';
 import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 
-export function initChatbot() {
-    const chatbotFab = document.getElementById('chatbotFab');
-    const chatbotWindow = document.getElementById('chatbotWindow');
-    const cwCloseBtn = document.getElementById('cwCloseBtn');
-    const cwMessages = document.getElementById('cwMessages');
-    const cwInput = document.getElementById('cwInput');
-    const cwSendBtn = document.getElementById('cwSendBtn');
-    const fabBadge = document.getElementById('fabBadge');
+let _chatbotInitialized = false;
 
-    let chatbotOpen = false;
-    let cwWaiting = false;
+export function initChatbot() {
+    if (_chatbotInitialized) return;
+    _chatbotInitialized = true;
+
+    const chatbotFab    = document.getElementById('chatbotFab');
+    const chatbotWindow = document.getElementById('chatbotWindow');
+    const cwCloseBtn    = document.getElementById('cwCloseBtn');
+    const cwExpandBtn   = document.getElementById('cwExpandBtn');
+    const cwHeader      = document.getElementById('cwHeader');
+    const cwMessages    = document.getElementById('cwMessages');
+    const cwInput       = document.getElementById('cwInput');
+    const cwSendBtn     = document.getElementById('cwSendBtn');
+    const fabBadge      = document.getElementById('fabBadge');
+
+    let chatbotOpen  = false;
+    let cwWaiting    = false;
     let welcomeShown = false;
 
     if (!chatbotFab) return;
@@ -31,8 +41,9 @@ export function initChatbot() {
     // Load chatbot CSS dynamically
     loadComponentCSS('chatbot');
 
+    // ── Open / Close ──
     chatbotFab.addEventListener('click', toggleChatbot);
-    cwCloseBtn.addEventListener('click', toggleChatbot);
+    if (cwCloseBtn) cwCloseBtn.addEventListener('click', toggleChatbot);
 
     function toggleChatbot() {
         chatbotOpen = !chatbotOpen;
@@ -48,10 +59,82 @@ export function initChatbot() {
         }
     }
 
-    /**
-     * Show structured welcome message with capability chips.
-     */
+    // ── Expand / Collapse ──
+    if (cwExpandBtn) {
+        cwExpandBtn.addEventListener('click', () => {
+            const isExpanded = chatbotWindow.classList.toggle('expanded');
+            cwExpandBtn.title = isExpanded ? 'ย่อหน้าต่าง' : 'ขยายหน้าต่าง';
+            cwExpandBtn.setAttribute('aria-label', isExpanded ? 'ย่อหน้าต่าง' : 'ขยายหน้าต่าง');
+        });
+    }
+
+    // Double-click header to toggle expanded mode
+    if (cwHeader) {
+        cwHeader.addEventListener('dblclick', (e) => {
+            if (e.target.closest('button')) return;
+            if (cwExpandBtn) cwExpandBtn.click();
+        });
+    }
+
+    // ESC key closes the chatbot window
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && chatbotOpen) {
+            toggleChatbot();
+        }
+    });
+
+    // ── Mobile: swipe-down header to dismiss ──
+    if (cwHeader && isMobile()) {
+        initMobileSwipeDismiss(cwHeader);
+    }
+
+    // Re-check on resize (orientation change etc.)
+    window.addEventListener('resize', () => {
+        if (isMobile() && cwHeader) {
+            initMobileSwipeDismiss(cwHeader);
+        }
+    });
+
+    // ── Mobile swipe-to-dismiss ──
+    let _swipeInitialized = false;
+    function initMobileSwipeDismiss(header) {
+        if (_swipeInitialized) return;
+        _swipeInitialized = true;
+
+        let touchStartY = 0;
+        let currentTranslateY = 0;
+
+        header.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            chatbotWindow.style.transition = 'none';
+        }, { passive: true });
+
+        header.addEventListener('touchmove', (e) => {
+            const dy = e.touches[0].clientY - touchStartY;
+            if (dy > 0) {
+                currentTranslateY = dy;
+                chatbotWindow.style.transform = `translateY(${dy}px)`;
+            }
+        }, { passive: true });
+
+        header.addEventListener('touchend', () => {
+            chatbotWindow.style.transition = '';
+            if (currentTranslateY > 120) {
+                toggleChatbot(); // Close on swipe-down
+            } else {
+                chatbotWindow.style.transform = '';
+            }
+            currentTranslateY = 0;
+        });
+    }
+
+    function isMobile() {
+        return window.innerWidth <= 560;
+    }
+
+    // ── Welcome Message ──
     function showWelcomeMessage() {
+        if (cwMessages.querySelector('.cw-welcome')) return;
         const welcomeDiv = document.createElement('div');
         welcomeDiv.className = 'cw-welcome';
         welcomeDiv.innerHTML = `
@@ -108,7 +191,6 @@ export function initChatbot() {
         const text = cwInput.value.trim();
         if (!text || cwWaiting) return;
 
-        // Save user input for potential recovery on error
         const savedInput = text;
 
         addCwMsg('user', text);
@@ -116,7 +198,7 @@ export function initChatbot() {
         cwSendBtn.disabled = true;
         cwWaiting = true;
 
-        // ── Show typing indicator with label ──
+        // Show typing indicator
         const typing = document.createElement('div');
         typing.className = 'cw-typing';
         typing.id = 'cwTyping';
@@ -149,12 +231,9 @@ export function initChatbot() {
             console.warn('⚠️ [Chatbot Error] Could not connect to AI endpoint:', err.message);
             isError = true;
             reply = 'ไม่สามารถเชื่อมต่อกับบริการ AI Chatbot ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
-
-            // Unhappy Path: Restore user input for easy retry
             cwInput.value = savedInput;
         }
 
-        // Remove typing indicator
         const t = document.getElementById('cwTyping');
         if (t) t.remove();
 
@@ -169,15 +248,11 @@ export function initChatbot() {
         cwInput.focus();
     }
 
-    /**
-     * Add a standard chat message bubble with rich formatting support.
-     */
     function addCwMsg(role, text) {
         const div = document.createElement('div');
         div.className = `cw-msg ${role}`;
 
         if (role === 'bot') {
-            // Render basic markdown formatting safely (bold, bullet points, linebreaks)
             let formatted = text
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -195,9 +270,6 @@ export function initChatbot() {
         cwMessages.scrollTop = cwMessages.scrollHeight;
     }
 
-    /**
-     * Add an error message bubble with distinct styling.
-     */
     function addCwErrorMsg(text) {
         const div = document.createElement('div');
         div.className = 'cw-msg bot error';

@@ -1,8 +1,8 @@
 /* ============================================================
-   FLOATING CHATBOT WIDGET — Enhanced UX (2026)
+   FLOATING CHATBOT WIDGET — Flexible & Responsive (2026)
    ============================================================
-   Features: capability transparency welcome panel, smooth
-   typing indicator, error state styling, micro-animations.
+   Features: drag-to-resize, expand mode, mobile fullscreen
+   bottom-sheet, smooth transitions, capability transparency.
    ============================================================ */
 
 /* ── FAB Button ── */
@@ -84,7 +84,11 @@
     right: 24px;
     z-index: 290;
     width: 400px;
-    max-height: 560px;
+    height: 560px;
+    min-width: 300px;
+    min-height: 380px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 120px);
     background: #fff;
     border-radius: var(--radius-xl);
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
@@ -93,7 +97,7 @@
     transform: translateY(16px) scale(0.92);
     opacity: 0;
     pointer-events: none;
-    transition: transform var(--t-spring), opacity var(--t-base);
+    transition: transform var(--t-spring), opacity var(--t-base), border-radius 0.25s ease, width 0.28s cubic-bezier(0.16, 1, 0.3, 1), height 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
 }
 
@@ -103,15 +107,25 @@
     pointer-events: auto;
 }
 
+/* Expanded (spacious desktop) mode */
+.chatbot-window.expanded {
+    width: 660px;
+    height: calc(100vh - 110px);
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 110px);
+}
+
 /* ── Header ── */
 .cw-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 12px 14px;
     background: linear-gradient(135deg, var(--brand-700), var(--brand-600));
     color: #fff;
     flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
 }
 
 .cw-header-left {
@@ -129,6 +143,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .cw-avatar svg {
@@ -163,26 +178,53 @@
     50% { opacity: 0.4; }
 }
 
-.cw-close-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+/* Header actions group */
+.cw-header-actions {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.7);
-    transition: all var(--t-fast);
+    gap: 4px;
+    flex-shrink: 0;
 }
 
+.cw-expand-btn,
+.cw-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.cw-expand-btn:hover,
 .cw-close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.18);
     color: #fff;
 }
 
-.cw-close-btn svg {
-    width: 18px;
-    height: 18px;
+.cw-expand-btn:active,
+.cw-close-btn:active {
+    transform: scale(0.92);
 }
+
+.cw-expand-btn svg,
+.cw-close-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.cw-expand-btn .icon-expand { display: block; }
+.cw-expand-btn .icon-collapse { display: none; }
+.chatbot-window.expanded .cw-expand-btn .icon-expand { display: none; }
+.chatbot-window.expanded .cw-expand-btn .icon-collapse { display: block; }
 
 
 /* ── Messages Area ── */
@@ -193,9 +235,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-height: 280px;
-    max-height: 380px;
     background: var(--g-50);
+    min-height: 0; /* Allow flex shrink */
 }
 
 .cw-messages::-webkit-scrollbar {
@@ -296,6 +337,7 @@
     padding: 16px;
     animation: fadeUp 0.4s var(--ease) both;
     max-width: 95%;
+    width: 100%;
 }
 
 .cw-welcome-header {
@@ -470,6 +512,7 @@
     background: var(--g-50);
     outline: none;
     transition: border-color var(--t-fast);
+    min-width: 0; /* Allow flex shrink */
 }
 
 .cw-input-area input:focus {
@@ -491,6 +534,7 @@
     align-items: center;
     justify-content: center;
     transition: all var(--t-fast);
+    flex-shrink: 0;
 }
 
 .cw-send-btn:not(:disabled) {
@@ -509,13 +553,80 @@
 }
 
 
-/* ── Responsive ── */
-@media (max-width: 860px) {
+/* ── Mobile: Bottom Sheet Fullscreen ── */
+@media (max-width: 560px) {
     .chatbot-window {
-        right: 8px;
-        left: 8px;
-        width: auto;
+        /* Full-width bottom sheet on mobile */
+        right: 0;
+        left: 0;
+        bottom: 0;
+        width: 100% !important;
+        height: 85vh !important;
+        max-height: 85vh !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+    }
+
+    .chatbot-window.open {
+        transform: translateY(0);
+    }
+
+
+    /* Expand button becomes full-screen toggle on mobile */
+    .chatbot-window.expanded {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0;
+    }
+
+    /* Wider chips on mobile */
+    .cw-capabilities {
+        grid-template-columns: 1fr;
+    }
+
+    /* FAB repositioned */
+    .chatbot-fab {
+        right: 16px;
+        bottom: 16px;
+    }
+
+    /* Header drag indicator for bottom sheet */
+    .cw-header {
+        position: relative;
+        padding-top: 18px;
+    }
+
+    .cw-header::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.45);
+        border-radius: 2px;
+    }
+}
+
+/* ── Tablet: Wider window ── */
+@media (min-width: 561px) and (max-width: 860px) {
+    .chatbot-window {
+        right: 16px;
+        left: auto;
+        width: 440px !important;
+        max-width: calc(100vw - 32px) !important;
         bottom: 88px;
+    }
+
+    .chatbot-window.expanded {
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        right: 16px;
+        left: 16px;
+        height: calc(100vh - 100px) !important;
     }
 
     .chatbot-fab {
@@ -524,6 +635,6 @@
     }
 
     .cw-capabilities {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
 }

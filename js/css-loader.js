@@ -48,5 +48,5 @@ export function loadRoleCSS(role) {
  * @param {string} component  e.g. 'timetable', 'chatbot'
  */
 export function loadComponentCSS(component) {
-    return loadCSS(`css/components/${component}.css`);
+    return loadCSS(`css/components/${component}.css?v=3.0`);
 }

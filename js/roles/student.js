@@ -247,9 +247,9 @@ function renderBibliography(s) {
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
         container.innerHTML = `
-        <div class="card">
-            <div class="profile-top">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="card profile-hero-card">
+            <div class="profile-hero-top">
+                <div class="profile-avatar-block">
                     <div class="profile-avatar-wrap" id="avatarWrap" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
                         ${avatarHTML}
                         <label class="avatar-upload-overlay" for="directAvatarFile">
@@ -258,33 +258,106 @@ function renderBibliography(s) {
                         </label>
                         <input type="file" id="directAvatarFile" accept="image/png, image/jpeg, image/webp" style="display:none">
                     </div>
-                    <div style="display:flex;gap:6px">
-                        <label class="btn btn-xs btn-ghost" for="directAvatarFile" style="cursor:pointer;font-size:0.75rem;color:var(--brand-700);display:inline-flex;align-items:center;gap:4px">
+                    <div class="profile-avatar-actions">
+                        <label class="btn btn-xs btn-ghost profile-avatar-btn" for="directAvatarFile">
                             📷 เปลี่ยนรูป
                         </label>
-                        ${s.avatar ? `<button class="btn btn-xs btn-ghost" id="directRemoveAvatarBtn" style="color:var(--red-600);font-size:0.75rem" title="รีเซ็ตรูปโปรไฟล์">🗑️ ลบรูป</button>` : ''}
+                        ${s.avatar ? `<button class="btn btn-xs btn-ghost profile-avatar-btn text-danger" id="directRemoveAvatarBtn" title="รีเซ็ตรูปโปรไฟล์">🗑️ ลบรูป</button>` : ''}
                     </div>
                 </div>
-                <div class="profile-info">
+
+                <div class="profile-headline">
                     <div class="profile-name">${esc(s.nameTh)}</div>
-                    <div class="profile-id">รหัส ${esc(s.studentId)} · ${esc(s.nameEn)}</div>
-                    <div class="profile-detail-grid">
-                        <div class="profile-item"><span class="label">คณะ</span><span class="value">${esc(s.faculty)}</span></div>
-                        <div class="profile-item"><span class="label">สาขา</span><span class="value">${esc(s.department)}</span></div>
-                        <div class="profile-item"><span class="label">ชั้นปี</span><span class="value">ปี ${s.year}</span></div>
-                        <div class="profile-item"><span class="label">สถานภาพ</span><span class="value">${esc(s.status)}</span></div>
-                        <div class="profile-item"><span class="label">อาจารย์ที่ปรึกษา</span><span class="value">${esc(s.advisor)}</span></div>
-                        <div class="profile-item"><span class="label">วันเกิด</span><span class="value">${esc(s.birthDate)}</span></div>
-                        <div class="profile-item"><span class="label">ศาสนา</span><span class="value">${esc(s.religion || 'พุทธ')}</span></div>
-                        <div class="profile-item"><span class="label">Email</span><span class="value">${esc(s.email)}</span></div>
-                        <div class="profile-item"><span class="label">โทรศัพท์</span><span class="value">${esc(s.phone)}</span></div>
-                        <div class="profile-item"><span class="label">ปีเข้าศึกษา</span><span class="value">${s.admitYear}</span></div>
-                        <div class="profile-item"><span class="label">ที่อยู่</span><span class="value">${esc(s.address)}</span></div>
+                    <div class="profile-id-badge">
+                        <span class="id-tag">รหัส ${esc(s.studentId)}</span>
+                        <span class="id-divider">•</span>
+                        <span class="name-en">${esc(s.nameEn)}</span>
                     </div>
-                    <button class="btn btn-sm btn-orange" id="bioEditBtn" style="margin-top:16px">
+                    <div class="profile-chips">
+                        <span class="badge badge-green"><span class="badge-dot"></span>${esc(s.status)}</span>
+                        <span class="profile-chip">ชั้นปีที่ ${s.year}</span>
+                        <span class="profile-chip">เข้าศึกษาปี ${s.admitYear}</span>
+                    </div>
+                    <button class="btn btn-sm btn-orange profile-edit-btn" id="bioEditBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         แก้ไขข้อมูลส่วนตัว
                     </button>
+                </div>
+            </div>
+
+            <!-- Profile Info Sections Grid -->
+            <div class="profile-sections-container">
+                <!-- Section 1: ข้อมูลการศึกษา -->
+                <div class="profile-section-box">
+                    <div class="profile-section-title">
+                        <div class="pst-icon">🎓</div>
+                        <span>ข้อมูลด้านการศึกษา</span>
+                    </div>
+                    <div class="profile-rows-list">
+                        <div class="p-row">
+                            <span class="p-label">คณะ</span>
+                            <span class="p-val">${esc(s.faculty)}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">สาขาวิชา</span>
+                            <span class="p-val">${esc(s.department)}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">ชั้นปี</span>
+                            <span class="p-val">ปี ${s.year}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">สถานภาพ</span>
+                            <span class="p-val"><span class="badge badge-green">${esc(s.status)}</span></span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">อาจารย์ที่ปรึกษา</span>
+                            <span class="p-val p-advisor">${esc(s.advisor)}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">ปีที่เข้าศึกษา</span>
+                            <span class="p-val">${s.admitYear}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: ข้อมูลส่วนตัวและการติดต่อ -->
+                <div class="profile-section-box">
+                    <div class="profile-section-title">
+                        <div class="pst-icon">👤</div>
+                        <span>ข้อมูลส่วนตัวและการติดต่อ</span>
+                    </div>
+                    <div class="profile-rows-list">
+                        <div class="p-row">
+                            <span class="p-label">วันเกิด</span>
+                            <span class="p-val">${esc(s.birthDate)}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">ศาสนา</span>
+                            <span class="p-val">${esc(s.religion || 'พุทธ')}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">อีเมล</span>
+                            <a href="mailto:${esc(s.email)}" class="p-val p-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                ${esc(s.email)}
+                            </a>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">โทรศัพท์</span>
+                            <a href="tel:${esc(s.phone)}" class="p-val p-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                ${esc(s.phone)}
+                            </a>
+                        </div>
+                        <div class="p-row p-row-address">
+                            <span class="p-label">ที่อยู่ปัจจุบัน</span>
+                            <div class="p-val-address">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;color:var(--brand-500);flex-shrink:0;margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                <span>${esc(s.address)}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
