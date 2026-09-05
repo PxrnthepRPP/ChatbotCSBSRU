@@ -14,9 +14,10 @@ import { initAdvisorDashboard } from './roles/advisor.js';
 import { initStudentDashboard } from './roles/student.js';
 
 // ================================================================
-// UTILITY FUNCTIONS (Re-exported from utils.js for backward compatibility)
+// UTILITY FUNCTIONS (Imported & re-exported for backward compatibility)
 // ================================================================
-export { esc, fmt, gradeClass, statusBadge, getBatch } from './utils.js';
+import { esc, fmt, gradeClass, statusBadge, getBatch } from './utils.js';
+export { esc, fmt, gradeClass, statusBadge, getBatch };
 
 // ================================================================
 // NAVIGATION CONFIG
