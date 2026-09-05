@@ -5,10 +5,9 @@
    (graduated, studying, on leave, dismissed) and advisee list management.
    ================================================================ */
 
-import { esc, statusBadge, getBatch } from '../main.js';
+import { esc, statusBadge, getBatch, debounce } from '../utils.js';
 import { MOCK_STUDENTS_POOL } from './admin.js';
 import { impersonateStudent } from '../auth.js';
-import { debounce } from '../utils.js';
 import { loadComponentCSS } from '../css-loader.js';
 
 let lastSelectedBatch = 'all';

@@ -1,4 +1,4 @@
-import { esc, fmt, gradeClass, statusBadge } from '../main.js';
+import { esc, fmt, gradeClass, statusBadge } from '../utils.js';
 import { MOCK_STUDENTS_POOL, MOCK_ADVISORS, MOCK_PETITIONS_LOG } from './admin.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from './advisor.js';
 import { fetchAPI } from '../api.js';

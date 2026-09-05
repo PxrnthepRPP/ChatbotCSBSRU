@@ -2,6 +2,37 @@
    BSRU Student Portal — Utilities
    ================================================================ */
 
+export function esc(str) { 
+    const d = document.createElement('div'); 
+    d.textContent = str; 
+    return d.innerHTML; 
+}
+
+export function fmt(n) { 
+    return (n || 0).toLocaleString('th-TH'); 
+}
+
+export function gradeClass(g) {
+    if (!g) return '';
+    if (g === 'A' || g === 'A-') return 'grade-a';
+    if (g.startsWith('B')) return 'grade-b';
+    if (g.startsWith('C')) return 'grade-c';
+    return g.startsWith('D') || g === 'F' ? 'grade-d' : '';
+}
+
+export function statusBadge(s) {
+    if (s === 'ผ่าน' || s === 'ชำระแล้ว' || s === 'กำลังศึกษา' || s === 'อนุมัติ') return 'badge-green';
+    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ') return 'badge-amber';
+    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ') return 'badge-red';
+    if (s === 'จบการศึกษา') return 'badge-blue';
+    if (s === 'พ้นสภาพ') return 'badge-red';
+    return 'badge-purple';
+}
+
+export function getBatch(studentId) { 
+    return studentId ? studentId.substring(0, 2) : ''; 
+}
+
 /**
  * Creates a debounced function that delays invoking `func` until after `delay` milliseconds
  * have elapsed since the last time the debounced function was invoked.
@@ -65,4 +96,3 @@ export function showToast(type, message) {
 }
 
 export { fetchAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
-

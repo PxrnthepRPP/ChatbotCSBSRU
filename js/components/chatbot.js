@@ -83,18 +83,6 @@ export function initChatbot() {
         }
     });
 
-    // ── Mobile: swipe-down header to dismiss ──
-    if (cwHeader && isMobile()) {
-        initMobileSwipeDismiss(cwHeader);
-    }
-
-    // Re-check on resize (orientation change etc.)
-    window.addEventListener('resize', () => {
-        if (isMobile() && cwHeader) {
-            initMobileSwipeDismiss(cwHeader);
-        }
-    });
-
     // ── Mobile swipe-to-dismiss ──
     let _swipeInitialized = false;
     function initMobileSwipeDismiss(header) {
@@ -127,6 +115,18 @@ export function initChatbot() {
             currentTranslateY = 0;
         });
     }
+
+    // ── Mobile: swipe-down header to dismiss ──
+    if (cwHeader && isMobile()) {
+        initMobileSwipeDismiss(cwHeader);
+    }
+
+    // Re-check on resize (orientation change etc.)
+    window.addEventListener('resize', () => {
+        if (isMobile() && cwHeader) {
+            initMobileSwipeDismiss(cwHeader);
+        }
+    });
 
     function isMobile() {
         return window.innerWidth <= 560;

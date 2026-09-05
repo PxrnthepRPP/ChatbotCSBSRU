@@ -8,31 +8,15 @@
 import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
-import { initChatbot } from './components/chatbot.js?v=3.0';
+import { initChatbot } from './components/chatbot.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
-import { initStudentDashboard } from './roles/student.js?v=3.0';
+import { initStudentDashboard } from './roles/student.js';
 
 // ================================================================
-// UTILITY FUNCTIONS (Exported for other modules)
+// UTILITY FUNCTIONS (Re-exported from utils.js for backward compatibility)
 // ================================================================
-export function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-export function fmt(n) { return n.toLocaleString('th-TH'); }
-export function gradeClass(g) {
-    if (g === 'A' || g === 'A-') return 'grade-a';
-    if (g.startsWith('B')) return 'grade-b';
-    if (g.startsWith('C')) return 'grade-c';
-    return g.startsWith('D') || g === 'F' ? 'grade-d' : '';
-}
-export function statusBadge(s) {
-    if (s === 'ผ่าน' || s === 'ชำระแล้ว' || s === 'กำลังศึกษา' || s === 'อนุมัติ') return 'badge-green';
-    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ') return 'badge-amber';
-    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ') return 'badge-red';
-    if (s === 'จบการศึกษา') return 'badge-blue';
-    if (s === 'พ้นสภาพ') return 'badge-red';
-    return 'badge-purple';
-}
-export function getBatch(studentId) { return studentId.substring(0, 2); }
+export { esc, fmt, gradeClass, statusBadge, getBatch } from './utils.js';
 
 // ================================================================
 // NAVIGATION CONFIG

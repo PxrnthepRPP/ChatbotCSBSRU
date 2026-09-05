@@ -1,6 +1,5 @@
-import { esc, statusBadge, getBatch } from '../main.js';
+import { esc, statusBadge, getBatch, debounce, showToast } from '../utils.js';
 import { impersonateStudent } from '../auth.js';
-import { debounce, showToast } from '../utils.js';
 import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { renderStatusDonutChart } from '../components/statusChart.js';
