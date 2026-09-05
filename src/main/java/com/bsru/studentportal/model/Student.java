@@ -37,7 +37,29 @@ public class Student {
     @Column(name = "career_path")
     private String careerPath;
 
+    @Column(name = "employment_status")
+    private String employmentStatus;
+
+    @Column(name = "company_name")
+    private String companyName;
+
+    @Column(name = "salary_range")
+    private String salaryRange;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "advisor_id")
     private Advisor advisor;
+
+    public Student(String studentId, String nameTh, String nameEn, Integer year, Double gpa, String status, String careerPath, Advisor advisor) {
+        this.studentId = studentId;
+        this.nameTh = nameTh;
+        this.nameEn = nameEn;
+        this.year = year;
+        this.gpa = gpa;
+        this.status = status;
+        this.careerPath = careerPath;
+        this.advisor = advisor;
+    }
 }
+
+

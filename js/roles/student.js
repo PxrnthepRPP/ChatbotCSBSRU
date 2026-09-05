@@ -2,6 +2,7 @@ import { esc, fmt, gradeClass, statusBadge } from '../utils.js';
 import { MOCK_STUDENTS_POOL, MOCK_ADVISORS, MOCK_PETITIONS_LOG } from './admin.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from './advisor.js';
 import { fetchAPI } from '../api.js';
+import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../components/careerCatalog.js';
 
 /* ============================================================
    MOCK DATA — Timetable schedules grouped by semester
@@ -167,8 +168,134 @@ function getStudentFullData(studentId) {
         religion: editable.religion || 'พุทธ',
         address: editable.address,
         avatar: editable.avatar || null,
+        careerPath: editable.careerPath !== undefined ? editable.careerPath : (base.careerPath || ''),
+        employmentStatus: editable.employmentStatus !== undefined ? editable.employmentStatus : (base.employmentStatus || ''),
+        companyName: editable.companyName !== undefined ? editable.companyName : (base.companyName || ''),
+        salaryRange: editable.salaryRange !== undefined ? editable.salaryRange : (base.salaryRange || ''),
     };
 }
+
+/**
+ * Open Modal for Graduate Career Tracking & Employment Status
+ */
+function openStudentCareerModal(s, onComplete) {
+    const crudModal = document.getElementById('crudModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!crudModal || !modalTitle || !modalBody) return;
+
+    const currentCareer = s.careerPath || '';
+    const isStandardCareer = STANDARD_CAREERS.some(c => c.id === currentCareer || c.name === currentCareer);
+    const selectedCareerId = isStandardCareer ? currentCareer : (currentCareer ? 'other' : '');
+    const customCareerVal = isStandardCareer ? '' : currentCareer;
+
+    const careerOpts = `
+        <option value="">-- เลือกสายอาชีพหลักของคุณ --</option>
+        ${STANDARD_CAREERS.map(c => `<option value="${esc(c.id)}" ${selectedCareerId === c.id ? 'selected' : ''}>${c.icon} ${esc(c.name)}</option>`).join('')}
+    `;
+
+    const empStatusOpts = `
+        <option value="">-- เลือกสถานะการทำงานปัจจุบัน --</option>
+        ${EMPLOYMENT_STATUSES.map(es => `<option value="${esc(es.label)}" ${s.employmentStatus === es.label ? 'selected' : ''}>${esc(es.label)}</option>`).join('')}
+    `;
+
+    const salaryOpts = `
+        <option value="">-- ไม่ระบุ --</option>
+        ${SALARY_RANGES.map(sr => `<option value="${esc(sr)}" ${s.salaryRange === sr ? 'selected' : ''}>${esc(sr)}</option>`).join('')}
+    `;
+
+    modalTitle.textContent = '💼 อัปเดตข้อมูลสายอาชีพบัณฑิต (Career Tracking)';
+    modalBody.innerHTML = `
+        <div style="font-size:0.84rem;color:var(--g-600);margin-bottom:14px;line-height:1.5;">
+            ข้อมูลนี้จะถูกนำไปรวบรวมเป็นสถิติสายอาชีพของบัณฑิตสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU เพื่อการพัฒนาหลักสูตรและการติดตามภาวะการมีงานทำ
+        </div>
+        <div class="modal-field">
+            <label>สถานะการทำงานปัจจุบัน <span style="color:var(--red-500)">*</span></label>
+            <select id="smfEmpStatus">${empStatusOpts}</select>
+        </div>
+        <div class="modal-field">
+            <label>สายอาชีพหลัก <span style="color:var(--red-500)">*</span></label>
+            <select id="smfCareerSelect">${careerOpts}</select>
+        </div>
+        <div class="modal-field" id="smfCareerCustomWrap" style="${selectedCareerId === 'other' ? 'display:block;' : 'display:none;'}">
+            <label>ระบุสายอาชีพเพิ่มเติม</label>
+            <input id="smfCareerCustom" placeholder="พิมพ์ชื่อตำแหน่งหรือสายอาชีพ..." value="${esc(customCareerVal)}">
+        </div>
+        <div class="modal-field">
+            <label>สถานที่ทำงาน / หน่วยงาน / บริษัท</label>
+            <input id="smfCompany" placeholder="เช่น Agoda, SCB TechX, ธุรกิจส่วนตัว..." value="${esc(s.companyName || '')}">
+        </div>
+        <div class="modal-field">
+            <label>ช่วงเงินเดือนเริ่มต้น / ปัจจุบัน (ไม่บังคับ)</label>
+            <select id="smfSalary">${salaryOpts}</select>
+        </div>
+    `;
+
+    const careerSelect = document.getElementById('smfCareerSelect');
+    const careerCustomWrap = document.getElementById('smfCareerCustomWrap');
+    careerSelect.addEventListener('change', () => {
+        careerCustomWrap.style.display = careerSelect.value === 'other' ? 'block' : 'none';
+    });
+
+    const saveBtn = document.getElementById('modalSave');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+    newSaveBtn.addEventListener('click', () => {
+        const empStatus = document.getElementById('smfEmpStatus').value;
+        const careerSelectVal = document.getElementById('smfCareerSelect').value;
+        const careerCustomVal = document.getElementById('smfCareerCustom').value.trim();
+        const finalCareer = careerSelectVal === 'other' ? careerCustomVal : careerSelectVal;
+        const companyName = document.getElementById('smfCompany').value.trim();
+        const salaryRange = document.getElementById('smfSalary').value;
+
+        if (!finalCareer && !empStatus) {
+            alert('กรุณาเลือกสถานะการทำงานหรือสายอาชีพ');
+            return;
+        }
+
+        // Update editable data & local storage
+        if (!studentEditableData[s.studentId]) studentEditableData[s.studentId] = {};
+        studentEditableData[s.studentId].careerPath = finalCareer;
+        studentEditableData[s.studentId].employmentStatus = empStatus;
+        studentEditableData[s.studentId].companyName = companyName;
+        studentEditableData[s.studentId].salaryRange = salaryRange;
+        try {
+            localStorage.setItem('studentEditableData_' + s.studentId, JSON.stringify(studentEditableData[s.studentId]));
+        } catch (e) {}
+
+        // Update base pool
+        const poolItem = MOCK_STUDENTS_POOL.find(item => item.studentId === s.studentId);
+        if (poolItem) {
+            poolItem.careerPath = finalCareer;
+            poolItem.employmentStatus = empStatus;
+            poolItem.companyName = companyName;
+            poolItem.salaryRange = salaryRange;
+        }
+
+        // Update in-memory student object
+        s.careerPath = finalCareer;
+        s.employmentStatus = empStatus;
+        s.companyName = companyName;
+        s.salaryRange = salaryRange;
+
+        // Async API sync
+        fetchAPI(`/students/${s.studentId}/career`, 'PATCH', {
+            careerPath: finalCareer,
+            employmentStatus: empStatus,
+            companyName: companyName,
+            salaryRange: salaryRange,
+        }).catch(() => {});
+
+        crudModal.classList.remove('open');
+        showPetitionToast('success', 'บันทึกข้อมูลสายอาชีพเรียบร้อยแล้ว ขอบคุณสำหรับข้อมูล 🎓');
+
+        if (typeof onComplete === 'function') onComplete();
+    });
+
+    crudModal.classList.add('open');
+}
+
 
 function updateTopbarAvatar(avatarUrl) {
     const topbarAvatar = document.getElementById('topbarAvatar');
@@ -359,6 +486,37 @@ function renderBibliography(s) {
                         </div>
                     </div>
                 </div>
+
+                <!-- Section 3: ข้อมูลสายอาชีพและภาวะการมีงานทำ -->
+                <div class="profile-section-box" style="border-left:3px solid var(--primary)">
+                    <div class="profile-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <div class="pst-icon">💼</div>
+                            <span>ข้อมูลสายอาชีพและภาวะการมีงานทำ</span>
+                        </div>
+                        <button class="btn btn-xs btn-outline" id="bioCareerEditBtn" style="font-size:0.78rem">
+                            ✏️ อัปเดต
+                        </button>
+                    </div>
+                    <div class="profile-rows-list">
+                        <div class="p-row">
+                            <span class="p-label">สถานะการทำงาน</span>
+                            <span class="p-val">${esc(s.employmentStatus || (s.careerPath ? 'ทำงานตรงสาย (IT & CS)' : 'ยังไม่ได้ระบุ'))}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">สายอาชีพหลัก</span>
+                            <span class="p-val" style="font-weight:700;color:var(--primary)">${esc(s.careerPath || 'ยังไม่ได้ระบุ')}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">สถานที่ทำงาน</span>
+                            <span class="p-val">${esc(s.companyName || '-')}</span>
+                        </div>
+                        <div class="p-row">
+                            <span class="p-label">ช่วงเงินเดือน</span>
+                            <span class="p-val">${esc(s.salaryRange || '-')}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="stat-row">
@@ -369,6 +527,7 @@ function renderBibliography(s) {
         </div>`;
 
         document.getElementById('bioEditBtn').addEventListener('click', renderEditMode);
+        document.getElementById('bioCareerEditBtn')?.addEventListener('click', () => openStudentCareerModal(s, () => renderBibliography(s)));
 
         // Direct Avatar File Upload
         document.getElementById('directAvatarFile')?.addEventListener('change', (e) => {
@@ -1889,7 +2048,36 @@ function renderGraduation(student) {
         </li>
     `).join('');
 
+    const careerBannerHTML = `
+        <!-- Career & Employment Tracking Callout -->
+        <div class="card" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(99,102,241,0.06));border:1px solid rgba(59,130,246,0.25);border-radius:var(--radius-lg);padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 10px rgba(59,130,246,0.3);flex-shrink:0">
+                        💼
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:1rem;color:var(--g-800);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            <span>สายอาชีพและภาวะการมีงานทำของบัณฑิต</span>
+                            <span class="badge ${student.careerPath ? 'badge-green' : 'badge-amber'}">${student.careerPath ? 'อัปเดตแล้ว' : 'ยังไม่อัปเดต'}</span>
+                        </div>
+                        <div style="font-size:0.84rem;color:var(--g-600);margin-top:2px">
+                            สายอาชีพปัจจุบัน: <strong style="color:var(--primary)">${esc(student.careerPath || 'ยังไม่ได้ระบุ')}</strong>
+                            ${student.companyName ? ` • ${esc(student.companyName)}` : ''}
+                            ${student.employmentStatus ? ` <span style="color:var(--g-500)">(${esc(student.employmentStatus)})</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnUpdateCareerGrad" style="display:inline-flex;align-items:center;gap:6px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>อัปเดตสายอาชีพของคุณ</span>
+                </button>
+            </div>
+        </div>
+    `;
+
     document.getElementById('graduationContent').innerHTML = `
+        ${careerBannerHTML}
         <!-- Summary Stat Row -->
         <div class="stat-row">
             <div class="stat-card">
@@ -2094,7 +2282,13 @@ function renderGraduation(student) {
             if (cardIcon) cardIcon.style.transform = 'rotate(-90deg)';
         });
     });
+
+    // ── Career Update Button Listener ──
+    document.getElementById('btnUpdateCareerGrad')?.addEventListener('click', () => {
+        openStudentCareerModal(student, () => renderGraduation(student));
+    });
 }
+
 
 /* ============================================================
    ACTIVITIES

@@ -4,6 +4,7 @@ import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { renderStatusDonutChart } from '../components/statusChart.js';
 import { renderCareerDataList } from '../components/careerList.js';
+import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../components/careerCatalog.js';
 
 export const MOCK_ADVISORS = [
     { id: 'ADV001', nameTh: 'ผศ.ดร.วิชัย เทคโนโลยี', nameEn: 'Asst.Prof.Dr. Wichai Technology', email: 'wichai.t@bsru.ac.th', phone: '02-473-7000 ต่อ 4001', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 12 },
@@ -489,6 +490,27 @@ function openStudentModal(mode, idx) {
     
     const s = mode === 'edit' ? MOCK_STUDENTS_POOL[idx] : {};
     const advisorOpts = MOCK_ADVISORS.map(a => `<option value="${a.id}" ${s.advisor === a.id ? 'selected' : ''}>${esc(a.nameTh)}</option>`).join('');
+    
+    const currentCareer = s.careerPath || '';
+    const isStandardCareer = STANDARD_CAREERS.some(c => c.id === currentCareer || c.name === currentCareer);
+    const selectedCareerId = isStandardCareer ? currentCareer : (currentCareer ? 'other' : '');
+    const customCareerVal = isStandardCareer ? '' : currentCareer;
+
+    const careerOpts = `
+        <option value="">-- เลือกสายอาชีพ --</option>
+        ${STANDARD_CAREERS.map(c => `<option value="${esc(c.id)}" ${selectedCareerId === c.id ? 'selected' : ''}>${c.icon} ${esc(c.name)}</option>`).join('')}
+    `;
+
+    const empStatusOpts = `
+        <option value="">-- เลือกสถานะการทำงาน --</option>
+        ${EMPLOYMENT_STATUSES.map(es => `<option value="${esc(es.label)}" ${s.employmentStatus === es.label ? 'selected' : ''}>${esc(es.label)}</option>`).join('')}
+    `;
+
+    const salaryOpts = `
+        <option value="">-- ไม่ระบุ --</option>
+        ${SALARY_RANGES.map(sr => `<option value="${esc(sr)}" ${s.salaryRange === sr ? 'selected' : ''}>${esc(sr)}</option>`).join('')}
+    `;
+
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขนักศึกษา' : 'เพิ่มนักศึกษาใหม่';
     modalBody.innerHTML = `
         <div class="modal-field"><label>รหัสนักศึกษา</label><input id="mfSid" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
@@ -498,30 +520,92 @@ function openStudentModal(mode, idx) {
         <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
         <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
         <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
-        <div class="modal-field"><label>สายอาชีพ (เฉพาะจบการศึกษา)</label><input id="mfScareer" placeholder="เช่น Full-Stack Developer, DevOps..." value="${esc(s.careerPath || '')}"></div>
+        
+        <div id="mfCareerGroup" style="${s.status === 'จบการศึกษา' ? 'display:block;' : 'display:none;'}margin-top:14px;padding:12px;background:rgba(59,130,246,0.05);border:1px dashed var(--primary);border-radius:var(--radius-md);">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                💼 ข้อมูลสายอาชีพและภาวะการมีงานทำ (บัณฑิต)
+            </div>
+            <div class="modal-field">
+                <label>สถานะการทำงาน</label>
+                <select id="mfSempStatus">${empStatusOpts}</select>
+            </div>
+            <div class="modal-field">
+                <label>สายอาชีพหลัก</label>
+                <select id="mfScareerSelect">${careerOpts}</select>
+            </div>
+            <div class="modal-field" id="mfScareerCustomWrap" style="${selectedCareerId === 'other' ? 'display:block;' : 'display:none;'}">
+                <label>ระบุสายอาชีพเพิ่มเติม</label>
+                <input id="mfScareerCustom" placeholder="พิมพ์ชื่อตำแหน่งหรือสายอาชีพ..." value="${esc(customCareerVal)}">
+            </div>
+            <div class="modal-field">
+                <label>สถานที่ทำงาน / หน่วยงาน (ถ้ามี)</label>
+                <input id="mfScompany" placeholder="เช่น Agoda, SCB TechX, ธุรกิจส่วนตัว..." value="${esc(s.companyName || '')}">
+            </div>
+            <div class="modal-field">
+                <label>ช่วงเงินเดือน (ถ้ามี)</label>
+                <select id="mfSsalary">${salaryOpts}</select>
+            </div>
+        </div>
     `;
+
+    // Interactive event listeners
+    const statusSelect = document.getElementById('mfSstatus');
+    const careerGroup = document.getElementById('mfCareerGroup');
+    const careerSelect = document.getElementById('mfScareerSelect');
+    const careerCustomWrap = document.getElementById('mfScareerCustomWrap');
+
+    statusSelect.addEventListener('change', () => {
+        careerGroup.style.display = statusSelect.value === 'จบการศึกษา' ? 'block' : 'none';
+    });
+
+    careerSelect.addEventListener('change', () => {
+        careerCustomWrap.style.display = careerSelect.value === 'other' ? 'block' : 'none';
+    });
     
     const saveBtn = document.getElementById('modalSave');
     const newSaveBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
     
     newSaveBtn.addEventListener('click', () => {
+        const statusVal = document.getElementById('mfSstatus').value;
+        const careerSelectVal = document.getElementById('mfScareerSelect').value;
+        const careerCustomVal = document.getElementById('mfScareerCustom').value.trim();
+        let finalCareer = careerSelectVal === 'other' ? careerCustomVal : careerSelectVal;
+        if (statusVal !== 'จบการศึกษา') {
+            finalCareer = undefined;
+        }
+
         const data = {
             studentId: document.getElementById('mfSid').value.trim(),
             nameTh: document.getElementById('mfSnameTh').value.trim(),
             nameEn: document.getElementById('mfSnameEn').value.trim(),
             year: parseInt(document.getElementById('mfSyear').value) || 1,
             gpa: parseFloat(document.getElementById('mfSgpa').value) || 0,
-            status: document.getElementById('mfSstatus').value,
+            status: statusVal,
             advisor: document.getElementById('mfSadvisor').value,
-            careerPath: document.getElementById('mfScareer').value.trim() || undefined,
+            careerPath: finalCareer || undefined,
+            employmentStatus: document.getElementById('mfSempStatus').value || undefined,
+            companyName: document.getElementById('mfScompany').value.trim() || undefined,
+            salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
         if (!data.studentId || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
         if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = data; }
         else { MOCK_STUDENTS_POOL.push(data); }
+
+        // Sync to backend if available (non-blocking)
+        if (data.status === 'จบการศึกษา' && data.careerPath) {
+            fetchAPI(`/students/${data.studentId}/career`, 'PATCH', {
+                careerPath: data.careerPath,
+                employmentStatus: data.employmentStatus,
+                companyName: data.companyName,
+                salaryRange: data.salaryRange,
+            }).catch(() => {});
+        }
+
         crudModal.classList.remove('open');
         renderManageStudents();
         renderAdminDashboard();
+        showToast('บันทึกข้อมูลนักศึกษาและสายอาชีพเรียบร้อย', 'success');
     });
     
     crudModal.classList.add('open');

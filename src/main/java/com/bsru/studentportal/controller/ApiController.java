@@ -1,5 +1,6 @@
 package com.bsru.studentportal.controller;
 
+import com.bsru.studentportal.dto.CareerUpdateRequest;
 import com.bsru.studentportal.dto.PetitionRequest;
 import com.bsru.studentportal.dto.PetitionStatusUpdateRequest;
 import com.bsru.studentportal.model.AcademicPetition;
@@ -123,4 +124,33 @@ public class ApiController {
         AcademicPetition updated = petitionRepository.save(petition);
         return ResponseEntity.ok(updated);
     }
+
+    @PatchMapping("/students/{studentId}/career")
+    public ResponseEntity<?> updateStudentCareer(
+            @PathVariable String studentId,
+            @RequestBody CareerUpdateRequest request) {
+
+        Student student = studentRepository.findById(Objects.requireNonNull(studentId)).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Student not found with ID: " + studentId));
+        }
+
+        if (request.getCareerPath() != null) {
+            student.setCareerPath(request.getCareerPath());
+        }
+        if (request.getEmploymentStatus() != null) {
+            student.setEmploymentStatus(request.getEmploymentStatus());
+        }
+        if (request.getCompanyName() != null) {
+            student.setCompanyName(request.getCompanyName());
+        }
+        if (request.getSalaryRange() != null) {
+            student.setSalaryRange(request.getSalaryRange());
+        }
+
+        Student updated = studentRepository.save(student);
+        return ResponseEntity.ok(updated);
+    }
 }
+

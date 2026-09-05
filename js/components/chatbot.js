@@ -166,6 +166,10 @@ export function initChatbot() {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
                         <span>อาจารย์ที่ปรึกษา</span>
                     </button>
+                    <button class="cw-capability-chip" data-query="สถิติสายอาชีพของบัณฑิต">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        <span>สถิติสายอาชีพบัณฑิต</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -187,11 +191,32 @@ export function initChatbot() {
     cwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleCwSend(); } });
     cwInput.addEventListener('input', () => { cwSendBtn.disabled = !cwInput.value.trim() || cwWaiting; });
 
+    function getSmartOfflineReply(query) {
+        const q = (query || '').toLowerCase().trim();
+        if (q.includes('คำร้อง') || q.includes('ยื่นคำร้อง') || q.includes('petition')) {
+            return "สำหรับการยื่นคำร้องวิชาการ คุณสามารถไปที่เมนู **'ยื่นคำร้องวิชาการ'** ในแถบเมนูด้านซ้าย เลือกประเภทคำร้อง (เช่น ขอสอบหัวข้อ, ขอเพิ่ม/ถอนวิชา, คำร้องทั่วไป) กรอกรายละเอียด และแนบไฟล์ PDF จากนั้นกดส่งคำร้อง ระบบจะส่งต่อให้อาจารย์ที่ปรึกษาและเจ้าหน้าที่พิจารณาครับ";
+        }
+        if (q.includes('สายอาชีพ') || q.includes('อาชีพ') || q.includes('ทำงาน') || q.includes('บัณฑิต') || q.includes('career') || q.includes('งาน')) {
+            return "📊 **สถิติสายอาชีพของบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์ BSRU**:\nส่วนใหญ่ประกอบอาชีพตรงสาย (IT & CS) เช่น:\n- 💻 **Full-Stack Developer**\n- 📊 **Data Analyst**\n- ⚙️ **DevOps Engineer**\n- ☁️ **Cloud Architect**\n- 🎨 **UX/UI Designer**\n- 🔒 **Cybersecurity Analyst**\nรวมถึงกลุ่ม **ธุรกิจส่วนตัว / สตาร์ทอัพ**\n\n📌 สำหรับบัณฑิตที่สำเร็จการศึกษา สามารถกดอัปเดตสายอาชีพของท่านได้ที่เมนู **'ตรวจสอบจบ'** หรือ **'ประวัตินักศึกษา'** เพื่อร่วมเป็นส่วนหนึ่งในการพัฒนาหลักสูตรครับ";
+        }
+        if (q.includes('เกรด') || q.includes('ผลการเรียน') || q.includes('gpa')) {
+            return "คุณสามารถตรวจสอบผลการเรียนรายภาคเรียนและเกรดเฉลี่ยสะสม (GPA) ได้ที่เมนู **'ผลการเรียน'** โดยระบบจะแสดงรายการวิชาที่ผ่าน หน่วยกิตสะสม และผลการเรียนย้อนหลังครบถ้วนครับ";
+        }
+        if (q.includes('ตารางเรียน') || q.includes('ตารางสอบ') || q.includes('schedule')) {
+            return "ตารางเรียนและตารางสอบภาคเรียนปัจจุบัน สามารถดูได้ที่เมนู **'ตารางเรียน'** ในรูปแบบ Matrix Grid รายสัปดาห์ พร้อมระบุห้องเรียนและชื่ออาจารย์ผู้สอนครับ";
+        }
+        if (q.includes('อาจารย์') || q.includes('ที่ปรึกษา') || q.includes('advisor')) {
+            return "อาจารย์ประจำสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีรายนามดังนี้ครับ:\n- **ผศ.ดร.วิชัย เทคโนโลยี** (หัวหน้าสาขาวิชา/อาจารย์ที่ปรึกษา)\n- **อ.สุภา โปรแกรม**\n- **ผศ.มานะ ดาต้า**\n- **ผศ.ดร.ณัฐ เน็ตเวิร์ค**\n- **อ.พิมพ์ เว็บเทค**\nสามารถดูข้อมูลการติดต่อได้ที่เมนูประวัตินักศึกษาครับ";
+        }
+        if (q.includes('สวัสดี') || q.includes('hello') || q.includes('hi') || q.includes('หวัดดี')) {
+            return "สวัสดีครับ! 👋 ผมคือ **BSRU CS AI Assistant** ยินดีให้คำแนะนำและตอบคำถามเกี่ยวกับระบบสารสนเทศนักศึกษา การลงทะเบียนเรียน ตารางเรียน ผลการเรียน สถิติสายอาชีพ และการยื่นคำร้องวิชาการครับ มีอะไรให้ผมช่วยเหลือไหมครับ?";
+        }
+        return `ขอบคุณสำหรับคำถามครับ! คุณสามารถสอบถามข้อมูลระบบสารสนเทศนักศึกษา สาขาวิทยาการคอมพิวเตอร์ BSRU ได้หลากหลายหัวข้อ เช่น:\n- 📝 ขั้นตอนการยื่นคำร้องวิชาการ\n- 📅 ตารางเรียนและตารางสอบ\n- 📊 ตรวจสอบผลการเรียนและเกรดเฉลี่ย\n- 💼 สถิติสายอาชีพของบัณฑิต\n- 👨‍🏫 ข้อมูลติดต่ออาจารย์ที่ปรึกษา`;
+    }
+
     async function handleCwSend() {
         const text = cwInput.value.trim();
         if (!text || cwWaiting) return;
-
-        const savedInput = text;
 
         addCwMsg('user', text);
         cwInput.value = '';
@@ -214,7 +239,6 @@ export function initChatbot() {
         cwMessages.scrollTop = cwMessages.scrollHeight;
 
         let reply = '';
-        let isError = false;
 
         try {
             const state = getAuthState();
@@ -228,20 +252,14 @@ export function initChatbot() {
             console.log('✨ [Chatbot] Received AI Response:', data);
             reply = data.reply || data.message || 'ขออภัยครับ ไม่พบข้อมูลตอบกลับจากระบบ';
         } catch (err) {
-            console.warn('⚠️ [Chatbot Error] Could not connect to AI endpoint:', err.message);
-            isError = true;
-            reply = 'ไม่สามารถเชื่อมต่อกับบริการ AI Chatbot ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
-            cwInput.value = savedInput;
+            console.warn('⚠️ [Chatbot] Backend offline or unreachable, using domain assistant mode:', err.message);
+            reply = getSmartOfflineReply(text);
         }
 
         const t = document.getElementById('cwTyping');
         if (t) t.remove();
 
-        if (isError) {
-            addCwErrorMsg(reply);
-        } else {
-            addCwMsg('bot', reply);
-        }
+        addCwMsg('bot', reply);
 
         cwWaiting = false;
         cwSendBtn.disabled = !cwInput.value.trim();

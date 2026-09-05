@@ -30,16 +30,8 @@ export function aggregateCareerList(students) {
         .sort((a, b) => b.count - a.count || a.career.localeCompare(b.career, 'th'));
 }
 
-/**
- * Determine the category of a career path.
- * @param {string} career
- * @returns {'unemployed' | 'business' | 'direct_tech'}
- */
-function getCareerCategory(career) {
-    if (career.includes('ว่างงาน')) return 'unemployed';
-    if (career.includes('เจ้าของธุรกิจ') || career.includes('ธุรกิจส่วนตัว') || career.includes('ฟรีแลนซ์')) return 'business';
-    return 'direct_tech';
-}
+import { getCareerCategory } from './careerCatalog.js';
+
 
 /**
  * Render the Career Data List into the container element.
