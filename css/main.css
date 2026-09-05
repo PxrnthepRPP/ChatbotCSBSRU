@@ -2845,6 +2845,25 @@ body.impersonating .chatbot-fab {
         min-width: 600px;
     }
 
+    /* ── Minimum Legible Font Size on Mobile (min 12px) ── */
+    .audit-badge,
+    .audit-cr-pill,
+    .audit-gpa-pill,
+    .badge,
+    .batch-tag,
+    .data-table th,
+    .data-table td,
+    .petition-type-badge,
+    .petition-pdf-badge,
+    .activity-meta,
+    .stat-label,
+    .filter-result-count,
+    .toolbar-search input,
+    .batch-select,
+    .filter-select {
+        font-size: max(0.75rem, 12px) !important;
+    }
+
     /* ── Toolbar / Filter Bar Stack ── */
     .toolbar,
     .batch-filter-bar,
