@@ -59,3 +59,62 @@
     border-bottom-color: var(--red-100);
 }
 
+/* ============================================================
+   ADMIN RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+    /* ── Admin Filter Bars ── */
+    #mod-admin-dashboard .admin-dashboard-filter-bar,
+    #mod-manage-petitions .petition-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 14px;
+    }
+
+    #mod-admin-dashboard .admin-dashboard-filter-bar select,
+    #mod-manage-petitions .petition-filter-bar select {
+        width: 100% !important;
+    }
+
+    /* ── Admin Stat Cards ── */
+    #mod-admin-dashboard .stat-row,
+    #mod-manage-petitions .stat-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    /* ── Data Table Containers ── */
+    #mod-manage-advisors .card,
+    #mod-manage-students .card,
+    #mod-manage-petitions .card {
+        padding: 14px;
+    }
+
+    /* ── Petition Review Modal ── */
+    .petition-review-modal .modal-content,
+    .petition-review-modal .modal-card {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 88vh;
+    }
+}
+
+@media (max-width: 480px) {
+    #mod-admin-dashboard .stat-row,
+    #mod-manage-petitions .stat-row {
+        grid-template-columns: 1fr;
+    }
+
+    /* ── Compact action buttons ── */
+    .admin-imp-btn,
+    .edit-advisor-btn,
+    .delete-advisor-btn,
+    .view-petition-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+}
+
+

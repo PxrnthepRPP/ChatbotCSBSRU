@@ -154,3 +154,71 @@
 #mod-timetable .batch-select:hover {
     box-shadow: 0 2px 8px rgba(31, 71, 133, 0.1);
 }
+
+/* ============================================================
+   STUDENT RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+    /* ── Finance Cards ── */
+    #mod-finance .stat-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    #mod-finance .finance-summary {
+        padding: 20px 16px;
+    }
+
+    #mod-finance .finance-amount {
+        font-size: 2rem;
+    }
+
+    /* ── Grades ── */
+    #mod-grades .stat-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    /* ── Activity Cards ── */
+    #mod-activity .activity-card {
+        padding: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* ── Graduation ── */
+    #mod-graduation .stat-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    /* ── Timetable Forms ── */
+    #mod-timetable .app-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #mod-finance .stat-row,
+    #mod-graduation .stat-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    #mod-finance .finance-amount {
+        font-size: 1.5rem;
+    }
+
+    /* ── Grade Table Compact ── */
+    #mod-grades .grade {
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+
+    /* ── Activity Meta ── */
+    #mod-activity .activity-card .activity-meta {
+        font-size: 0.75rem;
+    }
+}
+

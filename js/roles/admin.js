@@ -311,8 +311,8 @@ function renderManageAdvisors() {
         <tr>
             <td><strong>${esc(a.id)}</strong></td>
             <td>${esc(a.nameTh)}</td>
-            <td>${esc(a.email)}</td>
-            <td>${esc(a.department)}</td>
+            <td class="hide-mobile">${esc(a.email)}</td>
+            <td class="hide-mobile">${esc(a.department)}</td>
             <td style="text-align:center">${a.studentsCount}</td>
             <td>
                 <div class="action-btns">
@@ -330,7 +330,7 @@ function renderManageAdvisors() {
             </div>
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>Email</th><th>สาขา</th><th style="text-align:center">นศ.ที่ดูแล</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th class="hide-mobile">Email</th><th class="hide-mobile">สาขา</th><th style="text-align:center">นศ.ที่ดูแล</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -417,7 +417,7 @@ function renderManageStudents() {
         <tr>
             <td><strong>${esc(s.studentId)}</strong></td>
             <td>${esc(s.nameTh)} <span class="batch-tag">รุ่น ${batch}</span></td>
-            <td style="text-align:center">ปี ${s.year}</td>
+            <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
             <td style="text-align:center"><strong>${s.gpa.toFixed(2)}</strong></td>
             <td><span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span></td>
             <td>
@@ -435,16 +435,16 @@ function renderManageStudents() {
             <label>กรองตามรุ่น</label>
             <select class="batch-select" id="adminBatchFilter">${filterOpts}</select>
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${MOCK_STUDENTS_POOL.length} คน</div>
-            <div class="toolbar-search" style="margin-left:auto">
+            <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="adminStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
             </div>
-            <button class="btn btn-success" id="addStudentBtn" style="margin-left:14px">เพิ่มนักศึกษา</button>
+            <button class="btn btn-success" id="addStudentBtn">เพิ่มนักศึกษา</button>
         </div>
         <div class="card">
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center">ชั้นปี</th><th style="text-align:center">GPA</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -590,7 +590,7 @@ function renderManagePetitions() {
         return `
         <tr>
             <td><strong class="petition-log-id">${esc(p.id)}</strong></td>
-            <td><span class="petition-log-date">${esc(p.submittedAt)}</span></td>
+            <td class="hide-mobile"><span class="petition-log-date">${esc(p.submittedAt)}</span></td>
             <td>
                 <div class="petition-student-info">
                     <strong>${esc(p.studentName)}</strong>
@@ -601,8 +601,8 @@ function renderManagePetitions() {
                 </div>
             </td>
             <td><span class="petition-type-badge">${esc(p.type)}</span></td>
-            <td><span class="petition-log-title" title="${esc(p.title)}">${esc(p.title)}</span></td>
-            <td style="text-align:center">
+            <td class="hide-mobile"><span class="petition-log-title" title="${esc(p.title)}">${esc(p.title)}</span></td>
+            <td style="text-align:center" class="hide-mobile">
                 ${p.attachment ? `
                     <span class="petition-pdf-badge" title="${esc(p.attachment)}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -680,7 +680,7 @@ function renderManagePetitions() {
                 แสดง <strong>${filtered.length}</strong> จาก ${totalCount} รายการ
             </div>
 
-            <div class="toolbar-search" style="margin-left:auto">
+            <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="adminPetSearchInput" placeholder="ค้นหารหัสคำร้อง, นศ., ชื่อเรื่อง..." value="${esc(adminPetitionsSearch)}">
             </div>
@@ -692,11 +692,11 @@ function renderManagePetitions() {
                     <thead>
                         <tr>
                             <th>รหัสคำร้อง</th>
-                            <th>วันที่ยื่น</th>
+                            <th class="hide-mobile">วันที่ยื่น</th>
                             <th>นักศึกษา</th>
                             <th>ประเภทคำร้อง</th>
-                            <th>ชื่อหัวข้อ / เรื่อง</th>
-                            <th style="text-align:center">เอกสาร</th>
+                            <th class="hide-mobile">ชื่อหัวข้อ / เรื่อง</th>
+                            <th style="text-align:center" class="hide-mobile">เอกสาร</th>
                             <th>สถานะ</th>
                             <th>จัดการ</th>
                         </tr>

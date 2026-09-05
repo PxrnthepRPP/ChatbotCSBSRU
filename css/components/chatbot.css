@@ -562,7 +562,9 @@
         bottom: 0;
         width: 100% !important;
         height: 85vh !important;
+        height: 85dvh !important;
         max-height: 85vh !important;
+        max-height: 85dvh !important;
         max-width: 100% !important;
         min-width: 100% !important;
         border-radius: 20px 20px 0 0;
@@ -577,7 +579,9 @@
     /* Expand button becomes full-screen toggle on mobile */
     .chatbot-window.expanded {
         height: 100vh !important;
+        height: 100dvh !important;
         max-height: 100vh !important;
+        max-height: 100dvh !important;
         border-radius: 0;
     }
 

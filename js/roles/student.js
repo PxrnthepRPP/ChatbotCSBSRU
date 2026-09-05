@@ -511,7 +511,7 @@ function renderBibliography(s) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     ข้อมูลที่จัดการโดยระบบ (Read-only System Fields)
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:6px 16px;font-size:0.82rem;color:var(--g-700)">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:6px 16px;font-size:0.82rem;color:var(--g-700)">
                     <span>📌 รหัสนักศึกษา: <strong>${esc(s.studentId)}</strong></span>
                     <span>📌 คณะ: <strong>${esc(s.faculty)}</strong></span>
                     <span>📌 สาขา: <strong>${esc(s.department)}</strong></span>
@@ -1152,14 +1152,14 @@ function renderTimetable() {
    ============================================================ */
 function renderFinance() {
     const f = MOCK_FINANCE;
-    const payRows = f.payments.map(p => `<tr><td>${esc(p.semester)}</td><td>${fmt(p.amount)} ฿</td><td><span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></td><td>${esc(p.date)}</td><td>${esc(p.method)}</td></tr>`).join('');
+    const payRows = f.payments.map(p => `<tr><td>${esc(p.semester)}</td><td>${fmt(p.amount)} ฿</td><td><span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></td><td class="hide-mobile">${esc(p.date)}</td><td class="hide-mobile">${esc(p.method)}</td></tr>`).join('');
     document.getElementById('financeContent').innerHTML = `
         <div class="stat-row">
             <div class="finance-summary" style="flex:2"><h3>ยอดค้างชำระ</h3><div class="finance-amount">${fmt(f.currentOwed)} ฿</div><div class="finance-sub">ภาคเรียนที่ 1/2567</div></div>
             <div class="stat-card" style="flex:1"><div class="stat-icon green">💰</div><div><div class="stat-value">${fmt(f.totalPaid)}</div><div class="stat-label">ชำระแล้วทั้งหมด (฿)</div></div></div>
         </div>
         <div class="card"><div class="card-title">🎓 ทุนการศึกษา <span class="badge badge-green">ได้รับทุน</span></div><div class="profile-detail-grid"><div class="profile-item"><span class="label">ชื่อทุน</span><span class="value">${esc(f.scholarship)}</span></div><div class="profile-item"><span class="label">จำนวน</span><span class="value">${fmt(f.scholarshipAmount)} ฿/ปี</span></div></div></div>
-        <div class="card"><div class="card-title">📋 ประวัติการชำระเงิน</div><div class="table-wrap"><table class="data-table"><thead><tr><th>ภาคเรียน</th><th>จำนวน</th><th>สถานะ</th><th>วันที่</th><th>ช่องทาง</th></tr></thead><tbody>${payRows}</tbody></table></div></div>`;
+        <div class="card"><div class="card-title">📋 ประวัติการชำระเงิน</div><div class="table-wrap"><table class="data-table"><thead><tr><th>ภาคเรียน</th><th>จำนวน</th><th>สถานะ</th><th class="hide-mobile">วันที่</th><th class="hide-mobile">ช่องทาง</th></tr></thead><tbody>${payRows}</tbody></table></div></div>`;
 }
 
 /* ============================================================
@@ -1181,17 +1181,17 @@ function buildGradesBody(idx) {
     const tc = done.reduce((a, c) => a + c.credits, 0);
     const semGpa = tc > 0 ? (tp / tc).toFixed(2) : '-';
     const rows = sem.courses.map(c =>
-        `<tr><td><strong>${esc(c.code)}</strong></td><td>${esc(c.name)}</td><td style="text-align:center">${c.credits}</td><td style="text-align:center"><span class="grade ${gradeClass(c.grade)}">${c.grade}</span></td><td style="text-align:center">${c.point !== null ? c.point.toFixed(1) : '-'}</td></tr>`
+        `<tr><td><strong>${esc(c.code)}</strong></td><td>${esc(c.name)}</td><td style="text-align:center">${c.credits}</td><td style="text-align:center"><span class="grade ${gradeClass(c.grade)}">${c.grade}</span></td><td style="text-align:center" class="hide-mobile">${c.point !== null ? c.point.toFixed(1) : '-'}</td></tr>`
     ).join('');
 
     return `
-        <div class="table-wrap" style="overflow-x: hidden;">
+        <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>รหัส</th><th>ชื่อวิชา</th><th style="text-align:center">หน่วยกิต</th><th style="text-align:center">เกรด</th><th style="text-align:center">คะแนน</th></tr></thead>
+                <thead><tr><th>รหัส</th><th>ชื่อวิชา</th><th style="text-align:center">หน่วยกิต</th><th style="text-align:center">เกรด</th><th style="text-align:center" class="hide-mobile">คะแนน</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:24px;margin-top:12px;font-size:0.85rem">
+        <div style="display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:0.85rem">
             <span>หน่วยกิตลงทะเบียน: <strong>${sem.courses.reduce((a, c) => a + c.credits, 0)}</strong></span>
             <span>GPA: <strong style="color:var(--brand-600)">${semGpa}</strong></span>
         </div>`;

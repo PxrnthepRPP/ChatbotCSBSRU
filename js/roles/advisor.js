@@ -195,7 +195,7 @@ function renderMyAdvisees() {
             <label>กรองตามรุ่น</label>
             <select class="batch-select" id="advBatchFilter">${filterOpts}</select>
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${myStudents.length} คน</div>
-            <div class="toolbar-search" style="margin-left:auto">
+            <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="advStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
             </div>
@@ -278,7 +278,7 @@ export function renderAdvisorCourses() {
         <tr>
             <td><span class="badge badge-blue">${esc(c.code)}</span></td>
             <td>${esc(c.name)}</td>
-            <td>${esc(c.nameTh)}</td>
+            <td class="hide-mobile">${esc(c.nameTh)}</td>
             <td>
                 <button class="btn btn-sm btn-ghost adv-del-course" data-idx="${i}" title="ลบ">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
@@ -293,8 +293,8 @@ export function renderAdvisorCourses() {
             <td><span class="badge badge-blue">${esc(ex.code)}</span></td>
             <td>${esc(ex.name)}</td>
             <td>${esc(ex.date)}</td>
-            <td>${esc(ex.time)}</td>
-            <td>${esc(ex.room)}</td>
+            <td class="hide-mobile">${esc(ex.time)}</td>
+            <td class="hide-mobile">${esc(ex.room)}</td>
             <td><span class="badge badge-green">ประกาศแล้ว</span></td>
             <td>
                 <button class="btn btn-sm btn-ghost adv-del-exam" data-idx="${i}" title="ยกเลิก">
@@ -333,7 +333,7 @@ export function renderAdvisorCourses() {
                     <button type="button" class="btn btn-sm btn-ghost" id="advCloseCourseFormBtn" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                 </div>
 
-                <div class="app-form-grid" style="grid-template-columns: 1fr 1.5fr 1.5fr;">
+                <div class="app-form-grid app-form-grid-3col">
                     <div class="app-form-group">
                         <label class="app-form-label">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -369,7 +369,7 @@ export function renderAdvisorCourses() {
             <div class="table-wrap">
                 <table class="data-table" id="advCoursesTable">
                     <thead>
-                        <tr><th>รหัสวิชา</th><th>ชื่อวิชา (EN)</th><th>ชื่อวิชา (TH)</th><th style="width:50px"></th></tr>
+                        <tr><th>รหัสวิชา</th><th>ชื่อวิชา (EN)</th><th class="hide-mobile">ชื่อวิชา (TH)</th><th style="width:50px"></th></tr>
                     </thead>
                     <tbody>${courseRows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">ยังไม่มีรายวิชาที่สอน</td></tr>'}</tbody>
                 </table>
@@ -449,7 +449,7 @@ export function renderAdvisorCourses() {
             <div class="table-wrap">
                 <table class="data-table" id="advExamsTable">
                     <thead>
-                        <tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>วันสอบ</th><th>เวลา</th><th>ห้องสอบ</th><th>สถานะ</th><th style="width:50px"></th></tr>
+                        <tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>วันสอบ</th><th class="hide-mobile">เวลา</th><th class="hide-mobile">ห้องสอบ</th><th>สถานะ</th><th style="width:50px"></th></tr>
                     </thead>
                     <tbody>${examRows || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">ยังไม่มีประกาศสอบ</td></tr>'}</tbody>
                 </table>

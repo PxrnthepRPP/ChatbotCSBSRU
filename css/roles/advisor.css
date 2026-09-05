@@ -84,3 +84,64 @@
     letter-spacing: 0.01em;
 }
 
+/* ============================================================
+   ADVISOR RESPONSIVE
+   ============================================================ */
+@media (max-width: 860px) {
+    /* ── Advisee Card Mobile Stack ── */
+    #mod-my-advisees .advisee-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+        padding: 16px;
+        align-items: center;
+    }
+
+    #mod-my-advisees .advisee-card .badge {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        align-self: center;
+    }
+
+    #mod-my-advisees .advisee-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+    }
+
+    #mod-my-advisees .advisee-actions .btn {
+        flex: 1;
+        min-width: 110px;
+        justify-content: center;
+    }
+
+    /* ── Course Management Form ── */
+    #mod-advisor-courses .app-form-grid,
+    .app-form-grid-3col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ── Advisor Dashboard Stat Cards ── */
+    #mod-advisor-dashboard .stat-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    #mod-advisor-dashboard .stat-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    #mod-my-advisees .advisee-card .advisee-info h4 {
+        font-size: 0.95rem;
+    }
+
+    #mod-my-advisees .advisee-card {
+        padding: 14px 12px;
+    }
+}
+
+
