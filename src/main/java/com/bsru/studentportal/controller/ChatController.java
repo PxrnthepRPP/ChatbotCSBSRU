@@ -3,9 +3,11 @@ package com.bsru.studentportal.controller;
 import com.bsru.studentportal.dto.ChatRequest;
 import com.bsru.studentportal.dto.ChatResponse;
 import com.bsru.studentportal.service.ChatbotService;
+import com.bsru.studentportal.service.StudentRecordTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,9 +31,7 @@ public class ChatController {
         }
 
         String userMessage = request.getMessage().trim();
-        String sessionId = (authentication != null && authentication.getName() != null)
-                ? authentication.getName()
-                : (request.getSessionId() != null ? request.getSessionId() : "guest-session");
+        String sessionId = resolveSessionId(request, authentication);
 
         log.info("Incoming chat request from sessionId: {}, message: {}", sessionId, userMessage);
 
@@ -51,6 +51,30 @@ public class ChatController {
                     .sessionId(sessionId)
                     .build());
         }
+    }
+
+    /**
+     * Builds the chat memory id. StudentRecordTools trusts the "student:" prefix to decide whose
+     * records to read, so it is only ever derived from the verified JWT; guests get a "guest:" id
+     * no matter what sessionId they send.
+     */
+    private String resolveSessionId(ChatRequest request, Authentication authentication) {
+        boolean loggedIn = authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
+        if (!loggedIn) {
+            String guestId = request.getSessionId() != null ? request.getSessionId() : "guest-session";
+            return "guest:" + guestId;
+        }
+
+        String username = authentication.getName();
+        boolean isStudent = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_STUDENT".equals(a.getAuthority()));
+        if (isStudent) {
+            // Same demo mapping as AuthController: the "student" login is student 6421100042
+            String studentId = "student".equalsIgnoreCase(username) ? "6421100042" : username;
+            return StudentRecordTools.STUDENT_MEMORY_PREFIX + studentId;
+        }
+        return "staff:" + username;
     }
 
     private String generateFallbackResponse(String query) {

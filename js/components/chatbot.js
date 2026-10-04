@@ -247,7 +247,7 @@ export function initChatbot() {
             const data = await fetchAPI('/chat', 'POST', {
                 message: text,
                 sessionId: state.user?.username || 'student_guest',
-            });
+            }, 30000); // AI replies that look up grades take longer than the default 2.5s timeout
 
             console.log('✨ [Chatbot] Received AI Response:', data);
             reply = data.reply || data.message || 'ขออภัยครับ ไม่พบข้อมูลตอบกลับจากระบบ';
