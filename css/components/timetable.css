@@ -245,6 +245,30 @@
 }
 
 
+/* ── Registration status banner ── */
+.tt-reg-banner {
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border: 1px solid var(--g-100);
+    background: var(--g-50);
+    color: var(--g-700);
+}
+
+.tt-reg-banner.open {
+    background: var(--green-50);
+    border-color: var(--green-100);
+    color: var(--green-600);
+}
+
+.tt-reg-banner.warn {
+    background: var(--amber-100);
+    border-color: var(--amber-500);
+    color: var(--amber-600);
+}
+
 /* ── Exam Schedule Cards ── */
 .tt-exam-list {
     display: grid;
@@ -475,4 +499,24 @@
         flex-direction: column;
         gap: 4px;
     }
+}
+/* ── Registration requests ── */
+.tt-pending-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--amber-100);
+    color: var(--amber-600);
+    vertical-align: middle;
+    align-self: flex-start;
+    width: fit-content;
+}
+
+.tt-cart-problem {
+    font-size: 0.78rem;
+    color: var(--red-600);
+    line-height: 1.4;
 }

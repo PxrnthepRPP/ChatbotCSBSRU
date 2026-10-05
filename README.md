@@ -61,6 +61,28 @@
 
 ---
 
+## 🚀 Clone แล้วรันได้ทันที (สำหรับเพื่อนในทีม)
+
+ต้องมีแค่ **Git** และ **Docker Desktop** (เปิดไว้ก่อน) ไม่ต้องติดตั้ง Java / XAMPP / PostgreSQL
+
+```powershell
+git clone https://github.com/PxrnthepRPP/ChatbotCSBSRU.git
+cd ChatbotCSBSRU
+git checkout feat/chatbot-student-grades   # ถ้ายังไม่ได้รวมเข้า main
+docker compose up -d --build
+```
+ครั้งแรกใช้เวลาหลายนาที (ดาวน์โหลด image + build) จากนั้นเปิด **http://localhost:3000** แล้วกดป้าย ADMIN / ADVISOR / STUDENT ในหน้า login เพื่อกรอกบัญชีทดลอง (รหัสผ่าน `password`)
+
+- ระบบสร้างฐานข้อมูลและข้อมูลตัวอย่างให้เองทั้งหมด (นักศึกษา อาจารย์ ตารางเรียน ใบตรวจจบ ข้อมูลจำลองรุ่น 61–66)
+- **ไม่ต้องมีไฟล์ `.env` ก็รันได้** แต่แชทบอท AI จะตอบแบบสำรอง (ไม่ได้ดึงข้อมูลจริง) จนกว่าจะใส่ Gemini API key:
+  1. `copy .env.example .env`
+  2. ใส่ `GEMINI_API_KEY=...` (ขอฟรีที่ [Google AI Studio](https://aistudio.google.com/apikey) หรือขอจากเจ้าของโปรเจกต์ทางแชทส่วนตัว — **ห้าม commit ไฟล์ `.env`**)
+  3. `docker compose up -d backend`
+- พอร์ตที่ใช้: 3000 (เว็บ), 8080 (backend), 5432 (ฐานข้อมูล) — ถ้ามีโปรแกรมอื่นใช้อยู่ต้องปิดก่อน
+- หยุดระบบ: `docker compose down` · ล้างฐานข้อมูลเริ่มใหม่: `docker compose down -v`
+
+---
+
 ## ⚡ เริ่มต้นใช้งานด่วน (Quick Start)
 
 ### 1. ตั้งค่า Environment Variables
@@ -94,15 +116,25 @@ http://localhost/ChatbotCSBSRU/
 ```
 > ⚠️ **คำเตือนสำคัญ:** ห้ามดับเบิลคลิกเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้โมดูล JavaScript ES6 ซึ่งเบราว์เซอร์จะบล็อกตามนโยบายความปลอดภัย CORS ต้องเข้าผ่าน `http://localhost/ChatbotCSBSRU/` บน XAMPP เท่านั้น
 
+### ทางเลือก: รันทั้งระบบใน Docker (ไม่ต้องใช้ XAMPP / Java บนเครื่อง)
+ใส่ `GEMINI_API_KEY` ในไฟล์ `.env` ตามขั้นที่ 1 แล้วรัน:
+```powershell
+docker compose up -d --build
+```
+- เว็บไซต์: `http://localhost:3000/`
+- Backend API: `http://localhost:8080/api`
+
+หลังแก้ค่าใน `.env` ให้รัน `docker compose up -d backend` เพื่อให้ backend อ่านค่าใหม่
+
 ---
 
 ## 🔑 ข้อมูลบัญชีสำหรับทดสอบระบบ (Test Accounts)
 
 | บทบาท (Role) | Username สำหรับเข้าสู่ระบบ | รหัสผ่าน (Password) | สิทธิ์ระบบ (JWT Role) |
 |---|---|---|---|
-| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `1234` | `ROLE_STUDENT` |
-| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `1234` | `ROLE_ADVISOR` |
-| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `1234` | `ROLE_ADMIN` |
+| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `password` | `ROLE_STUDENT` |
+| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `password` | `ROLE_ADVISOR` |
+| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `password` | `ROLE_ADMIN` |
 
 ---
 

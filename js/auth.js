@@ -23,47 +23,44 @@ export const getAuthState = () => {
 };
 
 /**
- * Log in a user by username and password.
- * Authenticates with Spring Boot JWT Backend (/api/auth/login).
+ * Log in with username and password. The backend checks the password (BCrypt, lockout after
+ * repeated failures) and decides the role; nothing is stored until it accepts the login.
+ * Throws an Error with a message for the login page.
  */
-export const login = async (username, password = 'password') => {
-    let role, user;
-    const cleanUsername = username.trim().toLowerCase();
-
-    if (cleanUsername === 'admin') {
-        role = 'ADMIN';
-        user = { username: cleanUsername, displayName: 'ผู้ดูแลระบบ (Admin)', role: 'ADMIN' };
-    } else if (cleanUsername === 'advisor') {
-        role = 'ADVISOR';
-        user = { username: cleanUsername, displayName: 'ผศ.ดร.วิชัย เทคโนโลยี', role: 'ADVISOR' };
-    } else {
-        role = 'STUDENT';
-        user = { username: cleanUsername, displayName: 'สมชาย ใจดี', role: 'STUDENT' };
+export const login = async (username, password) => {
+    let authData;
+    try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Backend timeout')), 8000));
+        authData = await Promise.race([loginAPI(username.trim(), password), timeout]);
+    } catch (err) {
+        logoutAPI();
+        const match = /{.*}$/s.exec(err.message || '');
+        let serverMessage = null;
+        try { serverMessage = match ? JSON.parse(match[0]).error : null; } catch (e) { /* not JSON */ }
+        if (serverMessage) {
+            // A username typed with the Thai keyboard layout is a common cause of "wrong username"
+            const thaiHint = /[฀-๿]/.test(username) ? ' (แป้นพิมพ์ยังเป็นภาษาไทยอยู่หรือไม่?)' : '';
+            throw new Error(serverMessage + thaiHint);
+        }
+        throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่าระบบ backend ทำงานอยู่ แล้วลองใหม่');
     }
 
-    // Persist local auth state immediately so session is guaranteed
+    const role = String(authData.role || '').replace('ROLE_', '');
+    const user = {
+        username: authData.username,
+        displayName: authData.displayName,
+        role,
+        mustChangePassword: !!authData.mustChangePassword,
+    };
+    // The real ids, so the dashboard and the chatbot look at the same person
+    if (role === 'STUDENT') user.studentId = authData.userId;
+    if (role === 'ADVISOR') user.advisorId = authData.userId;
     setState({
         currentRole: role,
         user,
         isImpersonating: false,
         impersonatedStudent: null,
     });
-
-    // Authenticate with Spring Boot JWT Backend in background/foreground (1s max timeout)
-    try {
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Backend timeout')), 1000));
-        const authData = await Promise.race([loginAPI(username.trim(), password), timeoutPromise]);
-        if (authData && authData.token) {
-            console.log('🔑 [Auth] JWT Token acquired from Spring Boot Backend:', authData.token.substring(0, 20) + '...');
-            if (authData.displayName) {
-                user.displayName = authData.displayName;
-                setState({ user });
-            }
-        }
-    } catch (err) {
-        console.warn('⚠️ [Auth] Running in standalone mode:', err.message || err);
-    }
-
     return role;
 };
 

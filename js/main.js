@@ -9,6 +9,8 @@ import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot } from './components/chatbot.js';
+import { initThemeToggle } from './theme.js';
+import { openChangePasswordModal } from './components/password.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
 import { initStudentDashboard } from './roles/student.js';
@@ -56,6 +58,7 @@ const MODULE_TITLES = {
 // DOM REFERENCES & INITIALIZATION
 // ================================================================
 function initApp() {
+    initThemeToggle();
     const loginOverlay = document.getElementById('loginOverlay');
     const loginForm = document.getElementById('loginForm');
     const loginUsername = document.getElementById('loginUsername');
@@ -80,20 +83,56 @@ function initApp() {
         loginOverlay.style.display = 'none';
         dashboard.style.display = 'flex';
         initDashboard();
+        requirePasswordChangeIfNeeded();
+    }
+
+    /** Accounts on a first / reset password cannot use the system until the password is changed */
+    function requirePasswordChangeIfNeeded() {
+        if (!getAuthState().user?.mustChangePassword) return;
+        openChangePasswordModal({
+            forced: true,
+            onChanged: () => setState({ user: { ...getState().user, mustChangePassword: false } }),
+            onLogout: () => { logout(); window.location.reload(); },
+        });
     }
 
     // ── Login Form ──
+    function showLoginError(message) {
+        let box = document.getElementById('loginError');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'loginError';
+            box.className = 'login-error';
+            box.setAttribute('role', 'alert');
+            document.getElementById('loginBtn').before(box);
+        }
+        box.textContent = message;
+        box.style.display = message ? 'block' : 'none';
+    }
+
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = loginUsername.value.trim();
         const passwordInput = document.getElementById('loginPassword');
-        const password = passwordInput ? passwordInput.value.trim() || 'password' : 'password';
+        const password = passwordInput ? passwordInput.value : '';
         if (!username) return;
+        if (!password) {
+            showLoginError('กรุณากรอกรหัสผ่าน');
+            passwordInput?.focus();
+            return;
+        }
 
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) loginBtn.disabled = true;
+        showLoginError('');
 
-        await login(username, password);
+        try {
+            await login(username, password);
+        } catch (err) {
+            showLoginError(err.message);
+            if (loginBtn) loginBtn.disabled = false;
+            return;
+        }
 
         const loginCard = document.getElementById('loginCard');
         if (loginCard) loginCard.style.animation = 'cardExit 0.4s ease forwards';
@@ -102,6 +141,7 @@ function initApp() {
             loginOverlay.style.display = 'none';
             dashboard.style.display = 'flex';
             await initDashboard();
+            requirePasswordChangeIfNeeded();
         }, 300);
     });
 
@@ -123,6 +163,12 @@ function initApp() {
             if (passwordInput) passwordInput.value = 'password';
             loginUsername.focus();
         });
+    });
+
+    // ── Change password (every role) ──
+    document.getElementById('changePasswordBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openChangePasswordModal();
     });
 
     // ── Logout ──
@@ -208,7 +254,9 @@ function initApp() {
         } else if (effectiveRole === 'ADVISOR') {
             initAdvisorDashboard();
         } else {
-            const studentId = state.isImpersonating ? state.impersonatedStudent.studentId : '6421100042';
+            const studentId = state.isImpersonating
+                ? state.impersonatedStudent.studentId
+                : (state.user.studentId || '6421100042');
             initStudentDashboard(studentId);
         }
 

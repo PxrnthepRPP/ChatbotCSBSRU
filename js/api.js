@@ -52,6 +52,8 @@ export async function fetchAPI(endpoint, method = 'GET', body = null, timeoutMs 
             const errorText = await response.text().catch(() => response.statusText);
             throw new Error(`HTTP ${response.status} (${response.statusText}): ${errorText}`);
         }
+        // 204 No Content (e.g. DELETE) has no JSON body
+        if (response.status === 204) return null;
         const data = await response.json();
         return data;
     } catch (error) {

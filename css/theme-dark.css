@@ -1,0 +1,250 @@
+/* =============================================
+   BSRU Student Portal — Dark Theme
+   Active when <html data-theme="dark"> (toggled from the sidebar, saved per browser).
+   Most of the UI follows the design tokens, so the tokens are redefined first;
+   the rules after them cover places that use fixed light colours.
+   ============================================= */
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    /* Brand tints used as light backgrounds become deep navy */
+    --brand-50: #1a2740;
+    --brand-100: #22355a;
+    --brand-200: #3d5f94;
+    /* Mid brand blues are used as text and accents: lift them so they read on dark surfaces */
+    --brand-300: #8fb4ea;
+    --brand-400: #7aa6e6;
+    --brand-500: #6b9be0;
+    --brand-600: #5b8bd6;
+    --brand-700: #4a78c2;
+    --accent-600: #6bb6e6;
+
+    /* Status tints (badge / banner backgrounds) */
+    --green-50: #0f2a1c;
+    --green-100: #14432b;
+    --green-600: #4ade80;
+    --amber-100: #3a2a0c;
+    --amber-600: #fbbf24;
+    --red-50: #2c1517;
+    --red-100: #45191c;
+    --red-600: #f87171;
+    --blue-50: #142238;
+    --blue-100: #1c3456;
+    --blue-600: #60a5fa;
+
+    /* Gray scale flipped: low numbers are dark surfaces, high numbers are light text */
+    --g-50: #1b2433;
+    --g-100: #253042;
+    --g-200: #2f3b50;
+    --g-300: #46546b;
+    --g-400: #6b7a90;
+    --g-500: #94a3b8;
+    --g-600: #b6c2d2;
+    --g-700: #d4dce6;
+    --g-800: #e7ecf2;
+    --g-900: #f4f7fa;
+
+    --bg-body: #0d1420;
+    --bg-sidebar: #0a1220;
+    --bg-card: #151e2d;
+    --text-main: #e5eaf1;
+    --text-muted: #94a3b8;
+
+    --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --sh-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --sh-lg: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] body {
+    background: var(--bg-body);
+    color: var(--text-main);
+}
+
+/* ── Surfaces that use a fixed white / near-white background ── */
+[data-theme="dark"] .card,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .profile-hero-card,
+[data-theme="dark"] .p-val-address,
+[data-theme="dark"] .audit-wrap,
+[data-theme="dark"] .audit-course-row,
+[data-theme="dark"] .audit-course-row td:first-child,
+[data-theme="dark"] .audit-group-hdr,
+[data-theme="dark"] .audit-card-section,
+[data-theme="dark"] .audit-card-group-hdr,
+[data-theme="dark"] .audit-course-card,
+[data-theme="dark"] .audit-view-btn.active,
+[data-theme="dark"] .sem-tab,
+[data-theme="dark"] .hamburger,
+[data-theme="dark"] .chatbot-window,
+[data-theme="dark"] .cw-msg.bot,
+[data-theme="dark"] .cw-welcome,
+[data-theme="dark"] .cw-typing,
+[data-theme="dark"] .cw-input-area,
+[data-theme="dark"] .petition-toast,
+[data-theme="dark"] .petition-history-card:hover,
+[data-theme="dark"] .career-item:hover {
+    background: var(--bg-card) !important;
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .app-form-panel {
+    background: linear-gradient(180deg, #18233a 0%, var(--bg-card) 100%);
+}
+
+[data-theme="dark"] .topbar {
+    background: rgba(13, 20, 32, 0.96);
+}
+
+/* Secondary (light gray) surfaces */
+[data-theme="dark"] .audit-table th,
+[data-theme="dark"] .audit-table th.subject-col,
+[data-theme="dark"] .audit-sec-hdr,
+[data-theme="dark"] .audit-subsec-hdr,
+[data-theme="dark"] .audit-course-row:hover,
+[data-theme="dark"] .audit-course-row:hover td:first-child,
+[data-theme="dark"] .audit-grade-wait,
+[data-theme="dark"] .audit-legend-box,
+[data-theme="dark"] .audit-view-btn-group,
+[data-theme="dark"] .audit-card-sec-hdr,
+[data-theme="dark"] .audit-card-subsec-hdr,
+[data-theme="dark"] .audit-course-card:hover,
+[data-theme="dark"] .audit-course-card-meta-pill,
+[data-theme="dark"] .profile-section-box {
+    background: var(--g-50) !important;
+}
+
+[data-theme="dark"] .audit-sec-hdr:hover,
+[data-theme="dark"] .audit-card-sec-hdr:hover {
+    background: var(--g-100) !important;
+}
+
+[data-theme="dark"] .audit-grade-pass,
+[data-theme="dark"] .audit-scroll-hint {
+    background: var(--blue-50);
+}
+
+/* Text that was fixed to a dark colour */
+[data-theme="dark"] .audit-sec-hdr,
+[data-theme="dark"] .audit-subsec-hdr,
+[data-theme="dark"] .audit-course-row td {
+    color: var(--text-main);
+}
+
+/* ── Form controls ── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .app-input,
+[data-theme="dark"] .app-select,
+[data-theme="dark"] .app-textarea,
+[data-theme="dark"] .modal-field input,
+[data-theme="dark"] .modal-field select,
+[data-theme="dark"] .modal-field textarea,
+[data-theme="dark"] .petition-field textarea,
+[data-theme="dark"] .cw-input-area input {
+    background-color: var(--g-50) !important;
+    color: var(--text-main);
+    border-color: var(--g-200);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: var(--g-400);
+}
+
+[data-theme="dark"] .batch-select {
+    background-color: var(--g-50);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .app-input.is-invalid,
+[data-theme="dark"] .modal-field input.is-invalid,
+[data-theme="dark"] .modal-field select.is-invalid {
+    background-color: var(--red-50) !important;
+}
+
+/* ── Badges with fixed pastel backgrounds ── */
+[data-theme="dark"] .badge-green,
+[data-theme="dark"] .audit-badge.pass { background: var(--green-100); color: var(--green-600); }
+[data-theme="dark"] .badge-amber { background: var(--amber-100); color: var(--amber-600); }
+[data-theme="dark"] .badge-red,
+[data-theme="dark"] .audit-badge.fail,
+[data-theme="dark"] .petition-pdf-badge { background: var(--red-100); color: var(--red-600); }
+[data-theme="dark"] .badge-blue { background: var(--blue-100); color: var(--blue-600); }
+[data-theme="dark"] .badge-purple { background: #2e2350; color: #c4b5fd; }
+
+/* ── Tables ── */
+[data-theme="dark"] .data-table th {
+    background: var(--g-50);
+    color: var(--g-700);
+}
+
+[data-theme="dark"] .data-table td {
+    border-color: var(--g-100);
+}
+
+[data-theme="dark"] .data-table tr:hover td {
+    background: var(--g-50);
+}
+
+/* ── Timetable class cards (light gradients) ── */
+[data-theme="dark"] .tt-class-card,
+[data-theme="dark"] .tt-class-card.color-1 { background: linear-gradient(135deg, #1c2b47, var(--bg-card)); }
+[data-theme="dark"] .tt-class-card.color-2 { background: linear-gradient(135deg, #172a45, var(--bg-card)); }
+[data-theme="dark"] .tt-class-card.color-3 { background: linear-gradient(135deg, #12301f, var(--bg-card)); }
+[data-theme="dark"] .tt-class-card.color-4 { background: linear-gradient(135deg, #33270d, var(--bg-card)); }
+[data-theme="dark"] .tt-class-card.color-5 { background: linear-gradient(135deg, #351a1c, var(--bg-card)); }
+[data-theme="dark"] .tt-class-card.color-6 { background: linear-gradient(135deg, #36210f, var(--bg-card)); }
+
+[data-theme="dark"] .tt-cell {
+    border-color: var(--g-100);
+}
+
+/* ── Charts / career list ── */
+[data-theme="dark"] .career-item.item-unemployed,
+[data-theme="dark"] .career-item.item-unemployed:hover { background: var(--red-50) !important; }
+[data-theme="dark"] .career-item.item-business,
+[data-theme="dark"] .career-item.item-business:hover { background: var(--amber-100) !important; }
+
+/* Headings that use the dark brand navy as text colour */
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .profile-name,
+[data-theme="dark"] .app-form-title,
+[data-theme="dark"] .module-title,
+[data-theme="dark"] .stat-value,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+    color: var(--text-main);
+}
+
+/* ── Theme toggle in the sidebar ── */
+.theme-toggle-link .theme-icon-dark { display: none; }
+[data-theme="dark"] .theme-toggle-link .theme-icon-dark { display: inline; }
+[data-theme="dark"] .theme-toggle-link .theme-icon-light { display: none; }
+
+/* Floating toggle on the login screen */
+.login-theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 5;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.login-theme-toggle svg {
+    width: 20px;
+    height: 20px;
+}

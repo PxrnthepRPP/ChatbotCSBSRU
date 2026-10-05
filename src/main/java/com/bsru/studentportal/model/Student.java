@@ -11,6 +11,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "students")
 @Data
@@ -49,6 +51,39 @@ public class Student {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "advisor_id")
     private Advisor advisor;
+
+    /** Student group (D1 or D2), set by an admin; students register only in sections of their own group */
+    @Column(name = "student_section", nullable = false, length = 5,
+            columnDefinition = "varchar(5) default 'D1' not null")
+    private String studentSection = "D1";
+
+    /**
+     * Sample record for showing the dashboards (the old demo list): basic data only, no grades,
+     * graduation audit or login account. Admins and the student's advisor may add / delete these.
+     */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean simulated;
+
+    // ---- Profile (shown on the student's "ประวัตินักศึกษา" page and in the advisor's history view) ----
+    private String email;
+
+    private String phone;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    private String religion;
+
+    @Column(length = 500)
+    private String address;
+
+    /** Buddhist Era year of admission, e.g. 2564 */
+    @Column(name = "admission_year")
+    private Integer admissionYear;
+
+    private String faculty;
+
+    private String department;
 
     public Student(String studentId, String nameTh, String nameEn, Integer year, Double gpa, String status, String careerPath, Advisor advisor) {
         this.studentId = studentId;

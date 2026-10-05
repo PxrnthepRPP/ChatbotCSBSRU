@@ -1,0 +1,161 @@
+package com.bsru.studentportal.service;
+
+import com.bsru.studentportal.model.UserAccount;
+import com.bsru.studentportal.repository.AdvisorRepository;
+import com.bsru.studentportal.repository.StudentRepository;
+import com.bsru.studentportal.repository.UserAccountRepository;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+/** Login accounts: password check, lockout after repeated failures, change / reset password. */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AccountService {
+
+    /** Password of the demo accounts filled in by the role buttons on the login page */
+    public static final String DEMO_PASSWORD = "password";
+    public static final int MAX_FAILED_ATTEMPTS = 5;
+    public static final Duration LOCK_TIME = Duration.ofMinutes(5);
+
+    private static final String BAD_LOGIN = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+
+    @Getter
+    public static class AccountException extends RuntimeException {
+        private final HttpStatus status;
+
+        public AccountException(HttpStatus status, String message) {
+            super(message);
+            this.status = status;
+        }
+    }
+
+    private final UserAccountRepository accounts;
+    private final StudentRepository studentRepository;
+    private final AdvisorRepository advisorRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /** Checks the password; returns the account or throws with a message for the login page */
+    @Transactional(noRollbackFor = AccountException.class)
+    public UserAccount authenticate(String username, String password) {
+        UserAccount account = accounts.findByUsernameIgnoreCase(username == null ? "" : username.trim())
+                .orElseThrow(() -> new AccountException(HttpStatus.UNAUTHORIZED, BAD_LOGIN));
+        LocalDateTime now = LocalDateTime.now();
+        if (account.getLockedUntil() != null && account.getLockedUntil().isAfter(now)) {
+            long minutes = Math.max(1, Duration.between(now, account.getLockedUntil()).toMinutes() + 1);
+            throw new AccountException(HttpStatus.LOCKED,
+                    "บัญชีถูกล็อกชั่วคราวเพราะใส่รหัสผ่านผิดหลายครั้ง กรุณาลองใหม่ในอีก " + minutes + " นาที");
+        }
+        if (password == null || !passwordEncoder.matches(password, account.getPasswordHash())) {
+            account.setFailedAttempts(account.getFailedAttempts() + 1);
+            String message = BAD_LOGIN;
+            if (account.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
+                account.setLockedUntil(now.plus(LOCK_TIME));
+                account.setFailedAttempts(0);
+                message = "ใส่รหัสผ่านผิด " + MAX_FAILED_ATTEMPTS + " ครั้ง บัญชีถูกล็อก " + LOCK_TIME.toMinutes() + " นาที";
+            } else {
+                message += " (เหลืออีก " + (MAX_FAILED_ATTEMPTS - account.getFailedAttempts()) + " ครั้งก่อนบัญชีถูกล็อก)";
+            }
+            accounts.save(account);
+            log.warn("Failed login for {}", account.getUsername());
+            throw new AccountException(HttpStatus.UNAUTHORIZED, message);
+        }
+        account.setFailedAttempts(0);
+        account.setLockedUntil(null);
+        account.setLastLoginAt(now);
+        return accounts.save(account);
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        UserAccount account = accounts.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new AccountException(HttpStatus.NOT_FOUND, "ไม่พบบัญชีผู้ใช้"));
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+            throw new AccountException(HttpStatus.BAD_REQUEST, "รหัสผ่านปัจจุบันไม่ถูกต้อง");
+        }
+        String problem = passwordProblem(newPassword, account.getUsername());
+        if (problem != null) throw new AccountException(HttpStatus.BAD_REQUEST, problem);
+        if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
+            throw new AccountException(HttpStatus.BAD_REQUEST, "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
+        }
+        account.setPasswordHash(passwordEncoder.encode(newPassword));
+        account.setMustChangePassword(false);
+        accounts.save(account);
+    }
+
+    /** Admin reset: the password becomes the student id and must be changed at the next login */
+    @Transactional
+    public void resetStudentPassword(String studentId) {
+        if (!studentRepository.existsById(studentId)) {
+            throw new AccountException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId);
+        }
+        UserAccount account = accounts.findByUsernameIgnoreCase(studentId)
+                .orElseGet(() -> newAccount(studentId, "ROLE_STUDENT", studentId, true));
+        account.setPasswordHash(passwordEncoder.encode(studentId));
+        account.setMustChangePassword(true);
+        account.setFailedAttempts(0);
+        account.setLockedUntil(null);
+        accounts.save(account);
+    }
+
+    /** New student created by an admin: first password = student id, must be changed */
+    @Transactional
+    public void createStudentAccount(String studentId) {
+        if (accounts.findByUsernameIgnoreCase(studentId).isEmpty()) {
+            accounts.save(newAccount(studentId, "ROLE_STUDENT", studentId, true));
+        }
+    }
+
+    @Transactional
+    public void deleteAccount(String username) {
+        accounts.findByUsernameIgnoreCase(username).ifPresent(accounts::delete);
+    }
+
+    /**
+     * Accounts for everyone who can log in but has none yet. Demo accounts (admin, advisor, student,
+     * the seeded advisors and students) use the demo password so the login page buttons keep working.
+     */
+    @Transactional
+    public void ensureAccounts() {
+        ensure("admin", "ROLE_ADMIN", DEMO_PASSWORD, false);
+        ensure("advisor", "ROLE_ADVISOR", DEMO_PASSWORD, false);
+        ensure("student", "ROLE_STUDENT", DEMO_PASSWORD, false);
+        advisorRepository.findAll().forEach(a -> ensure(a.getId(), "ROLE_ADVISOR", DEMO_PASSWORD, false));
+        // Simulated (sample) students have no login
+        studentRepository.findAll().stream().filter(s -> !s.isSimulated())
+                .forEach(s -> ensure(s.getStudentId(), "ROLE_STUDENT", DEMO_PASSWORD, false));
+    }
+
+    /** null when the password is acceptable */
+    public static String passwordProblem(String password, String username) {
+        if (password == null || password.length() < 8) return "รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร";
+        if (!password.matches(".*[A-Za-z].*") || !password.matches(".*\\d.*")) {
+            return "รหัสผ่านใหม่ต้องมีทั้งตัวอักษรภาษาอังกฤษและตัวเลข";
+        }
+        if (password.equalsIgnoreCase(username)) return "รหัสผ่านต้องไม่เหมือนชื่อผู้ใช้";
+        return null;
+    }
+
+    private void ensure(String username, String role, String password, boolean mustChange) {
+        if (accounts.findByUsernameIgnoreCase(username).isEmpty()) {
+            accounts.save(newAccount(username, role, password, mustChange));
+        }
+    }
+
+    private UserAccount newAccount(String username, String role, String password, boolean mustChange) {
+        UserAccount a = new UserAccount();
+        a.setUsername(username);
+        a.setRole(role);
+        a.setPasswordHash(passwordEncoder.encode(password));
+        a.setMustChangePassword(mustChange);
+        return a;
+    }
+}

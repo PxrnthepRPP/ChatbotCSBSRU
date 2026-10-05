@@ -1,0 +1,14 @@
+# ไม่ส่งไฟล์เหล่านี้เข้า Docker build context
+# (.env ห้ามติดเข้าไปใน image — ค่าจะถูกส่งตอนรันผ่าน env_file แทน)
+.env
+.env.*
+!.env.example
+.git
+.vscode
+.idea
+target
+assets
+css
+js
+index.html
+*.md

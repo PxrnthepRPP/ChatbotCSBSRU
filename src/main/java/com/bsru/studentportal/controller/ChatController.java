@@ -2,7 +2,11 @@ package com.bsru.studentportal.controller;
 
 import com.bsru.studentportal.dto.ChatRequest;
 import com.bsru.studentportal.dto.ChatResponse;
+import com.bsru.studentportal.security.CurrentUser;
+import com.bsru.studentportal.service.AdvisorTools;
 import com.bsru.studentportal.service.ChatbotService;
+import com.bsru.studentportal.service.StudentRecordTools;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,7 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatbotService chatbotService;
+    private final ChatMemoryStore chatMemoryStore;
 
     @PostMapping("/chat")
     public ResponseEntity<?> chat(
@@ -29,14 +34,12 @@ public class ChatController {
         }
 
         String userMessage = request.getMessage().trim();
-        String sessionId = (authentication != null && authentication.getName() != null)
-                ? authentication.getName()
-                : (request.getSessionId() != null ? request.getSessionId() : "guest-session");
+        String sessionId = resolveSessionId(request, authentication);
 
         log.info("Incoming chat request from sessionId: {}, message: {}", sessionId, userMessage);
 
         try {
-            String aiReply = chatbotService.chat(sessionId, userMessage);
+            String aiReply = askWithFreshMemoryOnError(sessionId, userMessage);
             return ResponseEntity.ok(ChatResponse.builder()
                     .reply(aiReply)
                     .sessionId(sessionId)
@@ -51,6 +54,41 @@ public class ChatController {
                     .sessionId(sessionId)
                     .build());
         }
+    }
+
+    /**
+     * A failed call or the memory window evicting a user turn can leave a tool call without the
+     * turn Gemini expects before it, and then every later message in that session fails with
+     * 400 INVALID_ARGUMENT. Clear that session's history and try once more before falling back.
+     */
+    private String askWithFreshMemoryOnError(String sessionId, String userMessage) {
+        try {
+            return chatbotService.chat(sessionId, userMessage);
+        } catch (Exception e) {
+            // Only a broken history is fixed by clearing it; retrying a 429 (quota) or 503 just burns more quota
+            if (e.getMessage() == null || !e.getMessage().contains("INVALID_ARGUMENT")) {
+                throw e;
+            }
+            log.warn("Gemini call failed for sessionId {} ({}), retrying with cleared chat history", sessionId, e.getMessage());
+            chatMemoryStore.deleteMessages(sessionId);
+            return chatbotService.chat(sessionId, userMessage);
+        }
+    }
+
+    /**
+     * Builds the chat memory id. StudentRecordTools trusts the "student:" prefix to decide whose
+     * records to read, so it is only ever derived from the verified JWT; guests get a "guest:" id
+     * no matter what sessionId they send.
+     */
+    private String resolveSessionId(ChatRequest request, Authentication authentication) {
+        if (!CurrentUser.isLoggedIn(authentication)) {
+            String guestId = request.getSessionId() != null ? request.getSessionId() : "guest-session";
+            return "guest:" + guestId;
+        }
+        return CurrentUser.studentId(authentication)
+                .map(id -> StudentRecordTools.STUDENT_MEMORY_PREFIX + id)
+                .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id))
+                .orElse("staff:" + authentication.getName());
     }
 
     private String generateFallbackResponse(String query) {
