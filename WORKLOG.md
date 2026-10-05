@@ -6,6 +6,17 @@ Branch ปัจจุบัน: `feat/chatbot-student-grades`
 
 ---
 
+## 2026-10-05 — รอบที่ 16: Commit, push และ Pull Request (clone แล้วรันได้ทันที)
+
+- Commit `593a675` (งานรอบ 1–15) + `2aa8a2e` (รันได้โดยไม่มี `.env`) push ขึ้น branch `feat/chatbot-student-grades`
+- **Pull Request #2** → `main`: https://github.com/PxrnthepRPP/ChatbotCSBSRU/pull/2
+- `docker-compose.yml`: `env_file` เป็น `required: false` → clone แล้ว `docker compose up -d --build` ได้เลย (แชทบอทตอบแบบสำรองถ้าไม่มี key)
+- `README.md`: เพิ่มหัวข้อ "Clone แล้วรันได้ทันที (สำหรับเพื่อนในทีม)"
+- **ไม่ได้ใส่ `.env` / API key จริงลง repo** (ดูเหตุผลในข้อความตอบผู้ใช้): เพื่อนใส่ key ของตัวเองหรือขอทางแชทส่วนตัว
+- ทดสอบ: clone ลงโฟลเดอร์ใหม่ที่ไม่มี `.env` → build/seed สำเร็จ (นักศึกษา 42, อาจารย์ 7, ใบตรวจจบ 5, D2 19), login 3 role, ทุกหน้าไม่มี JS error → ลบชุดทดสอบ และเปิดชุดเดิม (ข้อมูลเดิมครบ) กลับมาแล้ว
+
+---
+
 ## 2026-10-05 — รอบที่ 15: นำข้อมูลตัวอย่างชุดเก่า (รุ่น 61–66) กลับมาเป็น "ข้อมูลจำลอง"
 
 ### ที่มา
