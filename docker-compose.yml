@@ -23,8 +23,10 @@ services:
     container_name: bsru_backend
     restart: unless-stopped
     # อ่าน GEMINI_API_KEY, JWT_SECRET ฯลฯ จากไฟล์ .env (ไม่ถูก commit ขึ้น Git)
+    # ไม่บังคับ: clone แล้วรันได้เลยโดยไม่มี .env (แชทบอทจะตอบแบบสำรองจนกว่าจะใส่ GEMINI_API_KEY)
     env_file:
-      - .env
+      - path: .env
+        required: false
     # ค่าด้านล่างทับค่าใน .env เพราะใน Docker ต้องเรียกฐานข้อมูลผ่านชื่อ service ไม่ใช่ localhost
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/bsru_student_portal

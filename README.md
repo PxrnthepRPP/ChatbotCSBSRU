@@ -61,6 +61,28 @@
 
 ---
 
+## 🚀 Clone แล้วรันได้ทันที (สำหรับเพื่อนในทีม)
+
+ต้องมีแค่ **Git** และ **Docker Desktop** (เปิดไว้ก่อน) ไม่ต้องติดตั้ง Java / XAMPP / PostgreSQL
+
+```powershell
+git clone https://github.com/PxrnthepRPP/ChatbotCSBSRU.git
+cd ChatbotCSBSRU
+git checkout feat/chatbot-student-grades   # ถ้ายังไม่ได้รวมเข้า main
+docker compose up -d --build
+```
+ครั้งแรกใช้เวลาหลายนาที (ดาวน์โหลด image + build) จากนั้นเปิด **http://localhost:3000** แล้วกดป้าย ADMIN / ADVISOR / STUDENT ในหน้า login เพื่อกรอกบัญชีทดลอง (รหัสผ่าน `password`)
+
+- ระบบสร้างฐานข้อมูลและข้อมูลตัวอย่างให้เองทั้งหมด (นักศึกษา อาจารย์ ตารางเรียน ใบตรวจจบ ข้อมูลจำลองรุ่น 61–66)
+- **ไม่ต้องมีไฟล์ `.env` ก็รันได้** แต่แชทบอท AI จะตอบแบบสำรอง (ไม่ได้ดึงข้อมูลจริง) จนกว่าจะใส่ Gemini API key:
+  1. `copy .env.example .env`
+  2. ใส่ `GEMINI_API_KEY=...` (ขอฟรีที่ [Google AI Studio](https://aistudio.google.com/apikey) หรือขอจากเจ้าของโปรเจกต์ทางแชทส่วนตัว — **ห้าม commit ไฟล์ `.env`**)
+  3. `docker compose up -d backend`
+- พอร์ตที่ใช้: 3000 (เว็บ), 8080 (backend), 5432 (ฐานข้อมูล) — ถ้ามีโปรแกรมอื่นใช้อยู่ต้องปิดก่อน
+- หยุดระบบ: `docker compose down` · ล้างฐานข้อมูลเริ่มใหม่: `docker compose down -v`
+
+---
+
 ## ⚡ เริ่มต้นใช้งานด่วน (Quick Start)
 
 ### 1. ตั้งค่า Environment Variables
