@@ -18,4 +18,6 @@ public class LoginResponse {
     private String displayName;
     private String userId;
     private long expiresIn;
+    /** The account uses a first / reset password that must be changed now */
+    private boolean mustChangePassword;
 }

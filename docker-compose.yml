@@ -18,6 +18,41 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build: .
+    container_name: bsru_backend
+    restart: unless-stopped
+    # อ่าน GEMINI_API_KEY, JWT_SECRET ฯลฯ จากไฟล์ .env (ไม่ถูก commit ขึ้น Git)
+    env_file:
+      - .env
+    # ค่าด้านล่างทับค่าใน .env เพราะใน Docker ต้องเรียกฐานข้อมูลผ่านชื่อ service ไม่ใช่ localhost
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/bsru_student_portal
+      PGVECTOR_HOST: database
+      PGVECTOR_PORT: "5432"
+      SERVER_PORT: "8080"
+      # ช่วงเปิด/ปิดลงทะเบียนใช้เวลาไทย (ค่าเริ่มต้นของ container คือ UTC)
+      TZ: Asia/Bangkok
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    image: nginx:alpine
+    container_name: bsru_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./css:/usr/share/nginx/html/css:ro
+      - ./js:/usr/share/nginx/html/js:ro
+      - ./assets:/usr/share/nginx/html/assets:ro
+    depends_on:
+      - backend
+
 volumes:
   pg_data:
     driver: local

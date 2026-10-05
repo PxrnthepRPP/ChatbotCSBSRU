@@ -18,6 +18,11 @@ import { loadComponentCSS } from '../css-loader.js';
 
 let _chatbotInitialized = false;
 
+/** Open the chatbot and send a question, e.g. from the advisor's "ให้ AI วิเคราะห์" buttons */
+export function askChatbot(question) {
+    window.dispatchEvent(new CustomEvent('bsru:ask-chatbot', { detail: question }));
+}
+
 export function initChatbot() {
     if (_chatbotInitialized) return;
     _chatbotInitialized = true;
@@ -187,6 +192,14 @@ export function initChatbot() {
         });
     }
 
+    // Other pages can open the chatbot with a question (see askChatbot below)
+    window.addEventListener('bsru:ask-chatbot', (e) => {
+        if (!chatbotOpen) toggleChatbot();
+        cwInput.value = e.detail;
+        cwSendBtn.disabled = false;
+        handleCwSend();
+    });
+
     cwSendBtn.addEventListener('click', handleCwSend);
     cwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleCwSend(); } });
     cwInput.addEventListener('input', () => { cwSendBtn.disabled = !cwInput.value.trim() || cwWaiting; });
@@ -247,7 +260,7 @@ export function initChatbot() {
             const data = await fetchAPI('/chat', 'POST', {
                 message: text,
                 sessionId: state.user?.username || 'student_guest',
-            }, 30000); // AI replies that look up grades take longer than the default 2.5s timeout
+            }, 90000); // Gemini thinks before answering and may call several tools, so allow up to 90s
 
             console.log('✨ [Chatbot] Received AI Response:', data);
             reply = data.reply || data.message || 'ขออภัยครับ ไม่พบข้อมูลตอบกลับจากระบบ';

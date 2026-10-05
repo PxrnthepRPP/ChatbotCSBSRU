@@ -94,15 +94,25 @@ http://localhost/ChatbotCSBSRU/
 ```
 > ⚠️ **คำเตือนสำคัญ:** ห้ามดับเบิลคลิกเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้โมดูล JavaScript ES6 ซึ่งเบราว์เซอร์จะบล็อกตามนโยบายความปลอดภัย CORS ต้องเข้าผ่าน `http://localhost/ChatbotCSBSRU/` บน XAMPP เท่านั้น
 
+### ทางเลือก: รันทั้งระบบใน Docker (ไม่ต้องใช้ XAMPP / Java บนเครื่อง)
+ใส่ `GEMINI_API_KEY` ในไฟล์ `.env` ตามขั้นที่ 1 แล้วรัน:
+```powershell
+docker compose up -d --build
+```
+- เว็บไซต์: `http://localhost:3000/`
+- Backend API: `http://localhost:8080/api`
+
+หลังแก้ค่าใน `.env` ให้รัน `docker compose up -d backend` เพื่อให้ backend อ่านค่าใหม่
+
 ---
 
 ## 🔑 ข้อมูลบัญชีสำหรับทดสอบระบบ (Test Accounts)
 
 | บทบาท (Role) | Username สำหรับเข้าสู่ระบบ | รหัสผ่าน (Password) | สิทธิ์ระบบ (JWT Role) |
 |---|---|---|---|
-| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `1234` | `ROLE_STUDENT` |
-| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `1234` | `ROLE_ADVISOR` |
-| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `1234` | `ROLE_ADMIN` |
+| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `password` | `ROLE_STUDENT` |
+| 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `password` | `ROLE_ADVISOR` |
+| 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `password` | `ROLE_ADMIN` |
 
 ---
 

@@ -317,14 +317,69 @@ function updateTopbarAvatar(avatarUrl) {
    ============================================================ */
 export function initStudentDashboard(studentId) {
     const student = getStudentFullData(studentId);
+    // A different student (re-login / impersonation) must not see the previous student's audit
+    graduationStudentId = studentId;
+    graduationAudit = MOCK_GRADUATION_AUDIT;
+    graduationAuditLoadedFor = null;
     updateTopbarAvatar(student.avatar);
     renderBibliography(student);
-    renderTimetable();
+    renderTimetable(studentId);
     renderFinance();
-    renderGrades(student);
+    renderGrades(student, studentId);
     renderGraduation(student);
     renderActivity();
     renderPetitions(student);
+    loadProfileFromDb(student, studentId);
+}
+
+/**
+ * Replace the offline sample profile with the student's record in the database, so the profile page,
+ * the advisor's view and the chatbot show the same data. The avatar stays in this browser.
+ */
+async function loadProfileFromDb(student, studentId) {
+    let db, audit, timetable;
+    try {
+        [db, audit, timetable] = await Promise.all([
+            fetchAPI(`/students/${encodeURIComponent(studentId)}`),
+            fetchAPI(`/students/${encodeURIComponent(studentId)}/graduation-audit`).catch(() => null),
+            fetchAPI(`/students/${encodeURIComponent(studentId)}/timetable`).catch(() => null),
+        ]);
+    } catch (err) {
+        console.warn('[Profile] Backend unavailable, showing sample profile:', err.message);
+        return;
+    }
+    applyDbProfile(student, db, audit, timetable);
+    renderBibliography(student);
+    renderGraduation(student);
+}
+
+function applyDbProfile(target, db, audit, timetable) {
+    const term = (timetable || []).find(t => t.registration) || (timetable || [])[0];
+    Object.assign(target, {
+        fromDb: true,
+        studentId: db.studentId,
+        nameTh: db.nameTh,
+        nameEn: db.nameEn,
+        year: db.year,
+        status: db.status,
+        gpa: db.gpa ?? target.gpa,
+        advisor: db.advisor?.nameTh || '-',
+        faculty: db.faculty || target.faculty,
+        department: db.department || target.department,
+        admitYear: db.admissionYear || target.admitYear,
+        email: db.email || '-',
+        phone: db.phone || '-',
+        birthDate: db.birthDate ? isoToThaiDate(db.birthDate) : '-',
+        religion: db.religion || '-',
+        address: db.address || '-',
+        careerPath: db.careerPath || '',
+        employmentStatus: db.employmentStatus || '',
+        companyName: db.companyName || '',
+        salaryRange: db.salaryRange || '',
+        credits: audit?.summary?.totalEarnedCredits ?? target.credits,
+        currentCourses: term ? term.sessions.length : target.currentCourses,
+    });
+    return target;
 }
 
 /* ============================================================
@@ -523,7 +578,7 @@ function renderBibliography(s) {
             <div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value">${s.gpa.toFixed(2)}</div><div class="stat-label">GPA สะสม</div></div></div>
             <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${s.credits}</div><div class="stat-label">หน่วยกิตสะสม</div></div></div>
             <div class="stat-card"><div class="stat-icon amber">📅</div><div><div class="stat-value">ปี ${s.year}</div><div class="stat-label">ชั้นปีปัจจุบัน</div></div></div>
-            <div class="stat-card"><div class="stat-icon blue">📖</div><div><div class="stat-value">6</div><div class="stat-label">วิชาที่ลงเรียน</div></div></div>
+            <div class="stat-card"><div class="stat-icon blue">📖</div><div><div class="stat-value">${s.currentCourses ?? 6}</div><div class="stat-label">วิชาที่ลงเรียน</div></div></div>
         </div>`;
 
         document.getElementById('bioEditBtn').addEventListener('click', renderEditMode);
@@ -592,7 +647,7 @@ function renderBibliography(s) {
             </div>
 
             <!-- Profile Picture Section inside Edit Form -->
-            <div style="display:flex;gap:16px;align-items:center;background:#f8fafc;padding:14px 18px;border-radius:var(--radius-md);border:1px solid var(--g-200);margin-bottom:20px;flex-wrap:wrap">
+            <div style="display:flex;gap:16px;align-items:center;background:var(--g-50);padding:14px 18px;border-radius:var(--radius-md);border:1px solid var(--g-200);margin-bottom:20px;flex-wrap:wrap">
                 <div class="profile-avatar-wrap" style="width:76px;height:76px;border-radius:50%" id="editFormAvatarWrap">
                     ${avatarHTML}
                 </div>
@@ -737,7 +792,7 @@ function renderBibliography(s) {
         });
 
         document.getElementById('bioCancelBtn').addEventListener('click', renderViewMode);
-        document.getElementById('bioSaveBtn').addEventListener('click', () => {
+        document.getElementById('bioSaveBtn').addEventListener('click', async () => {
             const elNameTh = document.getElementById('bioNameTh');
             const elNameEn = document.getElementById('bioNameEn');
             const elEmail = document.getElementById('bioEmail');
@@ -800,6 +855,21 @@ function renderBibliography(s) {
             let formattedBirthDate = s.birthDate;
             if (birthDateISO) {
                 formattedBirthDate = isoToThaiDate(birthDateISO);
+            }
+
+            if (s.fromDb) {
+                try {
+                    const saved = await fetchAPI(`/students/${encodeURIComponent(s.studentId)}/profile`, 'PUT', {
+                        nameTh, nameEn, email, phone, birthDate: birthDateISO || null, religion, address,
+                    }, 10000);
+                    applyDbProfile(s, saved, { summary: { totalEarnedCredits: s.credits } }, null);
+                } catch (err) {
+                    showPetitionToast('error', esc(apiErrorMessage(err)));
+                    return;
+                }
+                showPetitionToast('success', 'บันทึกข้อมูลส่วนตัวลงฐานข้อมูลเรียบร้อยแล้ว ✅');
+                renderViewMode();
+                return;
             }
 
             // Update base data in pool
@@ -908,7 +978,7 @@ function buildTimetableDesktopHTML(schedule, showDelete) {
 
         html += `<div class="tt-class-card ${color}" style="grid-column:${colStart}; grid-row:${rowStart}/${rowEnd};position:relative" onmouseenter="this.querySelector('.tt-delete-course')&&(this.querySelector('.tt-delete-course').style.opacity='1')" onmouseleave="this.querySelector('.tt-delete-course')&&(this.querySelector('.tt-delete-course').style.opacity='0')">
             ${deleteBtn}
-            <span class="tt-class-code">${esc(e.subjectCode)}</span>
+            <span class="tt-class-code">${esc(e.subjectCode)}</span>${e.status === 'PENDING' ? '<span class="tt-pending-badge">รอยืนยัน</span>' : ''}
             <span class="tt-class-name">${esc(e.subjectName)}</span>
             <div class="tt-class-meta">
                 <div class="tt-class-meta-item">
@@ -981,7 +1051,7 @@ function buildTimetableAgendaHTML(schedule, colorMap, showDelete) {
                     <span class="tt-agenda-time-end">${esc(e.endTime)}</span>
                 </div>
                 <div class="tt-agenda-info">
-                    <span class="tt-agenda-code" style="background:${codeBg}">${esc(e.subjectCode)}</span>
+                    <span class="tt-agenda-code" style="background:${codeBg}">${esc(e.subjectCode)}</span>${e.status === 'PENDING' ? '<span class="tt-pending-badge">รอยืนยัน</span>' : ''}
                     <div class="tt-agenda-name">${esc(e.subjectName)}</div>
                     <div class="tt-agenda-details">
                         <span class="tt-agenda-detail">
@@ -1006,10 +1076,10 @@ function buildTimetableAgendaHTML(schedule, colorMap, showDelete) {
 }
 
 /** Build exam schedule cards — filtered by student's enrolled courses */
-function buildExamHTML(currentSchedule) {
+function buildExamHTML(currentSchedule, semesters = MOCK_TIMETABLE_SEMESTERS) {
     // Get all subject codes the student is enrolled in across all semesters
     const enrolledCodes = new Set();
-    MOCK_TIMETABLE_SEMESTERS.forEach(sem => {
+    semesters.forEach(sem => {
         sem.schedule.forEach(e => enrolledCodes.add(e.subjectCode));
     });
     // Also add from the current schedule directly
@@ -1055,36 +1125,125 @@ function buildExamHTML(currentSchedule) {
 }
 
 /** Build the semester <select> options for timetable */
-function buildTimetableSemesterOptions(selectedIdx) {
-    return MOCK_TIMETABLE_SEMESTERS.map((sem, i) =>
+function buildTimetableSemesterOptions(semesters, selectedIdx) {
+    return semesters.map((sem, i) =>
         `<option value="${i}"${i === selectedIdx ? ' selected' : ''}>${esc(sem.label)}</option>`
     ).join('');
 }
 
-/** Build time <select> options from 07:00 to 20:00 */
-function buildTimeOptions(selectedTime) {
-    let options = '';
-    for (let h = 7; h <= 20; h++) {
-        const t = String(h).padStart(2, '0') + ':00';
-        options += `<option value="${t}"${t === selectedTime ? ' selected' : ''}>${t}</option>`;
+/** Pull the backend message out of a fetchAPI error ('HTTP 404 (...): {"error":"..."}') */
+function apiErrorMessage(err) {
+    const match = /\{.*\}$/s.exec(err.message || '');
+    if (match) {
+        try { return JSON.parse(match[0]).error || err.message; } catch (e) { /* not JSON */ }
     }
-    return options;
+    return err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
 }
 
-/** Build day <select> options */
-function buildDayOptions() {
-    const labels = ['จันทร์ (Mon)', 'อังคาร (Tue)', 'พุธ (Wed)', 'พฤหัสบดี (Thu)', 'ศุกร์ (Fri)', 'เสาร์ (Sat)', 'อาทิตย์ (Sun)'];
-    return labels.map((label, i) =>
-        `<option value="${i}">${label}</option>`
-    ).join('');
+const THAI_DATE_TIME = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+/** Banner telling the student whether they can add or drop courses in this semester */
+function buildRegistrationBanner(sem) {
+    if (sem.offline) {
+        return `<div class="tt-reg-banner closed">โหมดออฟไลน์: แสดงตารางเรียนตัวอย่าง ยังเพิ่มหรือลบวิชาไม่ได้</div>`;
+    }
+    const reg = sem.registration;
+    if (!reg) {
+        return `<div class="tt-reg-banner closed">🔒 ภาคเรียนนี้ไม่ได้เปิดลงทะเบียน การเพิ่มหรือลบวิชาทำได้โดยผู้ดูแลระบบหรืออาจารย์ผู้สอน</div>`;
+    }
+    const period = `${THAI_DATE_TIME.format(new Date(reg.opensAt))} – ${THAI_DATE_TIME.format(new Date(reg.closesAt))}`;
+    if (reg.open) {
+        return `<div class="tt-reg-banner open">🟢 เปิดลงทะเบียนอยู่ (${period}) เพิ่มหรือลบวิชาได้</div>`;
+    }
+    return `<div class="tt-reg-banner closed">🔒 ปิดลงทะเบียน${reg.forceClosed ? ' (ผู้ดูแลระบบปิดไว้)' : ''} · ช่วงลงทะเบียน ${period}</div>`;
 }
 
-function renderTimetable() {
+/** Convert GET /students/{id}/timetable + GET /registration-periods into the semesters this page renders */
+function timetableFromApi(terms, periods) {
+    const key = (year, term) => `${year}/${term}`;
+    const semesters = terms.map(t => ({
+        academicYear: t.academicYear,
+        term: t.term,
+        label: t.label,
+        registration: t.registration,
+        conflicts: t.conflicts,
+        totalCredits: t.totalCredits,
+        schedule: t.sessions.map(s => ({
+            day: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            subjectCode: s.courseCode,
+            subjectName: s.courseName,
+            teacherName: s.instructorName || '-',
+            room: s.room || '-',
+            sectionId: s.sectionId,
+            sectionNo: s.sectionNo,
+            credits: s.credits,
+            status: s.enrollmentStatus,
+        })),
+        rejected: t.rejected || [],
+    }));
+    // A semester open for registration needs a tab even before the student has any course in it
+    const known = new Set(semesters.map(s => key(s.academicYear, s.term)));
+    periods.filter(p => p.open && !known.has(key(p.academicYear, p.term))).forEach(p => {
+        semesters.push({
+            academicYear: p.academicYear, term: p.term, label: `Term ${p.term}/${p.academicYear}`,
+            registration: p, conflicts: [], totalCredits: 0, schedule: [], rejected: [],
+        });
+    });
+    return semesters.sort((a, b) => b.academicYear - a.academicYear || b.term - a.term);
+}
+
+function renderTimetable(studentId) {
     const container = document.getElementById('timetableContent');
+    // Show the offline sample first, then replace it with the database timetable when the backend answers
+    let semesters = MOCK_TIMETABLE_SEMESTERS.map(s => ({ ...s, offline: true }));
     let currentIdx = 0;
+    let studentSection = null;   // Sec D1 / D2, set by the admin
+    let cartOpen = false;
+    const carts = {};            // "year/term" -> course codes picked but not sent yet
+
+    async function load(keepSelection) {
+        const selected = semesters[currentIdx];
+        try {
+            const [terms, periods, profile] = await Promise.all([
+                fetchAPI(`/students/${encodeURIComponent(studentId)}/timetable`),
+                fetchAPI('/registration-periods'),
+                fetchAPI(`/students/${encodeURIComponent(studentId)}`).catch(() => null),
+            ]);
+            semesters = timetableFromApi(terms, periods);
+            studentSection = profile?.studentSection || null;
+            if (keepSelection && selected) {
+                currentIdx = Math.max(0, semesters.findIndex(s =>
+                    s.academicYear === selected.academicYear && s.term === selected.term));
+            } else {
+                // Start on the semester open for registration, else one that has a registration period, else the newest
+                const openIdx = semesters.findIndex(s => s.registration?.open);
+                currentIdx = Math.max(0, openIdx >= 0 ? openIdx : semesters.findIndex(s => s.registration));
+            }
+        } catch (err) {
+            console.warn('[Timetable] Backend unavailable, showing sample timetable:', err.message);
+        }
+        render(currentIdx);
+    }
 
     function render(idx) {
-        const sem = MOCK_TIMETABLE_SEMESTERS[idx];
+        if (semesters.length === 0) {
+            container.innerHTML = `<div class="card"><div class="card-title">ตารางเรียน Study Timetable</div><p>ยังไม่มีรายวิชาในตารางเรียน</p></div>`;
+            return;
+        }
+        const sem = semesters[idx];
+        const canEdit = !sem.offline && !!sem.registration?.open;
+        const credits = sem.totalCredits ?? sem.schedule.reduce((a, e) => a + (e.credits || 0), 0);
+        const conflictBox = sem.conflicts?.length
+            ? `<div class="tt-reg-banner warn">⚠️ มีวิชาเวลาเรียนชนกัน: ${esc(sem.conflicts.join(', '))}</div>`
+            : '';
+        const rejectedBox = (sem.rejected || []).map(r => `
+            <div class="tt-reg-banner warn" style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+                <span>❌ คำขอลงทะเบียน ${esc(r.courseCode)} ${esc(r.courseName)} (Sec ${esc(r.sectionNo)}) ไม่ได้รับการยืนยัน${r.note ? `: ${esc(r.note)}` : ''}</span>
+                <button class="btn btn-sm btn-ghost tt-dismiss-rejected" data-section-id="${r.sectionId}">รับทราบ</button>
+            </div>`).join('');
+
         container.innerHTML = `
             <div class="card">
                 <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1092,91 +1251,41 @@ function renderTimetable() {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:var(--brand-500)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         ตารางเรียน Study Timetable
                     </span>
-                    <button class="btn btn-sm btn-orange" id="ttToggleAddCourse" style="display:inline-flex;align-items:center;gap:6px">
+                    ${canEdit ? `<button class="btn btn-sm btn-orange" id="ttToggleAddCourse" style="display:inline-flex;align-items:center;gap:6px">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        เพิ่มวิชาเรียน
-                    </button>
+                        ลงทะเบียนเรียน
+                    </button>` : ''}
                 </div>
 
-                <!-- Add Course Form (hidden by default) -->
-                <div id="ttAddCourseForm" style="display:none" class="app-form-panel">
+                ${buildRegistrationBanner(sem)}
+                ${conflictBox}
+                ${rejectedBox}
+
+                ${canEdit ? `
+                <!-- Registration cart: pick several courses, check them, then send them together -->
+                <div id="ttCartPanel" style="display:${cartOpen ? 'block' : 'none'}" class="app-form-panel">
                     <div class="app-form-header">
                         <div>
                             <div class="app-form-title">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                เพิ่มรายวิชาเรียน (Add New Course)
+                                ลงทะเบียนเรียน (${esc(sem.label)})${studentSection ? ` · Sec ${esc(studentSection)}` : ''}
                             </div>
-                            <div class="app-form-subtitle">กรอกรายละเอียดวิชาเรียนเพื่อจัดตารางเรียนให้อัตโนมัติ</div>
+                            <div class="app-form-subtitle">พิมพ์รหัสวิชาแล้วกด "เพิ่มลงรายการ" ได้หลายวิชา ระบบเลือกกลุ่มเรียนตาม Sec ของคุณ และตรวจที่นั่งกับเวลาชนให้ เมื่อครบแล้วกด "ยืนยันลงทะเบียน" คำขอจะรอผู้ดูแลระบบยืนยัน</div>
                         </div>
                         <button type="button" class="btn btn-sm btn-ghost" id="ttCloseFormBtn" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                     </div>
 
-                    <div class="app-form-grid">
-                        <div class="app-form-group">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                                รหัสวิชา <span class="req">*</span>
-                            </label>
-                            <input type="text" id="ttNewCode" class="app-input" placeholder="เช่น SC17351 / CS3101" required>
-                        </div>
-                        
-                        <div class="app-form-group" style="grid-column: span 2;">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                                ชื่อวิชา <span class="req">*</span>
-                            </label>
-                            <input type="text" id="ttNewName" class="app-input" placeholder="เช่น Web Development / Object-Oriented Programming" required>
-                        </div>
-
-                        <div class="app-form-group">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                วันเรียน <span class="req">*</span>
-                            </label>
-                            <select id="ttNewDay" class="app-select">${buildDayOptions()}</select>
-                        </div>
-
-                        <div class="app-form-group">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                เวลาเริ่ม <span class="req">*</span>
-                            </label>
-                            <select id="ttNewStartTime" class="app-select">${buildTimeOptions('09:00')}</select>
-                        </div>
-
-                        <div class="app-form-group">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 8"/></svg>
-                                เวลาสิ้นสุด <span class="req">*</span>
-                            </label>
-                            <select id="ttNewEndTime" class="app-select">${buildTimeOptions('12:00')}</select>
-                        </div>
-
-                        <div class="app-form-group">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                ห้องเรียน
-                            </label>
-                            <input type="text" id="ttNewRoom" class="app-input" placeholder="เช่น Room 6121 / CS-Lab2">
-                        </div>
-
-                        <div class="app-form-group" style="grid-column: span 2;">
-                            <label class="app-form-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                อาจารย์ผู้สอน
-                            </label>
-                            <input type="text" id="ttNewTeacher" class="app-input" placeholder="เช่น Dr. Somchai / ผศ.ดร.วิชัย เทคโนโลยี">
-                        </div>
+                    <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px">
+                        <input type="text" id="ttCartCode" class="app-input" placeholder="รหัสวิชา เช่น CS3401" style="max-width:220px">
+                        <button class="btn btn-sm btn-orange" id="ttCartAddBtn">เพิ่มลงรายการ</button>
                     </div>
+                    <div id="ttCartList" style="margin-top:12px"></div>
 
                     <div class="app-form-actions">
-                        <button class="app-btn-primary" id="ttSaveCourseBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            บันทึกวิชาเรียน
-                        </button>
-                        <button class="app-btn-ghost" id="ttCancelCourseBtn">ยกเลิก</button>
+                        <button class="app-btn-primary" id="ttCartSubmitBtn" disabled>ยืนยันลงทะเบียน</button>
+                        <button class="app-btn-ghost" id="ttCartClearBtn">ล้างรายการ</button>
                     </div>
-                </div>
+                </div>` : ''}
 
                 <div class="batch-filter-bar" style="margin-bottom:16px">
                     <label>
@@ -1184,17 +1293,17 @@ function renderTimetable() {
                         Semester
                     </label>
                     <select class="batch-select" id="timetableSemesterSelect">
-                        ${buildTimetableSemesterOptions(idx)}
+                        ${buildTimetableSemesterOptions(semesters, idx)}
                     </select>
-                    <span class="filter-result-count">Showing: <strong>${esc(sem.label)}</strong> · ${sem.schedule.length} วิชา</span>
+                    <span class="filter-result-count">Showing: <strong>${esc(sem.label)}</strong> · ${sem.schedule.length} วิชา${credits ? ` · ${credits} หน่วยกิต` : ''}</span>
                 </div>
                 <div id="timetableTableBody">
-                    ${buildTimetableDesktopHTML(sem.schedule, true)}
+                    ${buildTimetableDesktopHTML(sem.schedule, canEdit)}
                 </div>
             </div>
             <div class="card">
                 <div class="card-title">📝 ตารางสอบ Exam Schedule <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400">(อัปเดตอัตโนมัติจากอาจารย์ผู้สอน)</span></div>
-                ${buildExamHTML(sem.schedule)}
+                ${buildExamHTML(sem.schedule, semesters)}
             </div>`;
 
         // ── Event: Semester Select ──
@@ -1203,107 +1312,153 @@ function renderTimetable() {
             render(currentIdx);
         });
 
-        // ── Event: Toggle & Close Add Course Form ──
-        const closeAddCourseForm = () => {
-            const form = document.getElementById('ttAddCourseForm');
-            if (form) form.style.display = 'none';
-        };
+        // ── Event: Dismiss a rejected request (allowed even after registration closes) ──
+        document.querySelectorAll('.tt-dismiss-rejected').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await fetchAPI(`/students/${encodeURIComponent(studentId)}/enrollments/${btn.dataset.sectionId}`, 'DELETE', null, 8000);
+                    await load(true);
+                } catch (err) {
+                    showPetitionToast('error', esc(apiErrorMessage(err)));
+                }
+            });
+        });
+
+        if (!canEdit) return;
+
+        // ── Registration cart ──
+        const cartKey = `${sem.academicYear}/${sem.term}`;
+        const cart = carts[cartKey] || (carts[cartKey] = []);
+        const panel = document.getElementById('ttCartPanel');
+        const submitBtn = document.getElementById('ttCartSubmitBtn');
 
         document.getElementById('ttToggleAddCourse').addEventListener('click', () => {
-            const form = document.getElementById('ttAddCourseForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            cartOpen = panel.style.display === 'none';
+            panel.style.display = cartOpen ? 'block' : 'none';
+            if (cartOpen) document.getElementById('ttCartCode').focus();
         });
-        const closeBtn = document.getElementById('ttCloseFormBtn');
-        if (closeBtn) closeBtn.addEventListener('click', closeAddCourseForm);
-        const cancelBtn = document.getElementById('ttCancelCourseBtn');
-        if (cancelBtn) cancelBtn.addEventListener('click', closeAddCourseForm);
-
-        // Clear errors on input / change
-        ['ttNewCode', 'ttNewName', 'ttNewStartTime', 'ttNewEndTime', 'ttNewDay'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', () => el.classList.remove('is-invalid'));
-                el.addEventListener('change', () => el.classList.remove('is-invalid'));
-            }
+        document.getElementById('ttCloseFormBtn').addEventListener('click', () => {
+            cartOpen = false;
+            panel.style.display = 'none';
         });
 
-        // ── Event: Save New Course ──
-        document.getElementById('ttSaveCourseBtn').addEventListener('click', () => {
-            const elCode = document.getElementById('ttNewCode');
-            const elName = document.getElementById('ttNewName');
-            const elDay = document.getElementById('ttNewDay');
-            const elStart = document.getElementById('ttNewStartTime');
-            const elEnd = document.getElementById('ttNewEndTime');
-            const elRoom = document.getElementById('ttNewRoom');
-            const elTeacher = document.getElementById('ttNewTeacher');
-
-            const code = elCode.value.trim();
-            const name = elName.value.trim();
-            const day = parseInt(elDay.value, 10);
-            const startTime = elStart.value;
-            const endTime = elEnd.value;
-            const room = elRoom.value.trim() || '-';
-            const teacher = elTeacher.value.trim() || '-';
-
-            [elCode, elName, elStart, elEnd, elDay].forEach(el => el.classList.remove('is-invalid'));
-
-            if (!code || !name) {
-                if (!code) elCode.classList.add('is-invalid');
-                if (!name) elName.classList.add('is-invalid');
-                showPetitionToast('error', 'กรุณากรอกรหัสวิชาและชื่อวิชา');
+        /** Ask the backend about the whole cart and show seats, time clashes and other problems per course */
+        async function refreshCart() {
+            const list = document.getElementById('ttCartList');
+            if (!list) return;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'ยืนยันลงทะเบียน';
+            if (cart.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem">ยังไม่มีวิชาในรายการ</div>';
                 return;
             }
-            if (startTime >= endTime) {
-                elStart.classList.add('is-invalid');
-                elEnd.classList.add('is-invalid');
-                showPetitionToast('error', 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม');
+            let check;
+            try {
+                check = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration/check`, 'POST', {
+                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart,
+                }, 8000);
+            } catch (err) {
+                list.innerHTML = `<div class="tt-cart-problem">${esc(apiErrorMessage(err))}</div>`;
                 return;
             }
+            const rows = check.items.map((item, i) => {
+                const s = item.section;
+                const seats = !s ? '-' : item.seatsLeft === null ? 'ไม่จำกัด' : `เหลือ ${item.seatsLeft}`;
+                const state = item.problems.length
+                    ? item.problems.map(p => `<div class="tt-cart-problem">⚠️ ${esc(p)}</div>`).join('')
+                    : '<span class="badge badge-green">พร้อมลงทะเบียน</span>';
+                return `
+                    <tr>
+                        <td><span class="badge badge-blue">${esc(item.courseCode)}</span>${s ? `<div style="font-size:0.82rem">${esc(s.courseName)}</div>` : ''}</td>
+                        <td>${s ? esc(s.sectionNo) : '-'}</td>
+                        <td>${s ? `${esc(s.dayName)} ${esc(s.startTime)}–${esc(s.endTime)}` : '-'}</td>
+                        <td class="hide-mobile">${s ? s.credits : '-'}</td>
+                        <td>${seats}</td>
+                        <td>${state}</td>
+                        <td><button class="btn btn-sm btn-ghost tt-cart-remove" data-idx="${i}" title="เอาออกจากรายการ">✕</button></td>
+                    </tr>`;
+            }).join('');
+            list.innerHTML = `
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>วิชา</th><th>Sec</th><th>วัน-เวลา</th><th class="hide-mobile">หน่วยกิต</th><th>ที่นั่ง</th><th>ตรวจสอบ</th><th></th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <div style="font-size:0.85rem;margin-top:8px">รวม <strong>${check.items.length}</strong> วิชา · <strong>${check.totalCredits}</strong> หน่วยกิต</div>`;
+            list.querySelectorAll('.tt-cart-remove').forEach(btn => btn.addEventListener('click', () => {
+                cart.splice(parseInt(btn.dataset.idx, 10), 1);
+                refreshCart();
+            }));
+            submitBtn.disabled = !check.ok;
+            submitBtn.textContent = `ยืนยันลงทะเบียน (${check.items.length} วิชา)`;
+        }
 
-            // Overlap detection
-            const newStart = timeToSlot(startTime);
-            const newEnd = timeToSlot(endTime);
-            const overlap = sem.schedule.find(e => {
-                if (e.day !== day) return false;
-                const eStart = timeToSlot(e.startTime);
-                const eEnd = timeToSlot(e.endTime);
-                return newStart < eEnd && newEnd > eStart;
-            });
-            if (overlap) {
-                elDay.classList.add('is-invalid');
-                elStart.classList.add('is-invalid');
-                elEnd.classList.add('is-invalid');
-                showPetitionToast('error', `⚠️ เวลาซ้อนทับกับวิชา ${overlap.subjectCode} (${overlap.startTime}-${overlap.endTime})`);
+        const addToCart = () => {
+            const input = document.getElementById('ttCartCode');
+            const code = input.value.trim().toUpperCase();
+            if (!code) {
+                input.classList.add('is-invalid');
+                showPetitionToast('error', 'กรุณากรอกรหัสวิชา');
                 return;
             }
-
-            sem.schedule.push({
-                day,
-                startTime,
-                endTime,
-                subjectCode: code,
-                subjectName: name,
-                teacherName: teacher,
-                room,
-            });
-
-            showPetitionToast('success', `เพิ่มวิชา ${code} — ${name} สำเร็จ ✅`);
-            render(currentIdx);
+            if (cart.includes(code)) {
+                showPetitionToast('info', `${esc(code)} อยู่ในรายการแล้ว`);
+                return;
+            }
+            cart.push(code);
+            input.value = '';
+            input.focus();
+            refreshCart();
+        };
+        document.getElementById('ttCartAddBtn').addEventListener('click', addToCart);
+        document.getElementById('ttCartCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') addToCart(); });
+        document.getElementById('ttCartCode').addEventListener('input', (e) => e.target.classList.remove('is-invalid'));
+        document.getElementById('ttCartClearBtn').addEventListener('click', () => {
+            cart.splice(0, cart.length);
+            refreshCart();
         });
 
-        // ── Event: Delete Course from timetable ──
+        submitBtn.addEventListener('click', async () => {
+            submitBtn.disabled = true;
+            try {
+                const result = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration`, 'POST', {
+                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart,
+                }, 10000);
+                showPetitionToast('success', `ส่งคำขอลงทะเบียน ${result.items.length} วิชาแล้ว รอผู้ดูแลระบบยืนยัน ✅`);
+                cart.splice(0, cart.length);
+                cartOpen = false;
+                await load(true);
+            } catch (err) {
+                showPetitionToast('error', esc(apiErrorMessage(err)));
+                refreshCart();
+            }
+        });
+
+        refreshCart();
+
+        // ── Event: Drop a course ──
         document.querySelectorAll('.tt-delete-course').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const courseIdx = parseInt(btn.dataset.courseIdx, 10);
-                const removed = sem.schedule.splice(courseIdx, 1)[0];
-                showPetitionToast('success', `ลบวิชา ${removed.subjectCode} ออกจากตารางเรียนแล้ว`);
-                render(currentIdx);
+                const entry = sem.schedule[parseInt(btn.dataset.courseIdx, 10)];
+                const pending = entry.status === 'PENDING';
+                if (!confirm(pending
+                    ? `ยกเลิกคำขอลงทะเบียน ${entry.subjectCode} ${entry.subjectName}?`
+                    : `ถอนวิชา ${entry.subjectCode} ${entry.subjectName} ออกจากตารางเรียน?`)) return;
+                try {
+                    await fetchAPI(`/students/${encodeURIComponent(studentId)}/enrollments/${entry.sectionId}`, 'DELETE', null, 8000);
+                    showPetitionToast('success', esc(pending ? `ยกเลิกคำขอ ${entry.subjectCode} แล้ว` : `ถอนวิชา ${entry.subjectCode} ออกจากตารางเรียนแล้ว`));
+                    await load(true);
+                } catch (err) {
+                    showPetitionToast('error', apiErrorMessage(err));
+                }
             });
         });
     }
 
     render(currentIdx);
+    load(false);
 }
 
 /* ============================================================
@@ -1326,15 +1481,15 @@ function renderFinance() {
    ============================================================ */
 
 /** Build the semester <select> options for grades */
-function buildGradesSemesterOptions(selectedIdx) {
-    return MOCK_GRADES.semesters.map((sem, i) =>
+function buildGradesSemesterOptions(grades, selectedIdx) {
+    return grades.semesters.map((sem, i) =>
         `<option value="${i}"${i === selectedIdx ? ' selected' : ''}>${esc(sem.label)}</option>`
     ).join('');
 }
 
 /** Build the grades table body for a given semester index */
-function buildGradesBody(idx) {
-    const sem = MOCK_GRADES.semesters[idx];
+function buildGradesBody(grades, idx) {
+    const sem = grades.semesters[idx];
     const done = sem.courses.filter(c => c.point !== null);
     const tp = done.reduce((a, c) => a + c.point * c.credits, 0);
     const tc = done.reduce((a, c) => a + c.credits, 0);
@@ -1356,17 +1511,56 @@ function buildGradesBody(idx) {
         </div>`;
 }
 
-function renderGrades(student) {
+/** Cumulative GPA over every course that has a released grade */
+function cumulativeGpa(semesters) {
+    const done = semesters.flatMap(s => s.courses).filter(c => c.point !== null);
+    const credits = done.reduce((a, c) => a + c.credits, 0);
+    return credits > 0 ? done.reduce((a, c) => a + c.point * c.credits, 0) / credits : 0;
+}
+
+/** Convert GET /students/{id}/grades into the shape the grades table renders */
+function gradesFromApi(report) {
+    const semesters = report.semesters.map(sem => ({
+        label: sem.label,
+        courses: sem.courses.map(c => ({
+            code: c.code,
+            name: c.name,
+            credits: c.credits,
+            grade: c.grade ?? '-',
+            point: c.gradePoint ?? null,
+        })),
+    }));
+    // Credits earned = graded courses that were passed (an F earns nothing)
+    const earnedCredits = report.semesters.reduce((sum, sem) => sum + sem.courses
+        .filter(c => c.gradePoint != null && c.grade !== 'F').reduce((a, c) => a + c.credits, 0), 0);
+    return { semesters, gpa: report.gpa ?? 0, earnedCredits };
+}
+
+function renderGrades(student, studentId = student.studentId) {
     const container = document.getElementById('gradesContent');
     let currentIdx = 0; // default to most recent semester
+    // Show the offline sample first, then replace it with the database records when the backend answers
+    let grades = { semesters: MOCK_GRADES.semesters, gpa: cumulativeGpa(MOCK_GRADES.semesters) };
+
+    fetchAPI(`/students/${encodeURIComponent(studentId)}/grades`)
+        .then(report => {
+            grades = gradesFromApi(report);
+            currentIdx = 0;
+            render(currentIdx);
+        })
+        .catch(err => console.warn('[Grades] Backend unavailable, showing sample grades:', err.message));
 
     function render(idx) {
-        const sem = MOCK_GRADES.semesters[idx];
+        if (grades.semesters.length === 0) {
+            container.innerHTML = `<div class="card"><div class="card-title">📖 ผลการเรียนรายภาคเรียน (Studied Result)</div><p>ยังไม่มีข้อมูลผลการเรียนในระบบ</p></div>`;
+            return;
+        }
+        const sem = grades.semesters[idx];
         container.innerHTML = `
             <div class="stat-row">
-                <div class="stat-card"><div class="stat-icon purple">📊</div><div><div class="stat-value">${student.gpa.toFixed(2)}</div><div class="stat-label">GPA สะสม</div></div></div>
-                <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${student.credits}</div><div class="stat-label">หน่วยกิตสะสม</div></div></div>
-                <div class="stat-card"><div class="stat-icon amber">📋</div><div><div class="stat-value">${MOCK_GRADES.semesters.length}</div><div class="stat-label">ภาคเรียนทั้งหมด</div></div></div>
+                <div class="stat-card"><div class="stat-icon purple">📊</div><div><div class="stat-value">${grades.gpa.toFixed(2)}</div><div class="stat-label">GPA สะสม</div></div></div>
+                <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${grades.earnedCredits ?? student.credits}</div><div class="stat-label">หน่วยกิตสะสม</div></div></div>
+                <div class="stat-card"><div class="stat-icon amber">📋</div><div><div class="stat-value">${grades.semesters.length}</div><div class="stat-label">ภาคเรียนทั้งหมด</div></div></div>
             </div>
             <div class="card">
                 <div class="card-title">📖 ผลการเรียนรายภาคเรียน (Studied Result)</div>
@@ -1376,12 +1570,12 @@ function renderGrades(student) {
                         Semester
                     </label>
                     <select class="batch-select" id="gradesSemesterSelect">
-                        ${buildGradesSemesterOptions(idx)}
+                        ${buildGradesSemesterOptions(grades, idx)}
                     </select>
                     <span class="filter-result-count">Showing: <strong>${esc(sem.label)}</strong></span>
                 </div>
                 <div id="gradesTableBody">
-                    ${buildGradesBody(idx)}
+                    ${buildGradesBody(grades, idx)}
                 </div>
             </div>`;
 
@@ -1400,13 +1594,13 @@ function renderGrades(student) {
    ============================================================ */
 const MOCK_GRADUATION_AUDIT = {
     summary: {
-        totalRequiredCredits: 132,
-        totalEarnedCredits: 96,
-        currentGpa: 3.88,
+        totalRequiredCredits: 127,
+        totalEarnedCredits: 115,
+        currentGpa: 3.96,
         minGpa: 2.00,
         status: 'ยังไม่ผ่านเงื่อนไข',
-        passedCategories: 8,
-        totalCategories: 11,
+        passedCategories: 6,
+        totalCategories: 9,
         pendingRequirements: [
             '2.2.2 หมวดวิชาเฉพาะด้าน (เลือก) — ขาดอีก 6 หน่วยกิต (ผ่านแล้ว 15/21 CR)',
             '2.3 วิชาพื้นฐานวิชาชีพ — ขาดโครงงาน 2 (SC17402) และฝึกงาน (SC17411/12) ขาดอีก 6 หน่วยกิต',
@@ -1694,6 +1888,11 @@ const MOCK_GRADUATION_AUDIT = {
     ]
 };
 
+/** Offline sample until the backend answers; then the audit computed by GET /students/{id}/graduation-audit */
+let graduationAudit = MOCK_GRADUATION_AUDIT;   // null = the backend has no sheet for this student
+let graduationAuditLoadedFor = null;
+let graduationStudentId = null;                // the logged-in student (the profile mock may be another student)
+
 function buildAuditGroupHTML(secId, grp, hideHeader = false) {
     const passBadge = grp.status ? `<span class="audit-badge ${grp.status.toLowerCase()}">${grp.status}</span>` : '';
     const minCrText = grp.minCr !== null && grp.minCr !== undefined ? `MIN ${grp.minCr} CR` : '';
@@ -1720,7 +1919,7 @@ function buildAuditGroupHTML(secId, grp, hideHeader = false) {
     grp.courses.forEach(c => {
         const termsCells = [1, 2, 3, 4, 5, 6, 7, 8].map(termNum => {
             const val = c.terms && c.terms[termNum];
-            if (!val) return '<td class="term-col" style="color:#cbd5e1">-</td>';
+            if (!val) return '<td class="term-col" style="color:var(--g-300)">-</td>';
             if (val.startsWith('--')) {
                 return `<td class="term-col"><span class="audit-grade-wait">${esc(val)}</span></td>`;
             }
@@ -1734,10 +1933,10 @@ function buildAuditGroupHTML(secId, grp, hideHeader = false) {
                     <span class="audit-course-name">${esc(c.name)}</span>
                 </td>
                 <td class="cr-col" style="color:var(--g-600)">${esc(c.credits || '-')}</td>
-                <td class="num-col" style="${c.ca ? 'color:var(--g-800);font-weight:600' : 'color:#cbd5e1'}">${c.ca !== null && c.ca !== undefined ? c.ca : '-'}</td>
-                <td class="num-col" style="${c.pt ? 'color:var(--g-800);font-weight:600' : 'color:#cbd5e1'}">${c.pt !== null && c.pt !== undefined ? c.pt.toFixed(1) : '-'}</td>
-                <td class="num-col" style="${c.avg ? 'color:var(--g-800);font-weight:600' : 'color:#cbd5e1'}">${c.avg !== null && c.avg !== undefined ? c.avg : '-'}</td>
-                <td class="num-col" style="${c.max ? 'color:var(--g-800);font-weight:600' : 'color:#cbd5e1'}">${c.max !== null && c.max !== undefined ? c.max : '-'}</td>
+                <td class="num-col" style="${c.ca ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.ca !== null && c.ca !== undefined ? c.ca : '-'}</td>
+                <td class="num-col" style="${c.pt ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.pt !== null && c.pt !== undefined ? c.pt.toFixed(1) : '-'}</td>
+                <td class="num-col" style="${c.avg ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.avg !== null && c.avg !== undefined ? c.avg : '-'}</td>
+                <td class="num-col" style="${c.max ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.max !== null && c.max !== undefined ? c.max : '-'}</td>
                 ${termsCells}
             </tr>
         `;
@@ -1789,7 +1988,7 @@ function evaluateSection1_2(subsec) {
 function buildGraduationAuditTableRows() {
     let rowsHTML = '';
 
-    MOCK_GRADUATION_AUDIT.sections.forEach(sec => {
+    graduationAudit.sections.forEach(sec => {
         rowsHTML += `
             <tr class="audit-sec-hdr" data-sec="${sec.id}">
                 <td colspan="14" style="padding:9px 14px">
@@ -1857,11 +2056,15 @@ function buildGraduationAuditTableRows() {
                 } else if (subsec.subsections) {
                     subsec.subsections.forEach(subsub => {
                         rowsHTML += `
-                            <tr class="audit-subsec-hdr audit-row-${sec.id}" style="background:#fafafa !important">
+                            <tr class="audit-subsec-hdr audit-row-${sec.id}" style="background:var(--g-50) !important">
                                 <td colspan="6" style="padding-left:24px">
                                     <strong>${esc(subsub.title)}</strong>
                                 </td>
-                                <td colspan="8"></td>
+                                <td colspan="8" style="text-align:right;padding-right:12px">
+                                    ${subsub.status ? `<span class="audit-badge ${subsub.status.toLowerCase()}">${subsub.status}</span>` : ''}
+                                    ${subsub.minCr != null ? `<span class="audit-cr-pill">MIN ${subsub.minCr} CR</span>` : ''}
+                                    ${subsub.passCr != null ? `<span class="audit-cr-pill">PASS ${subsub.passCr} CR</span>` : ''}
+                                </td>
                             </tr>
                         `;
                         if (subsub.groups) {
@@ -1889,7 +2092,7 @@ function buildGraduationAuditTableRows() {
 let currentGradViewMode = 'table';
 
 function renderCourseCardItem(c) {
-    let termGradeHTML = '<span style="color:#94a3b8;font-size:0.75rem">○ ยังไม่ได้ลงทะเบียน</span>';
+    let termGradeHTML = '<span style="color:var(--g-400);font-size:0.75rem">○ ยังไม่ได้ลงทะเบียน</span>';
     if (c.terms) {
         for (const [termNum, gradeText] of Object.entries(c.terms)) {
             if (gradeText) {
@@ -1925,7 +2128,7 @@ function renderCourseCardItem(c) {
 
 function buildGraduationCardsHTML() {
     let html = '<div class="audit-cards-container">';
-    MOCK_GRADUATION_AUDIT.sections.forEach(sec => {
+    graduationAudit.sections.forEach(sec => {
         let secContent = '';
 
         if (sec.subsections) {
@@ -1994,7 +2197,7 @@ function buildGraduationCardsHTML() {
                 } else if (subsec.subsections) {
                     subsec.subsections.forEach(subsub => {
                         secContent += `
-                            <div class="audit-card-group-hdr" style="background:#f8fafc">
+                            <div class="audit-card-group-hdr" style="background:var(--g-50)">
                                 <span><strong>${esc(subsub.title)}</strong></span>
                             </div>
                         `;
@@ -2037,7 +2240,17 @@ function buildGraduationCardsHTML() {
 }
 
 function renderGraduation(student) {
-    const audit = MOCK_GRADUATION_AUDIT;
+    loadGraduationAudit(student);
+    if (graduationAudit === null) {
+        document.getElementById('graduationContent').innerHTML = `
+            <div class="card" style="text-align:center;padding:40px 20px">
+                <div style="font-size:2.4rem;margin-bottom:8px">📄</div>
+                <div class="card-title" style="justify-content:center">ยังไม่มีข้อมูลใบตรวจสอบจบ</div>
+                <p style="color:var(--text-muted);font-size:0.9rem">ผู้ดูแลระบบยังไม่ได้นำเข้าใบตรวจสอบจบของรหัส ${esc(graduationStudentId || '')} กรุณาติดต่อสำนักงานสาขา</p>
+            </div>`;
+        return;
+    }
+    const audit = graduationAudit;
     const s = audit.summary;
     const progressPct = Math.round((s.totalEarnedCredits / s.totalRequiredCredits) * 100);
 
@@ -2090,7 +2303,7 @@ function renderGraduation(student) {
             <div class="stat-card">
                 <div class="stat-icon green">📊</div>
                 <div>
-                    <div class="stat-value">${student.gpa.toFixed(2)}</div>
+                    <div class="stat-value">${Number(s.currentGpa).toFixed(2)}</div>
                     <div class="stat-label">GPA สะสม (เกณฑ์ขั้นต่ำ ≥ ${s.minGpa.toFixed(2)})</div>
                 </div>
             </div>
@@ -2188,7 +2401,7 @@ function renderGraduation(student) {
                 </div>
 
                 <!-- Table Legend Footnote -->
-                <div style="padding:14px 20px;background:#fafafa;border-top:1px solid #cbd5e1;font-size:0.75rem;color:#475569;line-height:1.6">
+                <div style="padding:14px 20px;background:var(--g-50);border-top:1px solid var(--g-300);font-size:0.75rem;color:var(--g-600);line-height:1.6">
                     <strong>หมายเหตุ (Legend):</strong><br>
                     <strong>CA</strong>: จำนวนหน่วยกิตที่ลงทะเบียน · <strong>CS</strong>: จำนวนหน่วยกิตที่ผ่าน · <strong>CW</strong>: จำนวนหน่วยกิตที่รอ · <strong>CG</strong>: จำนวนหน่วยกิตที่คิดเกรด · <strong>PT</strong>: คะแนนรวม · <strong>AVG</strong>: ค่าเฉลี่ย · <strong>MAX</strong>: เกรดสูงสุด
                 </div>
@@ -2254,7 +2467,7 @@ function renderGraduation(student) {
 
     // ── Expand / Collapse All Buttons for Both Views ──
     document.getElementById('auditExpandAllBtn')?.addEventListener('click', () => {
-        MOCK_GRADUATION_AUDIT.sections.forEach(sec => {
+        graduationAudit.sections.forEach(sec => {
             // Table view rows
             document.querySelectorAll(`.audit-row-${sec.id}`).forEach(r => r.style.display = '');
             const tableIcon = document.getElementById(`toggle-${sec.id}`);
@@ -2269,7 +2482,7 @@ function renderGraduation(student) {
     });
 
     document.getElementById('auditCollapseAllBtn')?.addEventListener('click', () => {
-        MOCK_GRADUATION_AUDIT.sections.forEach(sec => {
+        graduationAudit.sections.forEach(sec => {
             // Table view rows
             document.querySelectorAll(`.audit-row-${sec.id}`).forEach(r => r.style.display = 'none');
             const tableIcon = document.getElementById(`toggle-${sec.id}`);
@@ -2287,6 +2500,27 @@ function renderGraduation(student) {
     document.getElementById('btnUpdateCareerGrad')?.addEventListener('click', () => {
         openStudentCareerModal(student, () => renderGraduation(student));
     });
+
+}
+
+/** Replace the sample with the audit the backend computes for this student (the chatbot reads the same data) */
+function loadGraduationAudit(student) {
+    const studentId = graduationStudentId || student?.studentId;
+    if (!studentId || graduationAuditLoadedFor === studentId) return;
+    graduationAuditLoadedFor = studentId;
+    fetchAPI(`/students/${encodeURIComponent(studentId)}/graduation-audit`)
+        .then(audit => {
+            graduationAudit = audit;
+            renderGraduation(student);
+        })
+        .catch(err => {
+            if (/HTTP 404/.test(err.message || '')) {
+                graduationAudit = null;
+                renderGraduation(student);
+            } else {
+                console.warn('[Graduation] Backend unavailable, showing sample audit:', err.message);
+            }
+        });
 }
 
 

@@ -133,6 +133,27 @@ export const MOCK_PETITIONS_LOG = [
 
 let adminDashboardSelectedBatch = 'all';
 let adminLastSelectedBatch = 'all';
+/** true once the student list came from the database: add / edit / delete then go through the API */
+let studentsFromDb = false;
+
+/** GET /students row -> the shape this page uses */
+function toPoolStudent(s) {
+    return {
+        studentId: s.studentId,
+        nameTh: s.nameTh,
+        nameEn: s.nameEn,
+        year: s.year,
+        gpa: s.gpa ?? 0,
+        status: s.status,
+        careerPath: s.careerPath || '',
+        employmentStatus: s.employmentStatus || undefined,
+        companyName: s.companyName || undefined,
+        salaryRange: s.salaryRange || undefined,
+        studentSection: s.studentSection || null,
+        simulated: !!s.simulated,
+        advisor: (s.advisor && typeof s.advisor === 'object') ? s.advisor.id : (s.advisor || ''),
+    };
+}
 let adminSearchQuery = '';
 let adminPetitionsBatch = 'all';
 let adminPetitionsType = 'all';
@@ -149,24 +170,27 @@ export async function initAdminDashboard() {
     // 2. Fetch live data from Spring Boot REST API
     try {
         console.log('🔄 [Admin] Connecting to Spring Boot Backend API...');
-        const [liveStudents, livePetitions] = await Promise.all([
+        const [liveStudents, livePetitions, liveAdvisors] = await Promise.all([
             fetchAPI('/students').catch(() => null),
             fetchAPI('/petitions').catch(() => null),
+            fetchAPI('/advisors').catch(() => null),
         ]);
+
+        // Real advisors, so the advisor picked for a student is an id that exists in the database
+        if (Array.isArray(liveAdvisors) && liveAdvisors.length > 0) {
+            const counts = {};
+            (liveStudents || []).forEach(st => { const id = st.advisor?.id; if (id) counts[id] = (counts[id] || 0) + 1; });
+            MOCK_ADVISORS.splice(0, MOCK_ADVISORS.length, ...liveAdvisors.map(a => ({
+                id: a.id, nameTh: a.nameTh, nameEn: a.nameEn, email: a.email, phone: a.phone,
+                department: a.department, studentsCount: counts[a.id] || 0,
+            })));
+            renderManageAdvisors();
+        }
 
         if (Array.isArray(liveStudents) && liveStudents.length > 0) {
             console.log('✅ [Admin] Loaded Live Students from Backend API:', liveStudents);
-            const formatted = liveStudents.map(s => ({
-                studentId: s.studentId,
-                nameTh: s.nameTh,
-                nameEn: s.nameEn,
-                year: s.year,
-                gpa: s.gpa,
-                status: s.status,
-                careerPath: s.careerPath || '',
-                advisor: (s.advisor && typeof s.advisor === 'object') ? s.advisor.id : (s.advisor || 'ADV001'),
-            }));
-            MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...formatted);
+            MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...liveStudents.map(toPoolStudent));
+            studentsFromDb = true;
             renderAdminDashboard();
             renderManageStudents();
         }
@@ -283,6 +307,10 @@ function renderAdminDashboard() {
             ` : ''}
         </div>
 
+        <div id="adminRegistrationCard"></div>
+        <div id="adminEnrollmentRequestsCard"></div>
+        <div id="adminSectionsCard"></div>
+
         <div class="dashboard-grid">
             <div id="statusChartContainer"></div>
             <div id="careerListContainer"></div>
@@ -303,6 +331,358 @@ function renderAdminDashboard() {
     loadComponentCSS('statusChart').then(() => {
         renderStatusDonutChart('statusChartContainer', filteredStudents);
         renderCareerDataList('careerListContainer', filteredStudents);
+    });
+
+    renderRegistrationCard();
+    renderEnrollmentRequestsCard();
+    renderAdminSectionsCard();
+}
+
+/* ============================================================
+   REGISTRATION PERIODS — when students may add/drop courses
+   ============================================================ */
+
+/** "2026-10-05T08:00:00" -> "2026-10-05T08:00" for <input type="datetime-local"> */
+const toInputDateTime = (iso) => (iso || '').slice(0, 16);
+
+/** Pull the backend message out of a fetchAPI error ('HTTP 400 (...): {"error":"..."}') */
+export function apiErrorText(err) {
+    const match = /\{.*\}$/s.exec(err.message || '');
+    if (match) {
+        try { return JSON.parse(match[0]).error || err.message; } catch (e) { /* not JSON */ }
+    }
+    return err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+}
+
+async function renderRegistrationCard() {
+    const container = document.getElementById('adminRegistrationCard');
+    if (!container) return;
+
+    let periods;
+    try {
+        periods = await fetchAPI('/registration-periods');
+        if (!container.isConnected) return;
+    } catch (err) {
+        container.innerHTML = `<div class="card"><div class="card-title">🗓️ ช่วงลงทะเบียนเรียน</div><p style="color:var(--text-muted)">เชื่อมต่อ backend ไม่ได้ จึงยังจัดการช่วงลงทะเบียนไม่ได้</p></div>`;
+        return;
+    }
+
+    const rows = periods.map(p => `
+        <tr data-year="${p.academicYear}" data-term="${p.term}">
+            <td><strong>${p.term}/${p.academicYear}</strong></td>
+            <td>${p.open
+                ? '<span class="badge badge-green">เปิดอยู่</span>'
+                : `<span class="badge badge-red">ปิดอยู่${p.forceClosed ? ' (ปิดด่วน)' : ''}</span>`}</td>
+            <td><input type="datetime-local" class="app-input reg-opens" value="${toInputDateTime(p.opensAt)}"></td>
+            <td><input type="datetime-local" class="app-input reg-closes" value="${toInputDateTime(p.closesAt)}"></td>
+            <td style="white-space:nowrap">
+                <button class="btn btn-sm btn-ghost reg-save">บันทึกเวลา</button>
+                <button class="btn btn-sm ${p.forceClosed ? 'btn-orange' : 'btn-danger'} reg-toggle" data-force-closed="${!p.forceClosed}">
+                    ${p.forceClosed ? 'ยกเลิกปิดด่วน' : 'ปิดด่วน'}
+                </button>
+            </td>
+        </tr>`).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-title">🗓️ ช่วงลงทะเบียนเรียน (นักศึกษาเพิ่ม/ลบวิชาเองได้เฉพาะช่วงที่เปิด)</div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                เปิดอยู่ = เวลาปัจจุบันอยู่ในช่วงเปิด–ปิด และไม่ได้กดปิดด่วน · ผู้ดูแลระบบและอาจารย์ผู้สอนแก้ตารางเรียนได้ตลอดเวลา
+            </p>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>ภาคเรียน</th><th>สถานะ</th><th>เปิด</th><th>ปิด</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีช่วงลงทะเบียน</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div class="batch-filter-bar" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+                <label>สร้างช่วงลงทะเบียนภาคเรียนใหม่</label>
+                <input type="number" class="app-input" id="regNewYear" placeholder="ปี เช่น 2569" style="width:120px">
+                <select class="batch-select" id="regNewTerm"><option value="1">ภาค 1</option><option value="2">ภาค 2</option><option value="3">ภาคฤดูร้อน</option></select>
+                <input type="datetime-local" class="app-input" id="regNewOpens">
+                <input type="datetime-local" class="app-input" id="regNewCloses">
+                <button class="btn btn-sm btn-orange" id="regCreateBtn">สร้าง</button>
+            </div>
+        </div>`;
+
+    const save = async (body, successMessage) => {
+        try {
+            await fetchAPI('/registration-periods', 'PUT', body, 8000);
+            showToast('success', successMessage);
+            renderRegistrationCard();
+        } catch (err) {
+            showToast('error', apiErrorText(err));
+        }
+    };
+
+    container.querySelectorAll('tr[data-year]').forEach(row => {
+        const base = { academicYear: Number(row.dataset.year), term: Number(row.dataset.term) };
+        const label = `${base.term}/${base.academicYear}`;
+        row.querySelector('.reg-save').addEventListener('click', () => save({
+            ...base,
+            opensAt: row.querySelector('.reg-opens').value,
+            closesAt: row.querySelector('.reg-closes').value,
+        }, `บันทึกช่วงลงทะเบียนภาคเรียน ${label} แล้ว`));
+        const toggle = row.querySelector('.reg-toggle');
+        toggle.addEventListener('click', () => {
+            const forceClosed = toggle.dataset.forceClosed === 'true';
+            save({ ...base, forceClosed },
+                forceClosed ? `ปิดลงทะเบียนภาคเรียน ${label} ทันทีแล้ว` : `ยกเลิกปิดด่วน ภาคเรียน ${label} จะเปิดตามช่วงเวลาที่ตั้งไว้`);
+        });
+    });
+
+    container.querySelector('#regCreateBtn').addEventListener('click', () => {
+        const year = Number(document.getElementById('regNewYear').value);
+        if (!year) {
+            showToast('error', 'กรุณากรอกปีการศึกษา');
+            return;
+        }
+        save({
+            academicYear: year,
+            term: Number(document.getElementById('regNewTerm').value),
+            opensAt: document.getElementById('regNewOpens').value || null,
+            closesAt: document.getElementById('regNewCloses').value || null,
+            forceClosed: false,
+        }, `สร้างช่วงลงทะเบียนภาคเรียนใหม่แล้ว`);
+    });
+}
+
+/* ============================================================
+   CLASS SECTIONS — teachers request, admin approves.
+   Students can only register for APPROVED sections.
+   ============================================================ */
+const SECTION_STATUS = {
+    PENDING: { label: 'รออนุมัติ', badge: 'badge-amber' },
+    APPROVED: { label: 'อนุมัติแล้ว', badge: 'badge-green' },
+    REJECTED: { label: 'ไม่อนุมัติ', badge: 'badge-red' },
+};
+
+/** Status badge of a section, with the admin's note as a tooltip (shared with the advisor page) */
+export function sectionStatusBadge(section) {
+    const st = SECTION_STATUS[section.approvalStatus] || SECTION_STATUS.APPROVED;
+    const note = section.reviewNote ? ` title="${esc(section.reviewNote)}"` : '';
+    return `<span class="badge ${st.badge}"${note}>${st.label}</span>`;
+}
+
+let adminSectionStatusFilter = null;  // null = choose automatically on first render
+let adminSectionTermFilter = 'all';
+
+async function renderAdminSectionsCard() {
+    const container = document.getElementById('adminSectionsCard');
+    if (!container) return;
+
+    let sections;
+    try {
+        sections = await fetchAPI('/sections/mine');
+    } catch (err) {
+        container.innerHTML = `<div class="card"><div class="card-title">📚 จัดการกลุ่มเรียน</div><p style="color:var(--text-muted)">เชื่อมต่อ backend ไม่ได้ จึงยังจัดการกลุ่มเรียนไม่ได้</p></div>`;
+        return;
+    }
+    // The dashboard may have re-rendered while waiting for the API
+    if (!container.isConnected) return;
+
+    const pendingCount = sections.filter(s => s.approvalStatus === 'PENDING').length;
+    if (adminSectionStatusFilter === null) adminSectionStatusFilter = pendingCount > 0 ? 'PENDING' : 'all';
+
+    const terms = [...new Set(sections.map(s => `${s.term}/${s.academicYear}`))];
+    const shown = sections.filter(s =>
+        (adminSectionStatusFilter === 'all' || s.approvalStatus === adminSectionStatusFilter) &&
+        (adminSectionTermFilter === 'all' || `${s.term}/${s.academicYear}` === adminSectionTermFilter));
+
+    const rows = shown.map(s => `
+        <tr data-section-id="${s.sectionId}">
+            <td><span class="badge badge-blue">${esc(s.courseCode)}</span><div style="font-size:0.82rem">${esc(s.courseName)} (${s.credits} หน่วยกิต)</div></td>
+            <td>${s.term}/${s.academicYear}</td>
+            <td class="hide-mobile">${esc(s.sectionNo)}</td>
+            <td>${esc(s.dayName)} ${esc(s.startTime)}–${esc(s.endTime)}</td>
+            <td class="hide-mobile">${esc(s.room || '-')}</td>
+            <td class="hide-mobile">${esc(s.instructorName || '-')}</td>
+            <td>${s.enrolledCount}${s.capacity ? ' / ' + s.capacity : ''}</td>
+            <td>${sectionStatusBadge(s)}${s.reviewNote ? `<div style="font-size:0.75rem;color:var(--text-muted)">${esc(s.reviewNote)}</div>` : ''}</td>
+            <td style="white-space:nowrap">
+                ${s.approvalStatus !== 'APPROVED' ? '<button class="btn btn-sm btn-orange sec-approve">อนุมัติ</button>' : ''}
+                ${s.approvalStatus !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost sec-reject">ไม่อนุมัติ</button>' : ''}
+                <button class="btn btn-sm btn-ghost sec-delete" title="ลบกลุ่มเรียน">🗑️</button>
+            </td>
+        </tr>`).join('');
+
+    const option = (value, label, selected) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`;
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-title">📚 จัดการกลุ่มเรียน
+                ${pendingCount > 0 ? `<span class="badge badge-amber" style="font-size:0.75rem">รออนุมัติ ${pendingCount}</span>` : ''}
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                อาจารย์เป็นผู้เพิ่ม/แก้ไขกลุ่มเรียน แล้วส่งมาให้อนุมัติ · นักศึกษาลงทะเบียนได้เฉพาะกลุ่มที่อนุมัติแล้ว ·
+                ถ้าอาจารย์แก้กลุ่มที่อนุมัติไปแล้ว จะกลับมารออนุมัติใหม่ (นักศึกษาที่ลงไว้แล้วยังอยู่ในกลุ่มเดิม)
+            </p>
+            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                <label>สถานะ</label>
+                <select class="batch-select" id="secStatusFilter">
+                    ${option('all', 'ทั้งหมด', adminSectionStatusFilter)}
+                    ${option('PENDING', 'รออนุมัติ', adminSectionStatusFilter)}
+                    ${option('APPROVED', 'อนุมัติแล้ว', adminSectionStatusFilter)}
+                    ${option('REJECTED', 'ไม่อนุมัติ', adminSectionStatusFilter)}
+                </select>
+                <label>ภาคเรียน</label>
+                <select class="batch-select" id="secTermFilter">
+                    ${option('all', 'ทุกภาคเรียน', adminSectionTermFilter)}
+                    ${terms.map(t => option(t, t, adminSectionTermFilter)).join('')}
+                </select>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="adminSectionsTable">
+                    <thead><tr><th>วิชา</th><th>ภาค</th><th class="hide-mobile">Sec</th><th>วัน-เวลา</th><th class="hide-mobile">ห้อง</th><th class="hide-mobile">อาจารย์</th><th>นักศึกษา</th><th>สถานะ</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">ไม่มีกลุ่มเรียนตามเงื่อนไขที่เลือก</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+    container.querySelector('#secStatusFilter').addEventListener('change', e => {
+        adminSectionStatusFilter = e.target.value;
+        renderAdminSectionsCard();
+    });
+    container.querySelector('#secTermFilter').addEventListener('change', e => {
+        adminSectionTermFilter = e.target.value;
+        renderAdminSectionsCard();
+    });
+
+    const review = async (section, status, note, message) => {
+        try {
+            await fetchAPI(`/sections/${section.sectionId}/review`, 'PATCH', { status, note }, 8000);
+            showToast('success', esc(message));
+            renderAdminSectionsCard();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
+    };
+
+    container.querySelectorAll('tr[data-section-id]').forEach(row => {
+        const section = sections.find(s => String(s.sectionId) === row.dataset.sectionId);
+        const label = `${section.courseCode} กลุ่ม ${section.sectionNo} (${section.term}/${section.academicYear})`;
+
+        row.querySelector('.sec-approve')?.addEventListener('click', () =>
+            review(section, 'APPROVED', null, `อนุมัติ ${label} แล้ว นักศึกษาลงทะเบียนได้`));
+
+        row.querySelector('.sec-reject')?.addEventListener('click', () => {
+            const note = prompt(`เหตุผลที่ไม่อนุมัติ ${label} (อาจารย์จะเห็นข้อความนี้)`);
+            if (note === null) return;
+            if (!note.trim()) {
+                showToast('error', 'กรุณาระบุเหตุผลที่ไม่อนุมัติ');
+                return;
+            }
+            review(section, 'REJECTED', note.trim(), `ไม่อนุมัติ ${label} แล้ว`);
+        });
+
+        row.querySelector('.sec-delete').addEventListener('click', async () => {
+            const warning = section.enrolledCount > 0
+                ? `\nนักศึกษา ${section.enrolledCount} คนที่ลงกลุ่มนี้จะถูกถอนออกจากตารางเรียนด้วย` : '';
+            if (!confirm(`ลบ ${label}?${warning}`)) return;
+            try {
+                await fetchAPI(`/sections/${section.sectionId}`, 'DELETE', null, 8000);
+                showToast('info', esc(`ลบ ${label} แล้ว`));
+                renderAdminSectionsCard();
+            } catch (err) {
+                showToast('error', esc(apiErrorText(err)));
+            }
+        });
+    });
+}
+
+/* ============================================================
+   REGISTRATION REQUESTS — students send their course cart,
+   the admin confirms or rejects each request.
+   ============================================================ */
+const REQUEST_TIME = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+async function renderEnrollmentRequestsCard() {
+    const container = document.getElementById('adminEnrollmentRequestsCard');
+    if (!container) return;
+
+    let requests;
+    try {
+        requests = await fetchAPI('/enrollments/pending');
+    } catch (err) {
+        container.innerHTML = '';
+        return;
+    }
+    // The dashboard may have re-rendered while waiting for the API
+    if (!container.isConnected) return;
+
+    const rows = requests.map(r => `
+        <tr data-id="${r.enrollmentId}">
+            <td><input type="checkbox" class="req-check" value="${r.enrollmentId}"></td>
+            <td><strong>${esc(r.studentId)}</strong><div style="font-size:0.82rem">${esc(r.studentName)}</div></td>
+            <td><span class="badge badge-purple">${esc(r.studentSection)}</span></td>
+            <td><span class="badge badge-blue">${esc(r.section.courseCode)}</span><div style="font-size:0.82rem">${esc(r.section.courseName)}</div></td>
+            <td>${r.section.term}/${r.section.academicYear} · ${esc(r.section.sectionNo)}</td>
+            <td class="hide-mobile">${esc(r.section.dayName)} ${esc(r.section.startTime)}–${esc(r.section.endTime)}</td>
+            <td class="hide-mobile">${r.section.enrolledCount}${r.section.capacity ? ' / ' + r.section.capacity : ''}</td>
+            <td class="hide-mobile" style="font-size:0.8rem">${esc(REQUEST_TIME.format(new Date(r.requestedAt)))}</td>
+            <td style="white-space:nowrap">
+                <button class="btn btn-sm btn-orange req-confirm">ยืนยัน</button>
+                <button class="btn btn-sm btn-ghost req-reject">ไม่อนุมัติ</button>
+            </td>
+        </tr>`).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-title">📝 คำขอลงทะเบียนของนักศึกษา
+                ${requests.length ? `<span class="badge badge-amber" style="font-size:0.75rem">รอยืนยัน ${requests.length}</span>` : ''}
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                นักศึกษาเลือกวิชาแล้วกดยืนยันลงทะเบียน คำขอจะมารอที่นี่ · คำขอที่รออยู่จองที่นั่งไว้แล้ว · ไม่อนุมัติแล้วที่นั่งจะว่าง และนักศึกษาจะเห็นเหตุผล
+            </p>
+            ${requests.length ? `
+            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                <button class="btn btn-sm btn-orange" id="reqConfirmSelected">ยืนยันที่เลือก</button>
+                <button class="btn btn-sm btn-ghost" id="reqRejectSelected">ไม่อนุมัติที่เลือก</button>
+            </div>` : ''}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th><input type="checkbox" id="reqCheckAll" title="เลือกทั้งหมด"></th><th>นักศึกษา</th><th>Sec</th><th>วิชา</th><th>ภาค · กลุ่ม</th><th class="hide-mobile">วัน-เวลา</th><th class="hide-mobile">ที่นั่ง</th><th class="hide-mobile">ส่งเมื่อ</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">ไม่มีคำขอที่รอยืนยัน</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+    const review = async (ids, status) => {
+        if (ids.length === 0) {
+            showToast('error', 'กรุณาเลือกคำขออย่างน้อย 1 รายการ');
+            return;
+        }
+        let note = null;
+        if (status === 'REJECTED') {
+            note = prompt(`เหตุผลที่ไม่อนุมัติ ${ids.length} รายการ (นักศึกษาจะเห็นข้อความนี้)`);
+            if (note === null) return;
+            if (!note.trim()) {
+                showToast('error', 'กรุณาระบุเหตุผลที่ไม่อนุมัติ');
+                return;
+            }
+        }
+        try {
+            const result = await fetchAPI('/enrollments/review', 'PATCH', { enrollmentIds: ids, status, note }, 8000);
+            showToast('success', status === 'CONFIRMED'
+                ? `ยืนยันการลงทะเบียน ${result.updated} รายการแล้ว`
+                : `ไม่อนุมัติ ${result.updated} รายการแล้ว`);
+            renderEnrollmentRequestsCard();
+            renderAdminSectionsCard();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
+    };
+
+    const selectedIds = () => [...container.querySelectorAll('.req-check:checked')].map(c => Number(c.value));
+    container.querySelector('#reqCheckAll')?.addEventListener('change', e => {
+        container.querySelectorAll('.req-check').forEach(c => { c.checked = e.target.checked; });
+    });
+    container.querySelector('#reqConfirmSelected')?.addEventListener('click', () => review(selectedIds(), 'CONFIRMED'));
+    container.querySelector('#reqRejectSelected')?.addEventListener('click', () => review(selectedIds(), 'REJECTED'));
+    container.querySelectorAll('tr[data-id]').forEach(row => {
+        const id = Number(row.dataset.id);
+        row.querySelector('.req-confirm').addEventListener('click', () => review([id], 'CONFIRMED'));
+        row.querySelector('.req-reject').addEventListener('click', () => review([id], 'REJECTED'));
     });
 }
 
@@ -416,13 +796,20 @@ function renderManageStudents() {
         return `
         <tr>
             <td><strong>${esc(s.studentId)}</strong></td>
-            <td>${esc(s.nameTh)} <span class="batch-tag">รุ่น ${batch}</span></td>
+            <td>${esc(s.nameTh)} <span class="batch-tag">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
             <td style="text-align:center"><strong>${s.gpa.toFixed(2)}</strong></td>
+            <td>${s.studentSection
+                ? `<select class="batch-select student-sec-select" data-sid="${esc(s.studentId)}">${['D1', 'D2'].map(g => `<option value="${g}" ${s.studentSection === g ? 'selected' : ''}>${g}</option>`).join('')}</select>`
+                : '-'}</td>
             <td><span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span></td>
             <td>
                 <div class="action-btns">
                     <button class="btn btn-sm btn-orange admin-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
+                    ${s.studentSection && !s.simulated ? `
+                    <button class="btn btn-sm btn-ghost audit-dl-btn" data-sid="${esc(s.studentId)}" title="ดาวน์โหลดใบตรวจสอบจบ (ใช้เป็นแม่แบบได้)">⬇ ใบตรวจจบ</button>
+                    <button class="btn btn-sm btn-ghost audit-ul-btn" data-sid="${esc(s.studentId)}" title="อัปโหลดใบตรวจสอบจบ (.json)">⬆ อัปโหลด</button>
+                    <button class="btn btn-sm btn-ghost reset-pw-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="รีเซ็ตรหัสผ่านเป็นรหัสนักศึกษา">🔑 รีเซ็ตรหัส</button>` : ''}
                     <button class="btn btn-sm btn-warning edit-student-btn" data-idx="${realIdx}">แก้ไข</button>
                     <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}">ลบ</button>
                 </div>
@@ -440,11 +827,12 @@ function renderManageStudents() {
                 <input type="text" id="adminStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
             </div>
             <button class="btn btn-success" id="addStudentBtn">เพิ่มนักศึกษา</button>
+            <input type="file" id="auditUploadInput" accept=".json,application/json" hidden>
         </div>
         <div class="card">
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th>Sec</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -470,16 +858,114 @@ function renderManageStudents() {
 
     document.getElementById('addStudentBtn').addEventListener('click', () => openStudentModal('add'));
     document.querySelectorAll('.edit-student-btn').forEach(b => b.addEventListener('click', () => openStudentModal('edit', parseInt(b.dataset.idx))));
-    document.querySelectorAll('.del-student-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.del-student-btn').forEach(b => b.addEventListener('click', async () => {
         const idx = parseInt(b.dataset.idx);
-        if (confirm(`ต้องการลบ "${MOCK_STUDENTS_POOL[idx].nameTh}" หรือไม่?`)) {
-            MOCK_STUDENTS_POOL.splice(idx, 1);
-            renderManageStudents();
-            renderAdminDashboard();
+        const st = MOCK_STUDENTS_POOL[idx];
+        const warning = studentsFromDb && st.simulated ? '\n(ข้อมูลจำลอง)'
+            : studentsFromDb
+            ? `\nข้อมูลจะถูกลบออกจากฐานข้อมูลจริง รวมถึงเกรด การลงทะเบียน คำร้อง และใบตรวจสอบจบของนักศึกษาคนนี้ (ย้อนกลับไม่ได้)` : '';
+        if (!confirm(`ต้องการลบ "${st.nameTh}" (${st.studentId}) หรือไม่?${warning}`)) return;
+        if (studentsFromDb) {
+            try {
+                await fetchAPI(`/students/${encodeURIComponent(st.studentId)}`, 'DELETE', null, 10000);
+            } catch (err) {
+                showToast('error', esc(apiErrorText(err)));
+                return;
+            }
+        }
+        MOCK_STUDENTS_POOL.splice(idx, 1);
+        renderManageStudents();
+        renderAdminDashboard();
+        showToast('success', esc(`ลบ ${st.nameTh} แล้ว`));
+    }));
+    document.querySelectorAll('.student-sec-select').forEach(sel => sel.addEventListener('change', async () => {
+        const student = MOCK_STUDENTS_POOL.find(s => s.studentId === sel.dataset.sid);
+        try {
+            await fetchAPI(`/students/${encodeURIComponent(sel.dataset.sid)}/section`, 'PUT', { studentSection: sel.value }, 8000);
+            if (student) student.studentSection = sel.value;
+            showToast('success', esc(`ย้าย ${sel.dataset.sid} ไป Sec ${sel.value} แล้ว`));
+        } catch (err) {
+            if (student) sel.value = student.studentSection;
+            showToast('error', esc(apiErrorText(err)));
+        }
+    }));
+    bindGraduationAuditButtons();
+    document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
+        const sid = b.dataset.sid;
+        if (!confirm(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
+รหัสผ่านใหม่จะเป็นรหัสนักศึกษา และนักศึกษาต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ`)) return;
+        try {
+            const res = await fetchAPI(`/students/${encodeURIComponent(sid)}/reset-password`, 'POST', {}, 10000);
+            showToast('success', esc(res.message));
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
         }
     }));
     document.querySelectorAll('.admin-imp-btn').forEach(b => {
         b.addEventListener('click', () => impersonateStudent(b.dataset.sid, b.dataset.sname));
+    });
+}
+
+/* ============================================================
+   GRADUATION AUDIT SHEETS — one JSON per student, same format as
+   src/main/resources/graduation/<studentId>.json (see README.md there)
+   ============================================================ */
+const AUDIT_TEMPLATE_STUDENT = '6421100042';
+
+function downloadJson(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function bindGraduationAuditButtons() {
+    document.querySelectorAll('.audit-dl-btn').forEach(btn => btn.addEventListener('click', async () => {
+        const sid = btn.dataset.sid;
+        try {
+            downloadJson(await fetchAPI(`/students/${encodeURIComponent(sid)}/graduation-audit/raw`, 'GET', null, 10000), `${sid}.json`);
+        } catch (err) {
+            if (!/HTTP 404/.test(err.message || '')) {
+                showToast('error', esc(apiErrorText(err)));
+                return;
+            }
+            // No sheet yet: hand out an existing one as the template to fill in
+            try {
+                const template = await fetchAPI(`/students/${AUDIT_TEMPLATE_STUDENT}/graduation-audit/raw`, 'GET', null, 10000);
+                downloadJson(template, `${sid}-template.json`);
+                showToast('info', esc(`${sid} ยังไม่มีใบตรวจสอบจบ ดาวน์โหลดใบของ ${AUDIT_TEMPLATE_STUDENT} ไปเป็นแม่แบบแทน แก้รายวิชา/เกรดแล้วอัปโหลดกลับได้`));
+            } catch (e) {
+                showToast('error', esc(apiErrorText(e)));
+            }
+        }
+    }));
+
+    const input = document.getElementById('auditUploadInput');
+    document.querySelectorAll('.audit-ul-btn').forEach(btn => btn.addEventListener('click', () => {
+        input.dataset.sid = btn.dataset.sid;
+        input.value = '';
+        input.click();
+    }));
+    input?.addEventListener('change', async () => {
+        const file = input.files[0];
+        const sid = input.dataset.sid;
+        if (!file || !sid) return;
+        let text;
+        try {
+            text = await file.text();
+            JSON.parse(text);
+        } catch (e) {
+            showToast('error', 'ไฟล์ไม่ใช่ JSON ที่ถูกต้อง');
+            return;
+        }
+        try {
+            const summary = await fetchAPI(`/students/${encodeURIComponent(sid)}/graduation-audit`, 'PUT', text, 15000);
+            showToast('success', esc(`อัปโหลดใบตรวจสอบจบของ ${sid} แล้ว: ${summary.totalEarnedCredits}/${summary.totalRequiredCredits} หน่วยกิต · GPA ${Number(summary.currentGpa).toFixed(2)} · ผ่าน ${summary.passedCategories}/${summary.totalCategories} หมวด · ${summary.status}`));
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
     });
 }
 
@@ -520,6 +1006,9 @@ function openStudentModal(mode, idx) {
         <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
         <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
         <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
+        ${studentsFromDb ? `<div class="modal-field"><label>Sec</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
+        ${studentsFromDb && mode !== 'edit' ? `<label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:0.88rem;cursor:pointer"><input type="checkbox" id="mfSsimulated" checked style="width:auto"> เป็นข้อมูลจำลอง (แสดงในแดชบอร์ดอย่างเดียว ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน)</label>` : ''}
+        ${studentsFromDb ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">💾 บันทึกลงฐานข้อมูลจริง · รหัสนักศึกษาเป็นตัวเลข 10 หลัก · ถ้าไม่ใช่ข้อมูลจำลอง นักศึกษาล็อกอินด้วยรหัสนี้ได้ทันที</p>' : ''}
         
         <div id="mfCareerGroup" style="${s.status === 'จบการศึกษา' ? 'display:block;' : 'display:none;'}margin-top:14px;padding:12px;background:rgba(59,130,246,0.05);border:1px dashed var(--primary);border-radius:var(--radius-md);">
             <div style="font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px">
@@ -566,7 +1055,7 @@ function openStudentModal(mode, idx) {
     const newSaveBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
     
-    newSaveBtn.addEventListener('click', () => {
+    newSaveBtn.addEventListener('click', async () => {
         const statusVal = document.getElementById('mfSstatus').value;
         const careerSelectVal = document.getElementById('mfScareerSelect').value;
         const careerCustomVal = document.getElementById('mfScareerCustom').value.trim();
@@ -589,23 +1078,46 @@ function openStudentModal(mode, idx) {
             salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
         if (!data.studentId || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
-        if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = data; }
-        else { MOCK_STUDENTS_POOL.push(data); }
 
-        // Sync to backend if available (non-blocking)
-        if (data.status === 'จบการศึกษา' && data.careerPath) {
-            fetchAPI(`/students/${data.studentId}/career`, 'PATCH', {
-                careerPath: data.careerPath,
-                employmentStatus: data.employmentStatus,
-                companyName: data.companyName,
-                salaryRange: data.salaryRange,
-            }).catch(() => {});
+        if (studentsFromDb) {
+            const body = {
+                studentId: data.studentId,
+                nameTh: data.nameTh,
+                nameEn: data.nameEn,
+                year: data.year,
+                gpa: data.gpa,
+                status: data.status,
+                advisorId: data.advisor || '',
+                studentSection: document.getElementById('mfSsection')?.value,
+                simulated: document.getElementById('mfSsimulated')?.checked ?? undefined,
+                // Career fields only apply to graduates; '' clears them
+                careerPath: data.careerPath || '',
+                employmentStatus: data.status === 'จบการศึกษา' ? (data.employmentStatus || '') : '',
+                companyName: data.status === 'จบการศึกษา' ? (data.companyName || '') : '',
+                salaryRange: data.status === 'จบการศึกษา' ? (data.salaryRange || '') : '',
+            };
+            try {
+                const saved = mode === 'edit'
+                    ? await fetchAPI(`/students/${encodeURIComponent(data.studentId)}`, 'PUT', body, 10000)
+                    : await fetchAPI('/students', 'POST', body, 10000);
+                if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = toPoolStudent(saved); }
+                else { MOCK_STUDENTS_POOL.push(toPoolStudent(saved)); }
+            } catch (err) {
+                showToast('error', esc(apiErrorText(err)));
+                return;
+            }
+        } else {
+            if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = data; }
+            else { MOCK_STUDENTS_POOL.push(data); }
         }
 
         crudModal.classList.remove('open');
         renderManageStudents();
         renderAdminDashboard();
-        showToast('บันทึกข้อมูลนักศึกษาและสายอาชีพเรียบร้อย', 'success');
+        showToast('success', !studentsFromDb ? 'บันทึกข้อมูลนักศึกษาเรียบร้อย (โหมดออฟไลน์ ไม่ได้บันทึกลงฐานข้อมูล)'
+            : mode === 'edit' ? 'บันทึกข้อมูลนักศึกษาลงฐานข้อมูลเรียบร้อย'
+            : document.getElementById('mfSsimulated')?.checked ? esc(`เพิ่มนักศึกษาจำลอง ${data.studentId} แล้ว`)
+            : esc(`เพิ่มนักศึกษาแล้ว · เข้าสู่ระบบด้วยชื่อผู้ใช้ ${data.studentId} รหัสผ่านเริ่มต้น ${data.studentId} (ต้องเปลี่ยนเมื่อเข้าครั้งแรก)`));
     });
     
     crudModal.classList.add('open');

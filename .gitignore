@@ -65,3 +65,6 @@ $RECYCLE.BIN/
 .env.*.local
 *.local
 
+
+# Chatbot test output (contains AI answers, regenerate with test-chatbot.ps1)
+chatbot-test-report.md
