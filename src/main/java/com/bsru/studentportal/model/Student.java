@@ -6,12 +6,14 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "students")
@@ -47,6 +49,18 @@ public class Student {
 
     @Column(name = "salary_range")
     private String salaryRange;
+
+    /** ปีที่เข้าศึกษา พ.ศ. (เช่น 2564) — auto-derived from studentId prefix if not set */
+    @Column(name = "enrollment_year")
+    private Integer enrollmentYear;
+
+    /** ปีที่สำเร็จการศึกษา พ.ศ. (null ถ้ายังไม่จบ) */
+    @Column(name = "graduation_year")
+    private Integer graduationYear;
+
+    /** วันเวลาที่อัปเดตสายอาชีพล่าสุด */
+    @Column(name = "career_updated_at")
+    private LocalDateTime careerUpdatedAt;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "advisor_id")
@@ -85,6 +99,29 @@ public class Student {
 
     private String department;
 
+    /**
+     * Auto-derive enrollmentYear / admissionYear from the first 2 digits of studentId (batch) if not set.
+     * e.g. "6421100042" → batch "64" → enrollmentYear = 2564
+     */
+    @PrePersist
+    public void prePersist() {
+        if (this.enrollmentYear == null && this.admissionYear != null) {
+            this.enrollmentYear = this.admissionYear;
+        }
+        if (this.admissionYear == null && this.enrollmentYear != null) {
+            this.admissionYear = this.enrollmentYear;
+        }
+        if (this.enrollmentYear == null && this.studentId != null && this.studentId.length() >= 2) {
+            try {
+                int batch = Integer.parseInt(this.studentId.substring(0, 2));
+                this.enrollmentYear = 2500 + batch;
+                if (this.admissionYear == null) {
+                    this.admissionYear = this.enrollmentYear;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+    }
+
     public Student(String studentId, String nameTh, String nameEn, Integer year, Double gpa, String status, String careerPath, Advisor advisor) {
         this.studentId = studentId;
         this.nameTh = nameTh;
@@ -96,5 +133,3 @@ public class Student {
         this.advisor = advisor;
     }
 }
-
-

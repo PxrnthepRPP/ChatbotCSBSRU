@@ -90,6 +90,7 @@ ChatbotCSBSRU/
 │   ├── components/
 │   │   ├── chatbot.js                     # การทำงานของ AI Chatbot โต้ตอบแบบเรียลไทม์ผ่าน REST API
 │   │   ├── statusChart.js                 # ประมวลผลและวาด Chart.js สัดส่วนสถานะนักศึกษา
+│   │   ├── careerCatalog.js               # แคตตาล็อกมาตรฐาน 18+ สายอาชีพ IT/CS, สถานะ และช่วงเงินเดือน
 │   │   └── careerList.js                  # วิเคราะห์และแสดงสถิติเส้นทางอาชีพบัณฑิต
 │   └── roles/
 │       ├── admin.js                       # หน้าแดชบอร์ด, จัดการอาจารย์, จัดการนักศึกษา, พิจารณาคำร้อง
@@ -102,7 +103,8 @@ ChatbotCSBSRU/
         │   ├── config/
         │   │   ├── CorsConfig.java               # Global Spring MVC CORS Config
         │   │   ├── SecurityConfig.java           # Spring Security 6 FilterChain, Stateless Session & CORS
-        │   │   └── AiConfig.java                 # LangChain4j Gemini Models, PGVector Store & ContentRetriever
+        │   │   ├── AiConfig.java                 # LangChain4j Gemini Models, PGVector Store & ContentRetriever
+        │   │   └── DataSeeder.java               # CommandLineRunner เติมข้อมูลตั้งต้นลง PostgreSQL
         │   ├── security/
         │   │   ├── JwtUtil.java                  # การสร้าง ถอดรหัส และตรวจสอบความถูกต้องของ JWT Token
         │   │   └── JwtAuthenticationFilter.java  # OncePerRequestFilter ดักจับและยืนยัน Bearer Token
@@ -120,18 +122,17 @@ ChatbotCSBSRU/
         │   ├── controller/
         │   │   ├── ApiController.java            # REST API: Students, Advisors, Petitions (CRUD/Patch)
         │   │   ├── AuthController.java           # REST API: POST /api/auth/login
-        │   │   ├── ChatController.java           # REST API: POST /api/chat (Secured AI Chat)
+        │   │   ├── ChatController.java           # REST API: POST /api/chat (AI Chatbot & Career Q&A)
         │   │   └── KnowledgeController.java      # REST API: POST /api/admin/knowledge/ingest
         │   ├── dto/
         │   │   ├── LoginRequest.java             # DTO เข้าสู่ระบบ
         │   │   ├── LoginResponse.java            # DTO ข้อมูล JWT Token และ User Profile
+        │   │   ├── CareerUpdateRequest.java      # DTO ข้อมูลอัปเดตสายอาชีพและสถานะการทำงาน
         │   │   ├── PetitionRequest.java          # DTO ข้อมูลยื่นคำร้องใหม่
         │   │   ├── PetitionStatusUpdateRequest.java # DTO ข้อมูลพิจารณาอนุมัติ/ปฏิเสธคำร้อง
         │   │   ├── ChatRequest.java              # DTO ส่งข้อความคุยกับ AI
         │   │   ├── ChatResponse.java             # DTO คำตอบจาก AI Chatbot
         │   │   └── KnowledgeIngestRequest.java   # DTO ข้อมูลนำเข้าเอกสารความรู้ RAG
-        │   └── seeder/
-        │       └── DataSeeder.java               # CommandLineRunner เติมข้อมูลตั้งต้นลง PostgreSQL
         └── resources/
             └── application.properties            # ค่าคอนฟิกูเรชัน DataSource, JPA, JWT, และ Gemini API
 ```
@@ -206,6 +207,10 @@ graph TD
 7. **ยื่นคำร้องวิชาการ (Academic Petitions)**:
    - ฟอร์มยื่นคำร้อง (ขอสอบหัวข้อ, ขอสอบจบ, คำร้องทั่วไป) แนบไฟล์ PDF พร้อมส่งคำขอผ่าน `POST /api/petitions` บันทึกลงฐานข้อมูล PostgreSQL ทันที
    - การ์ดประวัติคำร้องแสดงสถานะเรียลไทม์ (รอดำเนินการ, อนุมัติ, ปฏิเสธ) และความเห็นตอบกลับจากแอดมิน
+8. **ระบบบันทึกและอัปเดตสายอาชีพบัณฑิต (Graduate Career Tracking - Self-Service)**:
+   - อัปเดตได้ทั้งจากแถบแจ้งเตือนพิเศษในหน้า **"ตรวจสอบจบ"** และการ์ดข้อมูลสายอาชีพในหน้า **"ประวัตินักศึกษา"**
+   - รองรับการเลือกสถานะการทำงาน (มีงานทำแล้วตรงสาย/ไม่ตรงสาย, ศึกษาต่อ, หางาน, ธุรกิจส่วนตัว), แคตตาล็อกมาตรฐาน 18+ สายอาชีพ IT/CS, ชื่อบริษัท และช่วงเงินเดือน
+   - ซิงค์บันทึกข้อมูลผ่าน REST API `PATCH /api/students/{id}/career` ลงฐานข้อมูล PostgreSQL ทันที
 
 ### 4.2 บทบาทอาจารย์ที่ปรึกษา (Advisor Role)
 เข้าสู่ระบบด้วย Username: `advisor` หรือรหัสประจำตัวอาจารย์ (เช่น `ADV-01`)
@@ -218,12 +223,17 @@ graph TD
 เข้าสู่ระบบด้วย Username: `admin`
 
 1. **แดชบอร์ดผู้ดูแล (Admin Dashboard)**:
-   - **ตัวกรองแยกตามรุ่น (Batch Filter)**: เลือกดูข้อมูลนักศึกษาได้ทั้งแบบทุกรุ่น หรือเจาะจงเฉพาะรุ่น (รุ่น 66, 65, 64, 63, 62, 61)
-   - Real-time Stat Cards, Status Donut Chart (Chart.js), และสถิติสายอาชีพของบัณฑิต
+   - **ตัวกรองรุ่นและช่วงปี (Multi-Year Range Filter)**: เลือกดูได้ทั้ง "ทุกรุ่น / ทุกปีการศึกษา", "⏱️ 4 ปีล่าสุด", "⏱️ 3 ปีล่าสุด", "📗 เฉพาะรุ่นกำลังศึกษา", เลือกทีละรุ่น หรือเลือกหลายรุ่นแบบกำหนดเองผ่าน Multi-Select Chips
+   - **สถิติและแผนภูมิภาพรวม**: Real-time Stat Cards, Status Donut Chart (Chart.js), และแถบสรุปสถิติสายอาชีพของบัณฑิต (Graduate Career Distribution) คำนวณแบบ Real-time
+   - **การวิเคราะห์เปรียบเทียบข้ามรุ่น (Year-over-Year Analytics)**: กราฟเส้นแนวโน้ม GPA เฉลี่ยตามรุ่น (GPA Trend Line Chart), กราฟแท่งเปรียบเทียบสัดส่วนสถานะตามรุ่น (Status Stacked Bar Chart), และตารางวิเคราะห์การเปลี่ยนผ่านสายอาชีพของบัณฑิตข้ามรุ่น (Career Shift Matrix)
 2. **จัดการอาจารย์ที่ปรึกษา (Manage Advisors)**: เพิ่ม, แก้ไข, ลบข้อมูลอาจารย์ (CRUD)
-3. **จัดการนักศึกษา (Manage Students)**: จัดการข้อมูลนักศึกษา (CRUD) พร้อมระบบค้นหาแบบ Real-time (Debounce) และปุ่มจำลองมุมมอง
+3. **จัดการนักศึกษา (Manage Students)**:
+   - **Preset Range Filter**: กรองนักศึกษาตามช่วงรุ่น ("⏱️ 4 ปีล่าสุด", "⏱️ 3 ปีล่าสุด", "📗 เฉพาะรุ่นที่กำลังศึกษา", หรือแยกรุ่น)
+   - **ระบบแบ่งหน้าตาราง (Table Pagination)**: รองรับการแสดงผลตารางนักศึกษาจำนวนมาก แบ่งหน้าพร้อมตัวเลือก 10, 15, 25, 50 แถว/หน้า และปุ่มเลื่อนหน้าแบบตัวเลข
+   - **CRUD & Career Updates**: ค้นหาแบบ Real-time (Debounce), ปุ่มจำลองมุมมอง (Impersonate), และ Modal จัดการข้อมูลนักศึกษาพร้อมข้อมูลสายอาชีพบัณฑิต
 4. **รายการคำร้องวิชาการ (Petition Logs & Review Modal)**:
-   - ตารางคำร้องวิชาการพร้อมตัวกรองหลายมิติ (ตามรุ่น, ประเภทคำร้อง, สถานะ)
+   - ตารางคำร้องวิชาการพร้อมตัวกรองหลายมิติ (ช่วงรุ่น 4 ปีล่าสุด/3 ปีล่าสุด, ประเภทคำร้อง, สถานะ)
+   - ระบบแบ่งหน้าตารางคำร้อง (Table Pagination: 5, 10, 20 รายการ/หน้า)
    - Modal พิจารณาคำร้องพร้อมปุ่มลัด **อนุมัติ (Approve)** และ **ปฏิเสธ (Reject)** ทำงานผ่าน `PATCH /api/petitions/{id}/status` บันทึกลง PostgreSQL แบบเรียลไทม์
 5. **ระบบนำเข้าความรู้ AI (Knowledge Ingestion)**:
    - ส่งเอกสารหลักสูตรและคู่มือวิชาการผ่าน `POST /api/admin/knowledge/ingest` เพื่อตัดชิ้นส่วนและแปลงเป็น Vector Embeddings จัดเก็บลง PGVector
@@ -261,8 +271,8 @@ sequenceDiagram
 - **Session Management**: กำหนดเป็น `SessionCreationPolicy.STATELESS`
 - **CORS Configuration**: อนุญาตคำขอ Cross-Origin จาก `http://localhost*` และ `http://127.0.0.1*` รองรับทุก HTTP Methods (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`)
 - **Endpoint Authorization**:
-  - `PERMIT_ALL`: `/api/auth/**`, `/api/health`, `/error`
-  - `AUTHENTICATED`: `/api/students/**`, `/api/advisors/**`, `/api/petitions/**`, `/api/chat`, `/api/admin/**`
+  - `PERMIT_ALL`: `/api/auth/**`, `/api/health`, `/api/chat`, `/error`
+  - `AUTHENTICATED`: `/api/students/**`, `/api/advisors/**`, `/api/petitions/**`, `/api/admin/**`
 
 ---
 
@@ -323,7 +333,8 @@ sequenceDiagram
 | `GET` | `/api/petitions` | **Authenticated** | ดึงรายการคำร้องวิชาการทั้งหมด |
 | `POST` | `/api/petitions` | **Authenticated** | นักศึกษายื่นคำร้องวิชาการใหม่ลงฐานข้อมูล PostgreSQL |
 | `PATCH` | `/api/petitions/{id}/status` | **Authenticated** | แอดมินพิจารณาปรับสถานะคำร้อง (อนุมัติ/ปฏิเสธ) พร้อมความเห็น |
-| `POST` | `/api/chat` | **Authenticated** | ส่งข้อความสนทนากับ AI Chatbot ผ่าน RAG Pipeline |
+| `PATCH` | `/api/students/{id}/career` | **Authenticated** | อัปเดตข้อมูลสายอาชีพ, สถานะการทำงาน, บริษัท และช่วงเงินเดือนของนักศึกษา |
+| `POST` | `/api/chat` | **Permit All** | ส่งข้อความสนทนากับ AI Chatbot ผ่าน RAG Pipeline และระบบวิเคราะห์สายอาชีพ |
 | `POST` | `/api/admin/knowledge/ingest` | **Authenticated (Admin)** | นำเข้าเอกสารความรู้และแปลงเป็น Vector ลง PGVector |
 
 ---
@@ -350,6 +361,9 @@ CREATE TABLE students (
     gpa NUMERIC(3,2),
     status VARCHAR(50) NOT NULL,
     career_path VARCHAR(255),
+    employment_status VARCHAR(100),
+    company_name VARCHAR(255),
+    salary_range VARCHAR(100),
     advisor_id VARCHAR(50) REFERENCES advisors(id)
 );
 
@@ -432,5 +446,16 @@ http://localhost/ChatbotCSBSRU/
 > ⚠️ **คำเตือนความปลอดภัย:**  
 > ห้ามเปิดไฟล์ `index.html` ผ่าน `file:///` โดยตรง เพราะระบบใช้ JavaScript ES6 Modules ซึ่งจะถูกจำกัดสิทธิ์ CORS โดยเบราว์เซอร์ ต้องเปิดผ่าน `http://localhost/ChatbotCSBSRU/` เท่านั้น
 
+### 5. วิธีปิดระบบและหยุดการทำงาน (Shutdown & Stop Environment)
+
+เมื่อต้องการหยุดการทำงานหรือปิดบริการแต่ละส่วน:
+
+| ลำดับ | ส่วนประกอบ | คำสั่ง / วิธีการปิดการทำงาน |
+|---|---|---|
+| 1 | **Spring Boot Backend** | คลิก Terminal ที่กำลังรันอยู่ แล้วกด **`Ctrl + C`** (พิมพ์ `Y` แล้วกด `Enter` หากขึ้นถาม) หรือกดปุ่มถังขยะ **Kill Terminal** ใน VS Code |
+| 2 | **ฐานข้อมูล Docker (PostgreSQL)** | รันคำสั่ง `docker-compose down` ใน PowerShell เพื่อปิดและหยุด Container |
+| 3 | **ตัวแปรสภาพแวดล้อม (.env)** | ปิดหน้าต่าง Terminal ตัวแปร Environment จะถูกเคลียร์ทิ้งอัตโนมัติ |
+| 4 | **เว็บเซิร์ฟเวอร์ Apache (XAMPP)** | เปิด **XAMPP Control Panel** และกดปุ่ม **Stop** ที่โมดูล **Apache** |
+
 ---
-*เอกสารนี้ได้รับการปรับปรุงให้เป็นปัจจุบัน ครอบคลุมสถาปัตยกรรมทั้งฝั่ง Frontend, Backend REST API, Spring Security 6, JWT, LangChain4j RAG Pipeline และคู่มือการติดตั้งด้วย Quick Start Scripts อย่างสมบูรณ์*
+*เอกสารนี้ได้รับการปรับปรุงให้เป็นปัจจุบัน ครอบคลุมสถาปัตยกรรมทั้งฝั่ง Frontend, Backend REST API, Spring Security 6, JWT, LangChain4j RAG Pipeline, ระบบ Graduate Career Tracking และคู่มือการติดตั้งด้วย Quick Start Scripts อย่างสมบูรณ์*

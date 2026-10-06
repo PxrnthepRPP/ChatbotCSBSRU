@@ -26,10 +26,10 @@
 
 ## ✨ จุดเด่นของระบบ (Key Features)
 
-- 🎓 **ระบบสารสนเทศนักศึกษาครบวงจร (Student Portal)**: ตรวจสอบประวัติ, อัปเดตข้อมูลและ Avatar, ตารางเรียน Matrix Grid พร้อมป้องกันวิชาชน, ตารางสอบอัตโนมัติ, ตรวจสอบจบ 8 เทอม (รองรับทั้ง Table View และ Mobile Cards View) และการยื่นคำร้องวิชาการ
+- 🎓 **ระบบสารสนเทศนักศึกษาครบวงจร (Student Portal)**: ตรวจสอบประวัติ, อัปเดตข้อมูลและ Avatar, ตารางเรียน Matrix Grid พร้อมป้องกันวิชาชน, ตารางสอบอัตโนมัติ, ตรวจสอบจบ 8 เทอม (รองรับทั้ง Table View และ Mobile Cards View), การบันทึกและอัปเดตสายอาชีพบัณฑิต (Career Tracking) และการยื่นคำร้องวิชาการ
 - 👩‍🏫 **ระบบอาจารย์ที่ปรึกษา (Advisor Portal)**: แดชบอร์ดสถิตินักศึกษาในความดูแล, จัดการรายวิชาที่สอน, ประกาศตารางสอบ และโหมดจำลองมุมมองนักศึกษา (Impersonation Mode)
-- 👑 **ระบบผู้ดูแลระบบ (Admin Portal)**: แดชบอร์ดวิเคราะห์สถิตินักศึกษาแยกตามรุ่น (Batch Filter), จัดการข้อมูลอาจารย์-นักศึกษา (CRUD) และระบบพิจารณาอนุมัติ/ปฏิเสธคำร้องวิชาการ (PATCH Status)
-- 🤖 **BSRU CS AI Assistant (RAG Pipeline)**: ผู้ช่วย AI ตอบคำถามหลักสูตรและระเบียบวิชาการแบบเรียลไทม์ ขับเคลื่อนด้วย Google Gemini 1.5 Flash ร่วมกับ Vector Database (PGVector) พร้อม Smart Local Fallback
+- 👑 **ระบบผู้ดูแลระบบ (Admin Portal)**: แดชบอร์ดวิเคราะห์สถิตินักศึกษาแยกตามรุ่น (Batch Filter), แดชบอร์ดสถิติสายอาชีพบัณฑิตแบบ Real-time, จัดการข้อมูลอาจารย์-นักศึกษา (CRUD) พร้อมอัปเดตสายอาชีพ และระบบพิจารณาอนุมัติ/ปฏิเสธคำร้องวิชาการ (PATCH Status)
+- 🤖 **BSRU CS AI Assistant (RAG Pipeline)**: ผู้ช่วย AI ตอบคำถามหลักสูตร ระเบียบวิชาการ และสถิติสายอาชีพบัณฑิตแบบเรียลไทม์ ขับเคลื่อนด้วย Google Gemini 1.5 Flash ร่วมกับ Vector Database (PGVector) พร้อม Smart Local Fallback
 
 ---
 
@@ -125,6 +125,11 @@ docker compose up -d --build
 - Backend API: `http://localhost:8080/api`
 
 หลังแก้ค่าใน `.env` ให้รัน `docker compose up -d backend` เพื่อให้ backend อ่านค่าใหม่
+
+### 5. วิธีหยุดการทำงานและปิดระบบ (Shutdown)
+- **หยุด Backend:** กด `Ctrl + C` ในหน้าต่าง Terminal ที่กำลังรันอยู่ (หรือกดปุ่มถังขยะ Kill Terminal ใน VS Code)
+- **หยุด PostgreSQL:** รัน `docker-compose down` ใน PowerShell
+- **หยุด Frontend:** กด **Stop** โมดูล Apache ใน XAMPP Control Panel
 
 ---
 
