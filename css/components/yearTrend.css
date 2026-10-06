@@ -107,6 +107,7 @@
     color: var(--text-secondary);
     transition: all 0.2s ease;
     user-select: none;
+    white-space: nowrap;
 }
 
 .batch-chip:hover {

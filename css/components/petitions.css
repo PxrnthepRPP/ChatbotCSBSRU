@@ -412,12 +412,13 @@
 .petition-student-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 }
 
 .petition-student-info strong {
     font-size: 0.86rem;
     color: var(--g-800);
+    white-space: nowrap;
 }
 
 .petition-student-meta {
@@ -426,6 +427,7 @@
     gap: 6px;
     font-size: 0.76rem;
     color: var(--text-muted);
+    white-space: nowrap;
 }
 
 .petition-type-badge {
