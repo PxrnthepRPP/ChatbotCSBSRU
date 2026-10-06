@@ -23,6 +23,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/advisors/me")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AdvisorController {
 
     private final AdvisorInsightService insights;

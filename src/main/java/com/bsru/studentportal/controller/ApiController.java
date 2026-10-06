@@ -31,6 +31,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class ApiController {
 
     private final StudentRepository studentRepository;

@@ -19,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class StudentAdminController {
 
     private final StudentAdminService studentAdminService;
