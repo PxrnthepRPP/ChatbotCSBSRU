@@ -49,14 +49,17 @@
 #mod-manage-advisors .data-table thead,
 #mod-manage-students .data-table thead,
 #mod-manage-petitions .data-table thead {
-    background: linear-gradient(135deg, var(--red-50), var(--brand-50));
+    background: #f8fafc;
+    border-bottom: 2px solid var(--g-200);
 }
 
 #mod-manage-advisors .data-table th,
 #mod-manage-students .data-table th,
 #mod-manage-petitions .data-table th {
-    color: var(--red-600);
-    border-bottom-color: var(--red-100);
+    color: var(--g-800, #1e293b);
+    font-weight: 700;
+    border-bottom: 2px solid var(--g-200);
+    letter-spacing: 0.01em;
 }
 
 /* ============================================================

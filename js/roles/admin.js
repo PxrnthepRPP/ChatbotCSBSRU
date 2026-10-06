@@ -952,7 +952,7 @@ function renderManageStudents() {
         return `
         <tr>
             <td><strong>${esc(s.studentId)}</strong></td>
-            <td>${esc(s.nameTh)} <span class="batch-tag">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
+            <td>${esc(s.nameTh)} <span class="batch-tag batch-${batch}">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
             <td style="text-align:center"><strong>${s.gpa.toFixed(2)}</strong></td>
             <td>${s.studentSection
@@ -1446,7 +1446,7 @@ function renderManagePetitions() {
                     <strong>${esc(p.studentName)}</strong>
                     <div class="petition-student-meta">
                         <span>${esc(p.studentId)}</span>
-                        <span class="batch-tag">รุ่น ${batch}</span>
+                        <span class="batch-tag batch-${batch}">รุ่น ${batch}</span>
                     </div>
                 </div>
             </td>

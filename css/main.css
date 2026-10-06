@@ -2301,24 +2301,82 @@ body.impersonating .chatbot-fab {
     font-weight: 700
 }
 
+/* ── Cohort Batch Tags (WCAG AAA High-Contrast Semantic Chroma-Coding) ── */
 .batch-tag {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 2px 9px;
+    gap: 4.5px;
+    padding: 2.5px 8.5px;
     border-radius: var(--radius-full);
     font-size: 0.72rem;
     font-weight: 600;
     line-height: 1.35;
-    letter-spacing: 0.01em;
-    background: #eef2ff;
-    color: #4338ca;
-    border: 1px solid #c7d2fe;
+    letter-spacing: 0.015em;
     white-space: nowrap !important;
     flex-shrink: 0;
     box-sizing: border-box;
     vertical-align: middle;
+    transition: all 0.15s ease;
+    /* Default Neutral Slate Fallback */
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.batch-tag::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+/* รุ่น 66 (ปี 1 / Freshmen) — Fresh Emerald (ความกระตือรือร้น, ปี 1) */
+.batch-tag.batch-66 {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+/* รุ่น 65 (ปี 2 / Sophomores) — Ocean Sky Blue (ปี 2 สดใส มั่นคง) */
+.batch-tag.batch-65 {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+/* รุ่น 64 (ปี 3 / Juniors) — Royal Indigo (ปี 3 เชี่ยวชาญ ลึกซึ้ง) */
+.batch-tag.batch-64 {
+    background: #eef2ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
+/* รุ่น 63 (ปี 4 / Seniors) — Warm Amber (ปี 4 ว่าที่บัณฑิต เกียรติภูมิ) */
+.batch-tag.batch-63 {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+/* รุ่น 62 (ปี 5 / Super Seniors) — Rose Velvet (ปี 5 หรือเกินหลักสูตร) */
+.batch-tag.batch-62 {
+    background: #fdf2f8;
+    color: #9d174d;
+    border-color: #fbcfe8;
+}
+
+/* รุ่น 61, 60... (Alumni / ศิษย์เก่า) — Slate Neutral */
+.batch-tag.batch-61,
+.batch-tag.batch-60,
+.batch-tag.batch-59 {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
 }
 
 /* ============================================================
@@ -2365,13 +2423,15 @@ body.impersonating .chatbot-fab {
 }
 
 .btn-warning {
-    background: var(--amber-500);
-    color: #fff
+    background: #f59e0b;
+    color: #1e293b; /* WCAG AAA high-contrast dark text on amber */
+    font-weight: 700;
 }
 
 .btn-warning:hover {
-    background: var(--amber-600);
-    transform: translateY(-1px)
+    background: #d97706;
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 .btn-danger {
