@@ -49,14 +49,17 @@
 #mod-manage-advisors .data-table thead,
 #mod-manage-students .data-table thead,
 #mod-manage-petitions .data-table thead {
-    background: linear-gradient(135deg, var(--red-50), var(--brand-50));
+    background: #f8fafc;
+    border-bottom: 2px solid var(--g-200);
 }
 
 #mod-manage-advisors .data-table th,
 #mod-manage-students .data-table th,
 #mod-manage-petitions .data-table th {
-    color: var(--red-600);
-    border-bottom-color: var(--red-100);
+    color: var(--g-800, #1e293b);
+    font-weight: 700;
+    border-bottom: 2px solid var(--g-200);
+    letter-spacing: 0.01em;
 }
 
 /* ============================================================
@@ -116,5 +119,144 @@
         font-size: 0.75rem;
     }
 }
+
+/* ============================================================
+   ADMIN TABLE PAGINATION STYLES
+   ============================================================ */
+.table-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 0 0 12px 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.88rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.table-pagination-bar .pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.table-pagination-bar .pagination-info strong {
+    color: var(--text-primary, #1f2937);
+    font-weight: 600;
+}
+
+.table-pagination-bar .page-size-select {
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #1f2937);
+    font-size: 0.84rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--t-fast);
+}
+
+.table-pagination-bar .page-size-select:focus {
+    border-color: var(--red-500, #ef4444);
+}
+
+.table-pagination-bar .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.table-pagination-bar .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #374151);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.table-pagination-bar .pagination-btn:hover:not(:disabled) {
+    background: var(--red-50, #fef2f2);
+    border-color: var(--red-500, #ef4444);
+    color: var(--red-600, #dc2626);
+}
+
+.table-pagination-bar .pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--g-100, #f3f4f6);
+}
+
+.table-pagination-bar .pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.table-pagination-bar .pagination-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #374151);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.table-pagination-bar .pagination-page-btn:hover {
+    border-color: var(--red-400, #f87171);
+    color: var(--red-600, #dc2626);
+    background: var(--red-50, #fef2f2);
+}
+
+.table-pagination-bar .pagination-page-btn.active {
+    background: linear-gradient(135deg, var(--red-500, #ef4444), var(--red-600, #dc2626));
+    border-color: var(--red-600, #dc2626);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.table-pagination-bar .pagination-ellipsis {
+    padding: 0 4px;
+    color: var(--g-400, #9ca3af);
+    user-select: none;
+}
+
+@media (max-width: 640px) {
+    .table-pagination-bar {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 12px;
+    }
+    .table-pagination-bar .pagination-info {
+        justify-content: center;
+    }
+    .table-pagination-bar .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
 
 

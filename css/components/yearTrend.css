@@ -1,0 +1,375 @@
+/* ================================================================
+   BSRU Student Portal — Year Trend Analytics CSS
+   ================================================================ */
+
+/* ── Trend Chart Cards ── */
+.trend-chart-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--g-200);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.trend-chart-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.trend-chart-header {
+    padding: 18px 22px 10px;
+    border-bottom: 1px solid var(--g-100);
+}
+
+.trend-chart-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trend-chart-icon {
+    font-size: 1.1rem;
+}
+
+.trend-chart-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.trend-chart-body {
+    padding: 16px 18px 18px;
+    height: 320px;
+    position: relative;
+}
+
+/* ── Empty State ── */
+.trend-empty-state {
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.trend-empty-icon {
+    font-size: 2.4rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.trend-empty-text {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+/* ── Trend Grid Layout (2-column for charts) ── */
+.trend-analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.trend-analytics-grid > div {
+    min-width: 0;
+}
+
+@media (max-width: 992px) {
+    .trend-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Multi-Year Filter Bar Enhancements ── */
+.batch-preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+.batch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--g-200);
+    background: var(--surface);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.batch-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.batch-chip.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.batch-chip .chip-count {
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.batch-chip-preset {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.08));
+    border-color: rgba(99, 102, 241, 0.25);
+    color: var(--primary);
+}
+
+.batch-chip-preset:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+    border-color: var(--primary);
+}
+
+.batch-chip-preset.active {
+    background: linear-gradient(135deg, var(--primary), #a855f7);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
+}
+
+.filter-separator {
+    width: 1px;
+    height: 28px;
+    background: var(--g-200);
+    margin: 0 4px;
+    align-self: center;
+}
+
+/* ── Career Shift Matrix Table ── */
+.career-matrix-card {
+    margin-top: 0;
+}
+
+.career-matrix-scroll {
+    overflow-x: auto;
+    padding: 0 16px 16px;
+}
+
+.career-matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+}
+
+.career-matrix-table thead th {
+    background: var(--g-50);
+    padding: 10px 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    border-bottom: 2px solid var(--g-200);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.career-matrix-name-header {
+    text-align: left !important;
+    min-width: 180px;
+}
+
+.career-matrix-batch-header {
+    min-width: 80px;
+}
+
+.career-matrix-trend-header {
+    min-width: 70px;
+}
+
+.career-matrix-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.career-matrix-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.career-matrix-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--g-100);
+    text-align: center;
+}
+
+.career-matrix-name {
+    text-align: left !important;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.career-matrix-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--g-100);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.career-matrix-cell {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.career-matrix-zero {
+    color: var(--g-300);
+    font-weight: 400;
+}
+
+.career-matrix-high {
+    color: var(--primary);
+    font-weight: 700;
+    background: rgba(99, 102, 241, 0.06);
+    border-radius: 4px;
+}
+
+.career-matrix-row-unemployed td {
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.career-matrix-row-unemployed .career-matrix-name {
+    color: #ef4444;
+}
+
+.career-matrix-trend {
+    white-space: nowrap;
+}
+
+/* ── Trend Arrows ── */
+.trend-arrow {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.trend-hot {
+    color: #f97316;
+}
+
+.trend-up {
+    color: #22c55e;
+}
+
+.trend-neutral {
+    color: var(--text-muted);
+}
+
+.trend-down {
+    color: #ef4444;
+}
+
+.trend-good {
+    color: #22c55e;
+}
+
+.trend-bad {
+    color: #ef4444;
+}
+
+/* ── Career Matrix Legend ── */
+.career-matrix-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--g-100);
+    background: var(--g-50);
+}
+
+.career-matrix-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* ── Year-over-Year Analytics Section Header ── */
+.analytics-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 28px 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--g-100);
+}
+
+.analytics-section-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analytics-section-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), #a855f7);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 768px) {
+    .trend-chart-body {
+        height: 260px;
+        padding: 12px 10px 14px;
+    }
+
+    .batch-preset-chips {
+        gap: 4px;
+    }
+
+    .batch-chip {
+        padding: 4px 10px;
+        font-size: 0.72rem;
+    }
+
+    .career-matrix-name {
+        font-size: 0.78rem;
+    }
+
+    .career-matrix-table {
+        font-size: 0.78rem;
+    }
+
+    .analytics-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}
