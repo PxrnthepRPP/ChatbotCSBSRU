@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class DataSeeder implements CommandLineRunner {
 
     private final AdvisorRepository advisorRepository;

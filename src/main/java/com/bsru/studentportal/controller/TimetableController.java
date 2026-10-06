@@ -28,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class TimetableController {
 
     private final TimetableService timetableService;

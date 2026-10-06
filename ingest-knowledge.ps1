@@ -17,7 +17,7 @@ Write-Host ""
 
 # 1. Check Backend
 try {
-    $health = Invoke-RestMethod -Uri "$backendUrl/api/health" -Method Get -TimeoutSec 3 -ErrorAction Stop
+    $null = Invoke-RestMethod -Uri "$backendUrl/api/health" -Method Get -TimeoutSec 3 -ErrorAction Stop
     Write-Host "[OK] Spring Boot Backend is running on port 8080" -ForegroundColor Green
 } catch {
     Write-Host "[ERR] Cannot connect to Spring Boot Backend at $backendUrl" -ForegroundColor Red
