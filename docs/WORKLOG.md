@@ -2,7 +2,19 @@
 
 บันทึกงานที่ทำในแต่ละรอบ อัปเดตทุกครั้งที่ทำงานต่อ เพื่อให้กลับมาทำต่อได้ทันที
 
-Branch ปัจจุบัน: `fix/clean-unused-imports-and-null-suppressions`
+Branch ปัจจุบัน: `feat/ai-student-grades-analysis`
+
+## 2026-10-07 — รอบที่ 19: AI วิเคราะห์เกรดและข้อมูลนักศึกษาด้วย Gemini Direct Service และ Database Context Injection
+
+### สิ่งที่ทำ
+| ไฟล์ | การเปลี่ยนแปลง |
+|---|---|
+| `GeminiDirectService.java` | บริการเรียก Google Gemini REST API โดยตรง (โมเดลหลัก `gemini-3.5-flash-lite`, สำรอง `gemini-3.8-flash`) ผ่าน Java 21 `HttpClient` แก้ปัญหา LangChain4j 0.35 tool-calling ขาด `thought_signature` ใน Gemini 3.x |
+| `ChatController.java` | ดึงข้อมูลจริงจากฐานข้อมูล PostgreSQL (เกรด, ประวัตินักศึกษา, ตรวจสอบจบ, ตารางเรียน, คำร้อง) เข้า System Prompt ให้ AI ประมวลผลและวิเคราะห์เกรด แนวโน้ม และปัญหาการเรียนของนักศึกษาได้อย่างแม่นยำ พร้อมระบบตอบกลับข้อมูลจริงทันที |
+| `AiConfig.java` & `application.properties` | ตั้งค่า default model เป็น `gemini-3.5-flash-lite` ประสิทธิภาพสูงและ latency ต่ำ |
+| `start-backend.ps1` | แก้ไขชื่อ docker compose service เป็น `database` ให้ถูกต้อง |
+
+---
 
 ## 2026-10-07 — รอบที่ 18: จัดโครงสร้างโฟลเดอร์โปรเจกต์ใหม่
 
