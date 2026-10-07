@@ -149,8 +149,7 @@ ChatbotCSBSRU/
 │   └── init.sql                           # สคริปต์เปิดใช้งานส่วนขยาย CREATE EXTENSION vector;
 ├── docs/
 │   ├── DOCUMENTATION.md                   # เอกสารสถาปัตยกรรมระบบฉบับสมบูรณ์ (ไฟล์นี้)
-│   ├── USER_GUIDE.md                      # คู่มือขั้นตอนการติดตั้งและทดสอบฟังก์ชันระบบฉบับละเอียด
-│   └── WORKLOG.md                         # บันทึกการพัฒนา
+│   └── USER_GUIDE.md                      # คู่มือขั้นตอนการติดตั้งและทดสอบฟังก์ชันระบบฉบับละเอียด
 ├── scripts/
 │   └── ingest-knowledge.ps1               # นำเข้าเอกสารความรู้เข้าสู่ Vector Store (RAG) ผ่าน API
 └── tests/

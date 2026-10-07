@@ -166,8 +166,7 @@ ChatbotCSBSRU/
 │   └── init.sql              # เปิดใช้ส่วนขยาย pgvector ตอนสร้างฐานข้อมูลครั้งแรก
 ├── docs/
 │   ├── USER_GUIDE.md         # คู่มือการติดตั้งและทดสอบฟังก์ชันฉบับละเอียด
-│   ├── DOCUMENTATION.md      # เอกสารสถาปัตยกรรมและรายละเอียดเชิงเทคนิค
-│   └── WORKLOG.md            # บันทึกการพัฒนา
+│   └── DOCUMENTATION.md      # เอกสารสถาปัตยกรรมและรายละเอียดเชิงเทคนิค
 ├── scripts/
 │   └── ingest-knowledge.ps1  # นำเข้าเอกสารความรู้ให้ AI Chatbot (RAG)
 └── tests/
