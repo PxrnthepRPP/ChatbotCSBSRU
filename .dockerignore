@@ -12,3 +12,7 @@ css
 js
 index.html
 *.md
+docs
+tests
+scripts
+database

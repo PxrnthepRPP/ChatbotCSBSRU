@@ -24,7 +24,6 @@ import java.util.TreeMap;
  */
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AcademicRecordService {
 
     public record Course(String code, String name, int credits, String grade, Double gradePoint) {}

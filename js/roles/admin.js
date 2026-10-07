@@ -229,7 +229,7 @@ export async function initAdminDashboard() {
 }
 
 /**
- * Compute active batches for preset ranges (all, last4, last3, active, or single).
+ * Compute active batches for preset ranges (all, last4, active, or single).
  * @param {string} mode
  * @param {string[]} allBatches
  * @param {Array} [pool]
@@ -237,8 +237,7 @@ export async function initAdminDashboard() {
  */
 function resolveBatchRange(mode, allBatches, pool = MOCK_STUDENTS_POOL) {
     if (mode === 'all') return allBatches;
-    if (mode === 'last4') return allBatches.slice(0, 4);
-    if (mode === 'last3') return allBatches.slice(0, 3);
+    if (mode === 'last4' || mode === 'last3') return allBatches.slice(0, 4);
     if (mode === 'active') {
         return allBatches.filter(b => pool.some(s => getBatch(s.studentId) === b && s.status === 'กำลังศึกษา'));
     }
@@ -292,15 +291,11 @@ function renderAdminDashboard() {
     const isMultiMode = activeBatches.length > 1;
 
     // Build preset options for the dropdown
-    const last4Label = allBatches.length >= 4 ? `⏱️ 4 ปีล่าสุด (รุ่น ${allBatches.slice(0, 4).reverse().join('-')})` : null;
-    const last3Label = allBatches.length >= 3 ? `⏱️ 3 ปีล่าสุด (รุ่น ${allBatches.slice(0, 3).reverse().join('-')})` : null;
-    const activeCount = allBatches.filter(b => MOCK_STUDENTS_POOL.some(s => getBatch(s.studentId) === b && s.status === 'กำลังศึกษา')).length;
+    const last4Label = allBatches.length >= 4 ? '⏱️ 4 ปีล่าสุด' : null;
 
     const batchOpts = [
         `<option value="all" ${adminDashboardSelectedBatch === 'all' ? 'selected' : ''}>ทุกรุ่น / ทุกปีการศึกษา (All Batches) — รวม ${MOCK_STUDENTS_POOL.length} คน</option>`,
         last4Label ? `<option value="last4" ${adminDashboardSelectedBatch === 'last4' ? 'selected' : ''}>${last4Label}</option>` : '',
-        last3Label ? `<option value="last3" ${adminDashboardSelectedBatch === 'last3' ? 'selected' : ''}>${last3Label}</option>` : '',
-        `<option value="active" ${adminDashboardSelectedBatch === 'active' ? 'selected' : ''}>📗 เฉพาะรุ่นที่กำลังศึกษา (${activeCount} รุ่น)</option>`,
         `<option value="multi" ${adminDashboardSelectedBatch === 'multi' ? 'selected' : ''}>🎛️ เลือกเองหลายรุ่น (Multi-Select)</option>`,
         `<option disabled>─── แยกตามรุ่น ───</option>`,
         ...allBatches.map(b => {
@@ -326,23 +321,44 @@ function renderAdminDashboard() {
     // Build selected text label
     let selectedBatchText;
     if (adminDashboardSelectedBatch === 'all') selectedBatchText = 'ทุกรุ่น / ทุกปีการศึกษา';
-    else if (adminDashboardSelectedBatch === 'last4') selectedBatchText = `4 ปีล่าสุด (รุ่น ${activeBatches.slice().reverse().join(', ')})`;
-    else if (adminDashboardSelectedBatch === 'last3') selectedBatchText = `3 ปีล่าสุด (รุ่น ${activeBatches.slice().reverse().join(', ')})`;
-    else if (adminDashboardSelectedBatch === 'active') selectedBatchText = `เฉพาะรุ่นกำลังศึกษา (${activeBatches.length} รุ่น)`;
+    else if (adminDashboardSelectedBatch === 'last4' || adminDashboardSelectedBatch === 'last3') selectedBatchText = '4 ปีล่าสุด';
     else if (adminDashboardSelectedBatch === 'multi') selectedBatchText = `เลือก ${activeBatches.length} รุ่น (${activeBatches.slice().reverse().join(', ')})`;
     else selectedBatchText = `รุ่น ${adminDashboardSelectedBatch} (เข้าปีการศึกษา 25${adminDashboardSelectedBatch})`;
 
-    // Build multi-select chips (shown when mode is 'multi' or any multi-batch preset)
+    // Build multi-select chips panel (shown when mode is 'multi')
     const showChips = adminDashboardSelectedBatch === 'multi';
     const chipsHtml = showChips ? `
-        <div class="batch-preset-chips" id="adminBatchChips">
-            ${allBatches.map(b => {
-                const count = MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === b).length;
-                const isActive = adminDashboardSelectedBatches.includes(b);
-                return `<button class="batch-chip ${isActive ? 'active' : ''}" data-batch="${b}">
-                    รุ่น ${b} <span class="chip-count">(${count})</span>
-                </button>`;
-            }).join('')}
+        <div class="batch-multi-panel" id="adminBatchChipsPanel">
+            <div class="batch-multi-panel-header">
+                <div class="batch-multi-panel-title">
+                    <span class="batch-multi-icon">🏷️</span>
+                    <span class="batch-multi-text">เลือกรุ่นที่ต้องการดูพร้อมกัน:</span>
+                    <span class="batch-multi-count-pill">เลือกแล้ว ${adminDashboardSelectedBatches.length} / ${allBatches.length} รุ่น</span>
+                </div>
+                <div class="batch-multi-actions">
+                    <button type="button" class="batch-quick-btn" id="btnBatchSelectAll" title="เลือกทุกรุ่น">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
+                        เลือกทั้งหมด
+                    </button>
+                    <button type="button" class="batch-quick-btn" id="btnBatchSelectLast4" title="เลือก 4 ปีล่าสุด">
+                        ⏱️ 4 ปีล่าสุด
+                    </button>
+                    <button type="button" class="batch-quick-btn batch-quick-btn-clear" id="btnBatchClear" title="เลือกรุ่นล่าสุดรุ่นเดียว">
+                        ↺ รุ่นล่าสุด
+                    </button>
+                </div>
+            </div>
+            <div class="batch-preset-chips" id="adminBatchChips" role="group" aria-label="เลือกรุ่นนักศึกษา">
+                ${allBatches.map(b => {
+                    const count = MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === b).length;
+                    const isActive = adminDashboardSelectedBatches.includes(b);
+                    return `<button type="button" class="batch-chip ${isActive ? 'active' : ''}" data-batch="${b}" aria-pressed="${isActive}">
+                        <span class="chip-indicator" aria-hidden="true">${isActive ? '✓' : '＋'}</span>
+                        <span class="chip-label">รุ่น ${b}</span>
+                        <span class="chip-count">(${count})</span>
+                    </button>`;
+                }).join('')}
+            </div>
         </div>` : '';
 
     container.innerHTML = `
@@ -435,23 +451,48 @@ function renderAdminDashboard() {
         renderAdminDashboard();
     });
 
-    // Event: multi-select batch chips
+    // Event: multi-select batch chips & quick actions
     if (showChips) {
         document.querySelectorAll('#adminBatchChips .batch-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const batch = chip.dataset.batch;
                 if (adminDashboardSelectedBatches.includes(batch)) {
-                    // Prevent deselecting last chip
+                    // Prevent deselecting last chip (must keep at least 1)
                     if (adminDashboardSelectedBatches.length > 1) {
                         adminDashboardSelectedBatches = adminDashboardSelectedBatches.filter(b => b !== batch);
                     }
                 } else {
                     adminDashboardSelectedBatches.push(batch);
-                    adminDashboardSelectedBatches.sort();
+                    // Maintain descending batch order matching allBatches
+                    adminDashboardSelectedBatches = allBatches.filter(b => adminDashboardSelectedBatches.includes(b));
                 }
                 renderAdminDashboard();
             });
         });
+
+        const btnAll = document.getElementById('btnBatchSelectAll');
+        if (btnAll) {
+            btnAll.addEventListener('click', () => {
+                adminDashboardSelectedBatches = [...allBatches];
+                renderAdminDashboard();
+            });
+        }
+
+        const btnLast4 = document.getElementById('btnBatchSelectLast4');
+        if (btnLast4) {
+            btnLast4.addEventListener('click', () => {
+                adminDashboardSelectedBatches = allBatches.slice(0, 4);
+                renderAdminDashboard();
+            });
+        }
+
+        const btnClear = document.getElementById('btnBatchClear');
+        if (btnClear) {
+            btnClear.addEventListener('click', () => {
+                adminDashboardSelectedBatches = [allBatches[0]];
+                renderAdminDashboard();
+            });
+        }
     }
 
     // Load chart CSS and render all components
@@ -912,15 +953,11 @@ function renderManageStudents() {
     const allBatches = [...new Set(MOCK_STUDENTS_POOL.map(s => getBatch(s.studentId)))].sort().reverse();
     const activeBatches = resolveBatchRange(adminLastSelectedBatch, allBatches, MOCK_STUDENTS_POOL);
 
-    const last4Label = allBatches.length >= 4 ? `⏱️ 4 ปีล่าสุด (รุ่น ${allBatches.slice(0, 4).reverse().join('-')})` : null;
-    const last3Label = allBatches.length >= 3 ? `⏱️ 3 ปีล่าสุด (รุ่น ${allBatches.slice(0, 3).reverse().join('-')})` : null;
-    const activeCount = allBatches.filter(b => MOCK_STUDENTS_POOL.some(s => getBatch(s.studentId) === b && s.status === 'กำลังศึกษา')).length;
+    const last4Label = allBatches.length >= 4 ? '⏱️ 4 ปีล่าสุด' : null;
 
     const filterOpts = [
         `<option value="all" ${adminLastSelectedBatch === 'all' ? 'selected' : ''}>ทุกรุ่น / ทุกปีการศึกษา (All Batches) — รวม ${MOCK_STUDENTS_POOL.length} คน</option>`,
         last4Label ? `<option value="last4" ${adminLastSelectedBatch === 'last4' ? 'selected' : ''}>${last4Label}</option>` : '',
-        last3Label ? `<option value="last3" ${adminLastSelectedBatch === 'last3' ? 'selected' : ''}>${last3Label}</option>` : '',
-        `<option value="active" ${adminLastSelectedBatch === 'active' ? 'selected' : ''}>📗 เฉพาะรุ่นที่กำลังศึกษา (${activeCount} รุ่น)</option>`,
         `<option disabled>─── แยกตามรุ่น ───</option>`,
         ...allBatches.map(b => {
             const count = MOCK_STUDENTS_POOL.filter(s => getBatch(s.studentId) === b).length;
@@ -975,9 +1012,7 @@ function renderManageStudents() {
 
     let selectedBatchDesc;
     if (adminLastSelectedBatch === 'all') selectedBatchDesc = 'ทุกรุ่น';
-    else if (adminLastSelectedBatch === 'last4') selectedBatchDesc = `4 ปีล่าสุด (${activeBatches.slice().reverse().join(', ')})`;
-    else if (adminLastSelectedBatch === 'last3') selectedBatchDesc = `3 ปีล่าสุด (${activeBatches.slice().reverse().join(', ')})`;
-    else if (adminLastSelectedBatch === 'active') selectedBatchDesc = `รุ่นกำลังศึกษา (${activeBatches.length} รุ่น)`;
+    else if (adminLastSelectedBatch === 'last4' || adminLastSelectedBatch === 'last3') selectedBatchDesc = '4 ปีล่าสุด';
     else selectedBatchDesc = `รุ่น ${adminLastSelectedBatch}`;
 
     const paginationHtml = totalStudents > 0 ? `
@@ -1388,13 +1423,11 @@ function renderManagePetitions() {
     const allBatches = [...new Set(MOCK_PETITIONS_LOG.map(p => getBatch(p.studentId)))].sort().reverse();
     const activeBatches = resolveBatchRange(adminPetitionsBatch, allBatches, MOCK_PETITIONS_LOG);
 
-    const last4Label = allBatches.length >= 4 ? `⏱️ 4 ปีล่าสุด (รุ่น ${allBatches.slice(0, 4).reverse().join('-')})` : null;
-    const last3Label = allBatches.length >= 3 ? `⏱️ 3 ปีล่าสุด (รุ่น ${allBatches.slice(0, 3).reverse().join('-')})` : null;
+    const last4Label = allBatches.length >= 4 ? '⏱️ 4 ปีล่าสุด' : null;
 
     const batchFilterOpts = [
         `<option value="all" ${adminPetitionsBatch === 'all' ? 'selected' : ''}>ทุกรุ่น / ทุกปีการศึกษา (All Batches)</option>`,
         last4Label ? `<option value="last4" ${adminPetitionsBatch === 'last4' ? 'selected' : ''}>${last4Label}</option>` : '',
-        last3Label ? `<option value="last3" ${adminPetitionsBatch === 'last3' ? 'selected' : ''}>${last3Label}</option>` : '',
         `<option disabled>─── แยกตามรุ่น ───</option>`,
         ...allBatches.map(b => `<option value="${b}" ${adminPetitionsBatch === b ? 'selected' : ''}>รุ่น ${b}</option>`),
     ].filter(Boolean).join('');
@@ -1472,8 +1505,7 @@ function renderManagePetitions() {
 
     let selectedPetBatchDesc;
     if (adminPetitionsBatch === 'all') selectedPetBatchDesc = 'ทุกรุ่น';
-    else if (adminPetitionsBatch === 'last4') selectedPetBatchDesc = `4 ปีล่าสุด (${activeBatches.slice().reverse().join(', ')})`;
-    else if (adminPetitionsBatch === 'last3') selectedPetBatchDesc = `3 ปีล่าสุด (${activeBatches.slice().reverse().join(', ')})`;
+    else if (adminPetitionsBatch === 'last4' || adminPetitionsBatch === 'last3') selectedPetBatchDesc = '4 ปีล่าสุด';
     else selectedPetBatchDesc = `รุ่น ${adminPetitionsBatch}`;
 
     const paginationHtml = totalPetitions > 0 ? `

@@ -254,3 +254,83 @@
     width: 20px;
     height: 20px;
 }
+
+/* ── Admin Multi-Batch Filter Panel (Dark Theme) ── */
+[data-theme="dark"] .batch-multi-panel {
+    background: var(--bg-card);
+    border-color: var(--g-200);
+    border-left-color: var(--brand-500);
+}
+
+[data-theme="dark"] .batch-multi-panel-header {
+    border-bottom-color: var(--g-200);
+}
+
+[data-theme="dark"] .batch-multi-count-pill {
+    background: var(--brand-100);
+    color: var(--brand-300);
+    border-color: var(--brand-200);
+}
+
+[data-theme="dark"] .batch-quick-btn {
+    background: var(--g-100);
+    border-color: var(--g-200);
+    color: var(--g-700);
+}
+
+[data-theme="dark"] .batch-quick-btn:hover {
+    background: var(--brand-100);
+    border-color: var(--brand-400);
+    color: var(--brand-300);
+}
+
+[data-theme="dark"] .batch-quick-btn-clear:hover {
+    background: #3c1417;
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .batch-chip {
+    background: var(--g-50);
+    border-color: var(--g-300);
+    color: var(--text-main);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .batch-chip .chip-indicator {
+    background: var(--g-200);
+    color: var(--g-500);
+}
+
+[data-theme="dark"] .batch-chip .chip-count {
+    background: var(--g-100);
+    color: var(--g-500);
+}
+
+[data-theme="dark"] .batch-chip:hover {
+    background: #172642;
+    border-color: var(--brand-400);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .batch-chip:hover .chip-indicator {
+    background: var(--brand-200);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .batch-chip.active {
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+
+[data-theme="dark"] .batch-chip.active .chip-indicator {
+    background: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .batch-chip.active .chip-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}

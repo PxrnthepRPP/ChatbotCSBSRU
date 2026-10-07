@@ -2,7 +2,38 @@
 
 บันทึกงานที่ทำในแต่ละรอบ อัปเดตทุกครั้งที่ทำงานต่อ เพื่อให้กลับมาทำต่อได้ทันที
 
-Branch ปัจจุบัน: `feat/chatbot-student-grades`
+Branch ปัจจุบัน: `fix/clean-unused-imports-and-null-suppressions`
+
+## 2026-10-07 — รอบที่ 18: จัดโครงสร้างโฟลเดอร์โปรเจกต์ใหม่
+
+### สิ่งที่ทำ
+| ไฟล์ / โฟลเดอร์ | การเปลี่ยนแปลง |
+|---|---|
+| `docs/` | ย้าย `DOCUMENTATION.md`, `USER_GUIDE.md`, `WORKLOG.md` มาไว้ที่นี่ (`README.md` ยังอยู่ที่ root) และแก้ลิงก์ระหว่างเอกสารเป็น relative path |
+| `tests/` | ย้าย `test-e2e.mjs`, `test-e2e-api.ps1`, `test-chatbot.ps1`, `chatbot-test-questions.json` — รายงานผลอยู่ที่ `tests/chatbot-test-report.md` (`.gitignore` อัปเดตแล้ว) |
+| `scripts/` | ย้าย `ingest-knowledge.ps1` |
+| `database/` | ย้าย `init.sql` และแก้ path ใน `docker-compose.yml` |
+| `com.bsru.studentportal.ai` | package ใหม่สำหรับ AI Chatbot: ย้าย `ChatbotService`, `StudentRecordTools`, `AdvisorTools` (จาก `service`) และ `FreshToolDataChatMemoryStore` (จาก `config`) |
+| `README.md` & `docs/DOCUMENTATION.md` | อัปเดตแผนผังโครงสร้างโปรเจกต์ให้ตรงกับไฟล์จริงทั้งหมด |
+
+- Frontend (`index.html`, `css/`, `js/`, `assets/`) และ `start-backend.*` คงไว้ที่ root เพื่อให้ URL XAMPP `http://localhost/ChatbotCSBSRU/` และการดับเบิลคลิกเปิด Backend ใช้งานได้เหมือนเดิม
+- ทดสอบ: `mvnw.cmd compile` ผ่าน, `docker compose config` ผ่าน
+
+---
+
+## 2026-10-07 — รอบที่ 17: ปรับปรุง UI Multi-Select Batch Chips, ลบตัวเลือก 3 ปีล่าสุด และลบ "📗 เฉพาะรุ่นที่กำลังศึกษา"
+
+### สิ่งที่ทำ
+| ไฟล์ | การเปลี่ยนแปลง |
+|---|---|
+| `css/components/yearTrend.css` | แก้ไขตัวแปร CSS ที่ undefined (`--surface`, `--primary`, `--text-primary`, `--text-secondary`) และปรับสไตล์ `.batch-chip` ให้อ่านง่าย คมชัด (High-Contrast WCAG AAA) สีคราม-น้ำเงิน BSRU Gradient พร้อมไอคอนตัวระบุสถานะเลือก และกล่องการ์ด `.batch-multi-panel` |
+| `css/roles/admin.css` | เพิ่มสไตล์การแสดงผล `.batch-multi-panel` และ `.batch-chip` รองรับ Instant First Paint ไม่กระพริบ |
+| `css/main.css` | เพิ่ม Base fallback styles ให้กับปุ่มและชิปตัวเลือกรุ่น |
+| `css/theme-dark.css` | เพิ่ม Dark mode styling สำหรับชิปและกล่องเลือกหลายรุ่น |
+| `js/roles/admin.js` | 1. ลบตัวเลือก 3 ปีล่าสุด ให้เหลือเฉพาะ "⏱️ 4 ปีล่าสุด"<br>2. ลบตัวเลือก "📗 เฉพาะรุ่นที่กำลังศึกษา" ออกจากดรอปดาวน์ทั้งในแดชบอร์ดและหน้าจัดการนักศึกษา<br>3. ปรับชื่อตัวเลือก "⏱️ 4 ปีล่าสุด" ให้กระชับ โดยตัดคำอธิบายกำกับ `(รุ่น 63-64-65-66)` ออก เพื่อความยืดหยุ่นและเป็นสากลตลอดไป<br>4. ปรับปรุงแถบ Multi-select chips ให้มีปุ่ม Quick Actions ("เลือกทั้งหมด", "⏱️ 4 ปีล่าสุด", "↺ รุ่นล่าสุด") |
+| `USER_GUIDE.md` & `DOCUMENTATION.md` | อัปเดตคู่มือการใช้งานและเอกสารระบบให้สอดคล้องกับตัวกรองรุ่นล่าสุด |
+| `start-backend.ps1` & `.bat` | เพิ่มระบบปิด Windows QuickEdit Mode อัตโนมัติป้องกันคลิกเมาส์แล้วเทอร์มินัลค้าง และตรวจสอบ Port 8080 ชน |
+| `ChatController.java` | Fast Fallback ทันทีเมื่อ API key ไม่ถูกต้อง ลดเวลารอจาก 60–90 วินาทีเหลือ 0 วินาที |
 
 ---
 

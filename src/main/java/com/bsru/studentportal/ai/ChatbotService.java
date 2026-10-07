@@ -1,4 +1,4 @@
-package com.bsru.studentportal.service;
+package com.bsru.studentportal.ai;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;

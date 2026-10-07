@@ -1,5 +1,6 @@
 package com.bsru.studentportal.config;
 
+import com.bsru.studentportal.ai.FreshToolDataChatMemoryStore;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;

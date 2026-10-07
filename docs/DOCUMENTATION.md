@@ -6,7 +6,7 @@
 
 > **🎯 วัตถุประสงค์ของเอกสารนี้:**  
 > เอกสารฉบับนี้มีหน้าที่เป็น **เอกสารสถาปัตยกรรมและข้อกำหนดเชิงเทคนิคฉบับสมบูรณ์ (Technical Architecture & Developer Specs)** สำหรับ **นักพัฒนาซอฟต์แวร์ (Developers), วิศวกรระบบ (System Engineers) และผู้ประเมินเชิงเทคนิค** โดยรวบรวมรายละเอียดสถาปัตยกรรม Full-Stack, วงจรความปลอดภัย Spring Security 6 + JWT, ระบบ LangChain4j RAG Pipeline, รายละเอียด REST API Endpoints ทุกเส้นทาง และโครงสร้างฐานข้อมูล DDL Schema  
-> 🔗 *ย้อนกลับไปหน้าแรก: [README.md](README.md) | คู่มือการติดตั้งและทดสอบฟังก์ชัน: [USER_GUIDE.md](USER_GUIDE.md)*
+> 🔗 *ย้อนกลับไปหน้าแรก: [README.md](../README.md) | คู่มือการติดตั้งและทดสอบฟังก์ชัน: [USER_GUIDE.md](USER_GUIDE.md)*
 
 ---
 
@@ -56,85 +56,108 @@
 
 ```
 ChatbotCSBSRU/
+├── README.md                              # เอกสารแนะนำโปรเจกต์และเริ่มต้นใช้งานด่วน (Quick Start)
+├── start-backend.bat                      # ดับเบิลคลิกเพื่อสตาร์ท Backend (เรียก start-backend.ps1)
+├── start-backend.ps1                      # สคริปต์สตาร์ท Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
+├── mvnw.cmd                               # ตัวเรียก Maven สำหรับ Windows
+├── pom.xml                                # Maven Dependencies (Spring Boot, Security, JJWT, LangChain4j, Postgres)
+├── Dockerfile                             # Multi-stage Build ของ Spring Boot Backend
+├── docker-compose.yml                     # Docker: PostgreSQL 16 + pgvector, Backend และ Frontend (nginx)
 ├── .env.example                           # ไฟล์แม่แบบตัวแปรสภาพแวดล้อม (Template Environment)
 ├── .env                                   # ค่าจริง Environment Variables (ไม่ commit ใน Git)
-├── start-backend.bat                      # สคริปต์สตาร์ท Backend สำหรับ Windows CMD (อ่าน .env อัตโนมัติ)
-├── start-backend.ps1                      # สคริปต์สตาร์ท Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
-├── docker-compose.yml                     # คอนฟิกูเรชัน Docker PostgreSQL 16 + pgvector
-├── init.sql                               # สคริปต์เปิดใช้งานส่วนขยาย CREATE EXTENSION vector;
-├── pom.xml                                # Maven Dependencies (Spring Boot, Security, JJWT, LangChain4j, Postgres)
-├── README.md                              # เอกสารแนะนำโปรเจกต์และเริ่มต้นใช้งานด่วน (Quick Start)
-├── USER_GUIDE.md                          # คู่มือขั้นตอนการติดตั้งและทดสอบฟังก์ชันระบบฉบับละเอียด
-├── DOCUMENTATION.md                       # เอกสารสรุปภาพรวมและคู่มือสถาปัตยกรรมระบบฉบับสมบูรณ์
+│
 ├── index.html                             # หน้าเว็บหลัก SPA (Login, Sidebar, Main Modules, Modals, Chatbot)
 ├── assets/
 │   └── images/                            # รูปภาพ โลโก้สาขาวิชา และตรามหาวิทยาลัย BSRU
 ├── css/
 │   ├── main.css                           # ดีไซน์ซิสเต็ม ตัวแปรสี เลย์เอาต์ แถบเมนู Toast และสไตล์พื้นฐาน
+│   ├── theme-dark.css                     # ธีมมืด (กำหนด Design Tokens ใหม่เมื่อ data-theme="dark")
 │   ├── components/                        # สไตล์เฉพาะของแต่ละ Component (Loaded On-Demand)
 │   │   ├── chatbot.css                    # หน้าต่างและการโต้ตอบของ Floating AI Chatbot Widget (Responsive)
+│   │   ├── petitions.css                  # ฟอร์มยื่นคำร้อง, Drag & Drop Upload, ตาราง Log คำร้อง
 │   │   ├── statusChart.css                # กราฟโดนัทแสดงสถิติสถานะนักศึกษา (Chart.js)
 │   │   ├── timetable.css                  # ตารางเรียนแบบ Matrix Grid และ Mobile Agenda
-│   │   └── petitions.css                  # ฟอร์มยื่นคำร้อง, Drag & Drop Upload, ตาราง Log คำร้อง
+│   │   └── yearTrend.css                  # การ์ดกราฟวิเคราะห์แนวโน้มรายปีการศึกษา
 │   └── roles/                             # สไตล์เฉพาะของแต่ละบทบาทผู้ใช้งาน
 │       ├── admin.css                      # ธีมและลูกเล่นของผู้ดูแลระบบ (Red Accent)
 │       ├── advisor.css                    # ธีมของอาจารย์ที่ปรึกษา (Blue Accent)
 │       └── student.css                    # ธีมของนักศึกษา (Green Accent & Glow Effects)
 ├── js/
-│   ├── main.js                            # Entry Point หลัก, Navigation Config, Routing, Utility Helpers
+│   ├── main.js                            # Entry Point หลัก, Navigation Config, Routing
 │   ├── api.js                             # REST API Client Utility (Auto JWT Bearer Token Injection)
 │   ├── auth.js                            # ระบบยืนยันตัวตน, Session Persist, และ Impersonation Mode
 │   ├── state.js                           # ตัวจัดการสถานะรวมของแอปพลิเคชัน (Pub/Sub Centralized State Store)
+│   ├── theme.js                           # สลับธีมสว่าง / มืด และจดจำค่าที่เลือก
 │   ├── css-loader.js                      # ตัวโหลด CSS แบบอะซิงโครนัสตามโมดูลที่เปิดใช้งาน
 │   ├── utils.js                           # ฟังก์ชันช่วยเหลือสากล เช่น Debounce, Toast Notifications
 │   ├── components/
 │   │   ├── chatbot.js                     # การทำงานของ AI Chatbot โต้ตอบแบบเรียลไทม์ผ่าน REST API
-│   │   ├── statusChart.js                 # ประมวลผลและวาด Chart.js สัดส่วนสถานะนักศึกษา
 │   │   ├── careerCatalog.js               # แคตตาล็อกมาตรฐาน 18+ สายอาชีพ IT/CS, สถานะ และช่วงเงินเดือน
-│   │   └── careerList.js                  # วิเคราะห์และแสดงสถิติเส้นทางอาชีพบัณฑิต
+│   │   ├── careerList.js                  # วิเคราะห์และแสดงสถิติเส้นทางอาชีพบัณฑิต
+│   │   ├── password.js                    # หน้าต่างเปลี่ยนรหัสผ่าน (ทุกบทบาท)
+│   │   ├── statusChart.js                 # ประมวลผลและวาด Chart.js สัดส่วนสถานะนักศึกษา
+│   │   └── yearTrendCharts.js             # กราฟเปรียบเทียบแนวโน้มรายปีการศึกษา
 │   └── roles/
 │       ├── admin.js                       # หน้าแดชบอร์ด, จัดการอาจารย์, จัดการนักศึกษา, พิจารณาคำร้อง
 │       ├── advisor.js                     # หน้าแดชบอร์ดอาจารย์, นักศึกษาในที่ปรึกษา, ประกาศตารางสอบ
 │       └── student.js                     # ประวัติ, ตารางเรียน, การเงิน, เกรด, ตรวจสอบจบ, กิจกรรม, ยื่นคำร้อง
-└── src/
-    └── main/
-        ├── java/com/bsru/studentportal/
-        │   ├── BsruStudentPortalApplication.java # Spring Boot Application Main Class
-        │   ├── config/
-        │   │   ├── CorsConfig.java               # Global Spring MVC CORS Config
-        │   │   ├── SecurityConfig.java           # Spring Security 6 FilterChain, Stateless Session & CORS
-        │   │   ├── AiConfig.java                 # LangChain4j Gemini Models, PGVector Store & ContentRetriever
-        │   │   └── DataSeeder.java               # CommandLineRunner เติมข้อมูลตั้งต้นลง PostgreSQL
-        │   ├── security/
-        │   │   ├── JwtUtil.java                  # การสร้าง ถอดรหัส และตรวจสอบความถูกต้องของ JWT Token
-        │   │   └── JwtAuthenticationFilter.java  # OncePerRequestFilter ดักจับและยืนยัน Bearer Token
-        │   ├── model/
-        │   │   ├── Student.java                  # JPA Entity: ตาราง students
-        │   │   ├── Advisor.java                  # JPA Entity: ตาราง advisors
-        │   │   └── AcademicPetition.java         # JPA Entity: ตาราง academic_petitions
-        │   ├── repository/
-        │   │   ├── StudentRepository.java        # Spring Data JPA Repository สำหรับนักศึกษา
-        │   │   ├── AdvisorRepository.java        # Spring Data JPA Repository สำหรับอาจารย์
-        │   │   └── AcademicPetitionRepository.java # Spring Data JPA Repository สำหรับคำร้อง
-        │   ├── service/
-        │   │   ├── ChatbotService.java           # LangChain4j @AiService Chatbot Interface
-        │   │   └── KnowledgeIngestionService.java# RAG Document Splitter & Vector Ingestion Service
-        │   ├── controller/
-        │   │   ├── ApiController.java            # REST API: Students, Advisors, Petitions (CRUD/Patch)
-        │   │   ├── AuthController.java           # REST API: POST /api/auth/login
-        │   │   ├── ChatController.java           # REST API: POST /api/chat (AI Chatbot & Career Q&A)
-        │   │   └── KnowledgeController.java      # REST API: POST /api/admin/knowledge/ingest
-        │   ├── dto/
-        │   │   ├── LoginRequest.java             # DTO เข้าสู่ระบบ
-        │   │   ├── LoginResponse.java            # DTO ข้อมูล JWT Token และ User Profile
-        │   │   ├── CareerUpdateRequest.java      # DTO ข้อมูลอัปเดตสายอาชีพและสถานะการทำงาน
-        │   │   ├── PetitionRequest.java          # DTO ข้อมูลยื่นคำร้องใหม่
-        │   │   ├── PetitionStatusUpdateRequest.java # DTO ข้อมูลพิจารณาอนุมัติ/ปฏิเสธคำร้อง
-        │   │   ├── ChatRequest.java              # DTO ส่งข้อความคุยกับ AI
-        │   │   ├── ChatResponse.java             # DTO คำตอบจาก AI Chatbot
-        │   │   └── KnowledgeIngestRequest.java   # DTO ข้อมูลนำเข้าเอกสารความรู้ RAG
-        └── resources/
-            └── application.properties            # ค่าคอนฟิกูเรชัน DataSource, JPA, JWT, และ Gemini API
+│
+├── src/main/
+│   ├── java/com/bsru/studentportal/
+│   │   ├── BsruStudentPortalApplication.java # Spring Boot Application Main Class
+│   │   ├── ai/                               # AI Chatbot (LangChain4j)
+│   │   │   ├── ChatbotService.java           # @AiService Chatbot Interface และ System Prompt
+│   │   │   ├── StudentRecordTools.java       # @Tool เกรด ตรวจสอบจบ คำร้อง ตารางเรียน ของนักศึกษาที่ล็อกอิน
+│   │   │   ├── AdvisorTools.java             # @Tool ภาพรวมและวิเคราะห์ความเสี่ยงนักศึกษาในที่ปรึกษา
+│   │   │   └── FreshToolDataChatMemoryStore.java # Chat Memory ที่ไม่เก็บผลลัพธ์ Tool เก่า (บังคับดึงข้อมูลใหม่)
+│   │   ├── config/
+│   │   │   ├── AiConfig.java                 # LangChain4j Gemini Models, PGVector Store, ContentRetriever, Chat Memory
+│   │   │   ├── CorsConfig.java               # Global Spring MVC CORS Config
+│   │   │   ├── DataSeeder.java               # CommandLineRunner เติมข้อมูลตั้งต้นลง PostgreSQL
+│   │   │   └── SecurityConfig.java           # Spring Security 6 FilterChain, Stateless Session & CORS
+│   │   ├── controller/
+│   │   │   ├── ApiController.java            # REST API: Students, Advisors, Petitions, Health
+│   │   │   ├── AuthController.java           # REST API: /api/auth (Login, เปลี่ยนรหัสผ่าน)
+│   │   │   ├── AdvisorController.java        # REST API: /api/advisors/me (นักศึกษาในที่ปรึกษา)
+│   │   │   ├── StudentAdminController.java   # REST API: /api/students (Admin CRUD นักศึกษา)
+│   │   │   ├── TimetableController.java      # REST API: ตารางเรียน, Section, ช่วงลงทะเบียน
+│   │   │   ├── ChatController.java           # REST API: POST /api/chat (AI Chatbot & Career Q&A)
+│   │   │   └── KnowledgeController.java      # REST API: POST /api/admin/knowledge/ingest
+│   │   ├── dto/                              # Request / Response DTOs (Login, Chat, Petition, Section, Student ฯลฯ)
+│   │   ├── model/                            # JPA Entities: Student, Advisor, UserAccount, AcademicPetition,
+│   │   │                                     #   CourseGrade, ClassSection, SectionEnrollment, RegistrationPeriod,
+│   │   │                                     #   GraduationAudit, GraduationProgress
+│   │   ├── repository/                       # Spring Data JPA Repository ของแต่ละ Entity
+│   │   ├── security/
+│   │   │   ├── CurrentUser.java              # อ่านตัวตนผู้เรียก (Student / Advisor / Admin) จาก JWT
+│   │   │   ├── JwtAuthenticationFilter.java  # OncePerRequestFilter ดักจับและยืนยัน Bearer Token
+│   │   │   └── JwtUtil.java                  # การสร้าง ถอดรหัส และตรวจสอบความถูกต้องของ JWT Token
+│   │   └── service/
+│   │       ├── AccountService.java           # ตรวจรหัสผ่าน, ล็อกบัญชีเมื่อผิดซ้ำ, เปลี่ยน / รีเซ็ตรหัสผ่าน
+│   │       ├── AcademicRecordService.java    # ผลการเรียน เกรดรายภาค และคำนวณ GPA
+│   │       ├── AdvisorInsightService.java    # วิเคราะห์ความเสี่ยงนักศึกษาในที่ปรึกษา
+│   │       ├── GraduationAuditService.java   # ตรวจสอบหน่วยกิตตามโครงสร้างหลักสูตร
+│   │       ├── KnowledgeIngestionService.java # RAG Document Splitter & Vector Ingestion Service
+│   │       ├── StudentAdminService.java      # Admin จัดการข้อมูลนักศึกษาในฐานข้อมูล
+│   │       └── TimetableService.java         # ตารางเรียน การลงทะเบียน และตรวจเวลาชนกัน
+│   └── resources/
+│       ├── application.properties            # ค่าคอนฟิกูเรชัน DataSource, JPA, JWT, และ Gemini API
+│       ├── graduation/                       # ข้อมูลตรวจสอบจบรายนักศึกษา (JSON)
+│       └── sample/                           # ข้อมูลตัวอย่างนักศึกษา (legacy-students.json)
+│
+├── database/
+│   └── init.sql                           # สคริปต์เปิดใช้งานส่วนขยาย CREATE EXTENSION vector;
+├── docs/
+│   ├── DOCUMENTATION.md                   # เอกสารสถาปัตยกรรมระบบฉบับสมบูรณ์ (ไฟล์นี้)
+│   ├── USER_GUIDE.md                      # คู่มือขั้นตอนการติดตั้งและทดสอบฟังก์ชันระบบฉบับละเอียด
+│   └── WORKLOG.md                         # บันทึกการพัฒนา
+├── scripts/
+│   └── ingest-knowledge.ps1               # นำเข้าเอกสารความรู้เข้าสู่ Vector Store (RAG) ผ่าน API
+└── tests/
+    ├── test-e2e.mjs                       # E2E API Test Suite (Node.js)
+    ├── test-e2e-api.ps1                   # E2E API Test Suite (PowerShell)
+    ├── test-chatbot.ps1                   # ส่งชุดคำถามให้แชทบอทแล้วเขียนรายงาน chatbot-test-report.md
+    └── chatbot-test-questions.json        # ชุดคำถามทดสอบแชทบอท
 ```
 
 ---
@@ -223,16 +246,16 @@ graph TD
 เข้าสู่ระบบด้วย Username: `admin`
 
 1. **แดชบอร์ดผู้ดูแล (Admin Dashboard)**:
-   - **ตัวกรองรุ่นและช่วงปี (Multi-Year Range Filter)**: เลือกดูได้ทั้ง "ทุกรุ่น / ทุกปีการศึกษา", "⏱️ 4 ปีล่าสุด", "⏱️ 3 ปีล่าสุด", "📗 เฉพาะรุ่นกำลังศึกษา", เลือกทีละรุ่น หรือเลือกหลายรุ่นแบบกำหนดเองผ่าน Multi-Select Chips
+   - **ตัวกรองรุ่นและช่วงปี (Multi-Year Range Filter)**: เลือกดูได้ทั้ง "ทุกรุ่น / ทุกปีการศึกษา", "⏱️ 4 ปีล่าสุด", เลือกทีละรุ่น หรือเลือกหลายรุ่นแบบกำหนดเองผ่าน Multi-Select Chips
    - **สถิติและแผนภูมิภาพรวม**: Real-time Stat Cards, Status Donut Chart (Chart.js), และแถบสรุปสถิติสายอาชีพของบัณฑิต (Graduate Career Distribution) คำนวณแบบ Real-time
    - **การวิเคราะห์เปรียบเทียบข้ามรุ่น (Year-over-Year Analytics)**: กราฟเส้นแนวโน้ม GPA เฉลี่ยตามรุ่น (GPA Trend Line Chart), กราฟแท่งเปรียบเทียบสัดส่วนสถานะตามรุ่น (Status Stacked Bar Chart), และตารางวิเคราะห์การเปลี่ยนผ่านสายอาชีพของบัณฑิตข้ามรุ่น (Career Shift Matrix)
 2. **จัดการอาจารย์ที่ปรึกษา (Manage Advisors)**: เพิ่ม, แก้ไข, ลบข้อมูลอาจารย์ (CRUD)
 3. **จัดการนักศึกษา (Manage Students)**:
-   - **Preset Range Filter**: กรองนักศึกษาตามช่วงรุ่น ("⏱️ 4 ปีล่าสุด", "⏱️ 3 ปีล่าสุด", "📗 เฉพาะรุ่นที่กำลังศึกษา", หรือแยกรุ่น)
+   - **Preset Range Filter**: กรองนักศึกษาตามช่วงรุ่น ("⏱️ 4 ปีล่าสุด" หรือแยกรุ่น)
    - **ระบบแบ่งหน้าตาราง (Table Pagination)**: รองรับการแสดงผลตารางนักศึกษาจำนวนมาก แบ่งหน้าพร้อมตัวเลือก 10, 15, 25, 50 แถว/หน้า และปุ่มเลื่อนหน้าแบบตัวเลข
    - **CRUD & Career Updates**: ค้นหาแบบ Real-time (Debounce), ปุ่มจำลองมุมมอง (Impersonate), และ Modal จัดการข้อมูลนักศึกษาพร้อมข้อมูลสายอาชีพบัณฑิต
 4. **รายการคำร้องวิชาการ (Petition Logs & Review Modal)**:
-   - ตารางคำร้องวิชาการพร้อมตัวกรองหลายมิติ (ช่วงรุ่น 4 ปีล่าสุด/3 ปีล่าสุด, ประเภทคำร้อง, สถานะ)
+   - ตารางคำร้องวิชาการพร้อมตัวกรองหลายมิติ (ช่วงรุ่น 4 ปีล่าสุด, ประเภทคำร้อง, สถานะ)
    - ระบบแบ่งหน้าตารางคำร้อง (Table Pagination: 5, 10, 20 รายการ/หน้า)
    - Modal พิจารณาคำร้องพร้อมปุ่มลัด **อนุมัติ (Approve)** และ **ปฏิเสธ (Reject)** ทำงานผ่าน `PATCH /api/petitions/{id}/status` บันทึกลง PostgreSQL แบบเรียลไทม์
 5. **ระบบนำเข้าความรู้ AI (Knowledge Ingestion)**:
@@ -266,7 +289,7 @@ sequenceDiagram
     API-->>Client: ส่งคืนผลลัพธ์ JSON (200 OK / 201 Created)
 ```
 
-### การตั้งค่าความปลอดภัยใน [`SecurityConfig.java`](file:///c:/xampp/htdocs/ChatbotCSBSRU/src/main/java/com/bsru/studentportal/config/SecurityConfig.java)
+### การตั้งค่าความปลอดภัยใน [`SecurityConfig.java`](../src/main/java/com/bsru/studentportal/config/SecurityConfig.java)
 - **CSRF**: ปิดการใช้งาน (`csrf.disable()`) เนื่องจากใช้ Bearer JWT
 - **Session Management**: กำหนดเป็น `SessionCreationPolicy.STATELESS`
 - **CORS Configuration**: อนุญาตคำขอ Cross-Origin จาก `http://localhost*` และ `http://127.0.0.1*` รองรับทุก HTTP Methods (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`)

@@ -1,6 +1,7 @@
-package com.bsru.studentportal.service;
+package com.bsru.studentportal.ai;
 
 import com.bsru.studentportal.model.AcademicPetition;
+import com.bsru.studentportal.service.AdvisorInsightService;
 import com.bsru.studentportal.service.AdvisorInsightService.AdviseeDetail;
 import com.bsru.studentportal.service.AdvisorInsightService.AdviseeRisk;
 import com.bsru.studentportal.service.AdvisorInsightService.Level;
