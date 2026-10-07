@@ -35,6 +35,14 @@ public final class CurrentUser {
         return Optional.of("advisor".equalsIgnoreCase(username) ? DEMO_ADVISOR_ID : username);
     }
 
+    /**
+     * The demo "advisor" login (used until real advisor accounts exist): its chatbot sees every real
+     * student and every course, not only ADV-01's advisees and sections.
+     */
+    public static boolean isDemoAdvisor(Authentication auth) {
+        return hasRole(auth, "ROLE_ADVISOR") && "advisor".equalsIgnoreCase(auth.getName());
+    }
+
     /** The caller's student id, or empty when the caller is not a logged-in student. */
     public static Optional<String> studentId(Authentication auth) {
         if (!hasRole(auth, "ROLE_STUDENT")) return Optional.empty();

@@ -5,11 +5,12 @@
    (graduated, studying, on leave, dismissed) and advisee list management.
    ================================================================ */
 
-import { esc, statusBadge, getBatch, debounce, fetchAPI } from '../utils.js';
+import { esc, statusBadge, getBatch, debounce, fetchAPI, NAME_PREFIXES, withNamePrefix, joinFirstLast } from '../utils.js';
 import { MOCK_STUDENTS_POOL, apiErrorText, sectionStatusBadge } from './admin.js';
 import { impersonateStudent, getAuthState } from '../auth.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { askChatbot } from '../components/chatbot.js';
+import { openGradeEditor } from '../components/gradeEditor.js';
 
 let lastSelectedBatch = 'all';
 let advisorSearchQuery = '';
@@ -32,9 +33,10 @@ function currentAdvisees() {
         return liveAdvisees.map(r => ({
             studentId: r.studentId, nameTh: r.nameTh, nameEn: r.nameEn || '', year: r.year,
             gpa: r.gpa ?? 0, status: r.status, risk: r,
-        }));
+        })).sort((a, b) => a.studentId.localeCompare(b.studentId));
     }
-    return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001');
+    return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001')
+        .sort((a, b) => a.studentId.localeCompare(b.studentId));
 }
 
 async function loadLiveAdvisees() {
@@ -217,7 +219,7 @@ async function openAdviseeHistory(studentId) {
     const overlay = showAdvisorModal(`ประวัติ ${r.studentId} ${r.nameTh}`, `
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start">
             <div>
-                <div style="font-size:0.9rem">${esc(p.nameEn || '')} · ชั้นปี ${p.year} · Sec ${esc(p.studentSection || '-')} · <span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></div>
+                <div style="font-size:0.9rem">${esc(p.nameEn || '')} · ชั้นปี ${p.year} · Sec แรกเข้า ${esc(p.studentSection || '-')} · <span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></div>
                 <div style="font-size:1.4rem;font-weight:800;margin-top:4px">GPA ${r.gpa != null ? Number(r.gpa).toFixed(2) : '-'} <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">(${esc(r.gpaSource)})</span></div>
                 <div style="margin-top:4px">${riskBadge(r)} ${riskChips(r)}</div>
             </div>
@@ -478,12 +480,17 @@ function renderMyAdvisees() {
 
 /** Advisor adds a sample (simulated) student to their own advisees */
 function openAddSimulatedModal() {
-    const field = (label, input) => `<div class="modal-field"><label>${label}</label>${input}</div>`;
+    // Every field here is required
+    const REQ = '<span style="color:#dc2626" title="ต้องกรอก">*</span>';
+    const field = (label, input) => `<div class="modal-field"><label>${label} ${REQ}</label>${input}</div>`;
     const overlay = showAdvisorModal('เพิ่มนักศึกษาจำลอง', `
-        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">ข้อมูลจำลองใช้แสดงในแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน · จะอยู่ในความดูแลของคุณ</p>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">ข้อมูลจำลองใช้แสดงในแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน · จะอยู่ในความดูแลของคุณ · ช่องที่มี ${REQ} ต้องกรอก</p>
         ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6721100001">')}
-        ${field('ชื่อ-สกุล (ไทย)', '<input id="simNameTh" placeholder="เช่น นายทดลอง ใจดี">')}
-        ${field('ชื่อ-สกุล (English)', '<input id="simNameEn" placeholder="e.g. Mr. Tadlong Jaidee">')}
+        ${field('คำนำหน้า', `<select id="simPrefix"><option value="">-- เลือกคำนำหน้า --</option>${NAME_PREFIXES.map(p => `<option value="${p.th}">${p.th} (${p.en})</option>`).join('')}</select>`)}
+        ${field('ชื่อ (ไทย)', '<input id="simFirstTh" placeholder="เช่น ทดลอง">')}
+        ${field('นามสกุล (ไทย)', '<input id="simLastTh" placeholder="เช่น ใจดี">')}
+        ${field('ชื่อ (English)', '<input id="simFirstEn" placeholder="e.g. Tadlong">')}
+        ${field('นามสกุล (English)', '<input id="simLastEn" placeholder="e.g. Jaidee">')}
         ${field('ชั้นปี', '<input id="simYear" type="number" min="1" max="8" value="1">')}
         ${field('GPA', '<input id="simGpa" type="number" min="0" max="4" step="0.01" value="0">')}
         ${field('สถานะ', `<select id="simStatus">${['กำลังศึกษา', 'จบการศึกษา', 'พักการศึกษา', 'พ้นสภาพ'].map(x => `<option>${x}</option>`).join('')}</select>`)}
@@ -491,10 +498,28 @@ function openAddSimulatedModal() {
             <button class="btn btn-orange" id="simSave">บันทึก</button>
         </div>`);
     overlay.querySelector('#simSave').addEventListener('click', async () => {
+        const prefix = overlay.querySelector('#simPrefix').value;
+        const val = sel => overlay.querySelector(sel).value;
+        const required = [['#simId', 'รหัสนักศึกษา'], ['#simPrefix', 'คำนำหน้า'], ['#simFirstTh', 'ชื่อ (ไทย)'],
+            ['#simLastTh', 'นามสกุล (ไทย)'], ['#simFirstEn', 'ชื่อ (English)'], ['#simLastEn', 'นามสกุล (English)'],
+            ['#simYear', 'ชั้นปี'], ['#simGpa', 'GPA'], ['#simStatus', 'สถานะ']];
+        const missing = required.filter(([sel]) => !String(val(sel)).trim());
+        required.forEach(([sel]) => { overlay.querySelector(sel).style.borderColor = ''; });
+        missing.forEach(([sel]) => { overlay.querySelector(sel).style.borderColor = '#dc2626'; });
+        if (missing.length) {
+            showAdvisorToast('error', esc('กรุณากรอกให้ครบ: ' + missing.map(([, label]) => label).join(', ')));
+            return;
+        }
+        if (!/^\d{10}$/.test(val('#simId').trim())) {
+            showAdvisorToast('error', 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก');
+            return;
+        }
+        const names = withNamePrefix(prefix, joinFirstLast(val('#simFirstTh'), val('#simLastTh')),
+            joinFirstLast(val('#simFirstEn'), val('#simLastEn')));
         const body = {
             studentId: overlay.querySelector('#simId').value.trim(),
-            nameTh: overlay.querySelector('#simNameTh').value.trim(),
-            nameEn: overlay.querySelector('#simNameEn').value.trim(),
+            nameTh: names.nameTh,
+            nameEn: names.nameEn,
             year: Number(overlay.querySelector('#simYear').value) || 1,
             gpa: Number(overlay.querySelector('#simGpa').value) || 0,
             status: overlay.querySelector('#simStatus').value,
@@ -814,6 +839,7 @@ function sectionsCardHtml(sections) {
             <td>${sectionStatusBadge(s)}${s.reviewNote ? `<div style="font-size:0.75rem;color:var(--text-muted)">${esc(s.reviewNote)}</div>` : ''}</td>
             <td style="white-space:nowrap">
                 <button class="btn btn-sm btn-ghost adv-sec-students" title="รายชื่อนักศึกษา">👥</button>
+                ${s.approvalStatus === 'APPROVED' ? '<button class="btn btn-sm btn-ghost adv-sec-grades" title="ใส่เกรด / ส่งเกรด">📝</button>' : ''}
                 <button class="btn btn-sm btn-ghost adv-sec-edit" title="แก้ไข">✏️</button>
                 <button class="btn btn-sm btn-ghost adv-sec-delete" title="ลบ">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
@@ -1014,6 +1040,12 @@ function bindSectionsCard(sections) {
             } catch (err) {
                 showAdvisorToast('error', esc(apiErrorText(err)));
             }
+        });
+
+        row.querySelector('.adv-sec-grades')?.addEventListener('click', () => {
+            const panel = $('advSectionStudents');
+            openGradeEditor(panel, section.sectionId, { toast: showAdvisorToast, errorText: apiErrorText });
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
 
         row.querySelector('.adv-sec-students').addEventListener('click', async () => {

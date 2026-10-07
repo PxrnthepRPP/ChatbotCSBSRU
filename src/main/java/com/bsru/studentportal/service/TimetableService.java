@@ -30,6 +30,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,9 +45,11 @@ import java.util.stream.Collectors;
  * students may add or drop, time clashes, seat limits) lives here so the REST API, the web page
  * and the chatbot all see the same data and the same answers.
  *
- * Registration flow: teachers request sections (admin approves them), each student belongs to
- * Sec D1 or D2 and picks courses into a cart, the cart is sent as PENDING requests, and an admin
- * confirms or rejects each request. Pending requests already hold a seat.
+ * Registration flow: teachers request sections (admin approves them), students pick courses into a
+ * cart and choose any Sec of each course, the cart is sent as PENDING requests, and an admin confirms
+ * or rejects each request. Pending requests already hold a seat. The home Sec the admin set at
+ * admission (Student.studentSection) is only a record of where the student started; an admin or
+ * teacher registering for a student confirms directly.
  */
 @Service
 @RequiredArgsConstructor
@@ -88,8 +91,12 @@ public class TimetableService {
                                 int totalCredits, List<String> conflicts, RegistrationStatus registration,
                                 List<RejectedRequest> rejected) {}
 
-    /** One course in a student's cart; section is null when the course cannot be found for the student's Sec */
-    public record CartItem(String courseCode, SessionView section, Long seatsLeft, List<String> problems) {}
+    /**
+     * One course in a student's cart: the Sec it goes into (null when the course or the picked Sec is not
+     * offered) and every approved Sec of the course the student can switch to
+     */
+    public record CartItem(String courseCode, SessionView section, Long seatsLeft, List<String> problems,
+                           List<SessionView> choices) {}
 
     public record RegistrationCheck(String studentSection, int academicYear, int term, List<CartItem> items,
                                     int totalCredits, boolean ok) {}
@@ -116,6 +123,8 @@ public class TimetableService {
     }
 
     private final ClassSectionRepository sectionRepository;
+    private final com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository;
+    private final com.bsru.studentportal.repository.SectionGradeSubmissionRepository gradeSubmissionRepository;
     private final SectionEnrollmentRepository enrollmentRepository;
     private final RegistrationPeriodRepository periodRepository;
     private final StudentRepository studentRepository;
@@ -175,11 +184,13 @@ public class TimetableService {
     /** A section offered in a semester that has a registration period, checked against one student's timetable */
     public record OfferedSection(SessionView section, boolean alreadyEnrolled, String clashesWith) {}
 
-    /** Approved sections of the student's own Sec, in semesters that have a registration period */
+    /**
+     * Every approved Sec of each course in semesters that have a registration period; for a course the
+     * student already has, only the Sec they are in
+     */
     @Transactional(readOnly = true)
     public List<OfferedSection> offeredSectionsFor(String studentId, String courseCode) {
         String code = courseCode == null ? "" : courseCode.trim();
-        String group = studentRepository.findById(studentId).map(Student::getStudentSection).orElse(null);
         List<OfferedSection> result = new ArrayList<>();
         for (RegistrationPeriod p : periodRepository.findAllByOrderByAcademicYearDescTermDesc()) {
             List<ClassSection> mine = enrolledSections(studentId, p.getAcademicYear(), p.getTerm());
@@ -187,13 +198,21 @@ public class TimetableService {
                     ? sectionRepository.findByAcademicYearAndTermOrderByCourseCodeAscSectionNoAsc(p.getAcademicYear(), p.getTerm())
                     : sectionRepository.findByAcademicYearAndTermAndCourseCodeIgnoreCaseOrderBySectionNoAsc(
                             p.getAcademicYear(), p.getTerm(), code);
-            for (ClassSection s : offered) {
-                if (s.getApprovalStatus() != ApprovalStatus.APPROVED) continue;
-                if (group != null && !group.equalsIgnoreCase(s.getSectionNo())) continue;
-                boolean enrolled = mine.stream().anyMatch(m -> m.getId().equals(s.getId()));
-                String clash = enrolled ? null : mine.stream().filter(m -> overlaps(s, m))
-                        .map(m -> m.getCourseCode() + " " + m.getCourseName()).findFirst().orElse(null);
-                result.add(new OfferedSection(toView(s), enrolled, clash));
+            Map<String, List<ClassSection>> byCourse = offered.stream()
+                    .filter(s -> s.getApprovalStatus() == ApprovalStatus.APPROVED)
+                    .collect(Collectors.groupingBy(ClassSection::getCourseCode, LinkedHashMap::new, Collectors.toList()));
+            for (List<ClassSection> sections : byCourse.values()) {
+                Optional<ClassSection> taken = sections.stream()
+                        .filter(c -> mine.stream().anyMatch(m -> m.getId().equals(c.getId()))).findFirst();
+                if (taken.isPresent()) {
+                    result.add(new OfferedSection(toView(taken.get()), true, null));
+                    continue;
+                }
+                for (ClassSection s : sections) {
+                    String clash = mine.stream().filter(m -> overlaps(s, m))
+                            .map(m -> m.getCourseCode() + " " + m.getCourseName()).findFirst().orElse(null);
+                    result.add(new OfferedSection(toView(s), false, clash));
+                }
             }
         }
         return result;
@@ -217,7 +236,7 @@ public class TimetableService {
 
     // ------------------------------------------------------------------ student registration (cart)
 
-    /** Checks a cart without saving anything: the section of the student's Sec, seats left and every problem */
+    /** Checks a cart without saving anything: the Sec of each course, seats left and every problem */
     @Transactional(readOnly = true)
     public RegistrationCheck checkRegistration(Actor actor, String studentId, RegistrationCartRequest req) {
         Student student = findStudent(studentId);
@@ -232,6 +251,12 @@ public class TimetableService {
         List<ClassSection> picked = new ArrayList<>();
         Set<String> seenCodes = new HashSet<>();
         List<CartItem> items = new ArrayList<>();
+        Map<String, String> wantedSecs = new HashMap<>();
+        if (req.getSections() != null) {
+            req.getSections().forEach((c, sec) -> {
+                if (c != null && !isBlank(sec)) wantedSecs.put(c.trim().toUpperCase(), sec.trim());
+            });
+        }
 
         for (String raw : req.getCourseCodes() == null ? List.<String>of() : req.getCourseCodes()) {
             String code = raw == null ? "" : raw.trim().toUpperCase();
@@ -239,7 +264,7 @@ public class TimetableService {
             List<String> problems = new ArrayList<>();
             if (!seenCodes.add(code)) {
                 problems.add("เลือกวิชานี้ซ้ำในรายการ");
-                items.add(new CartItem(code, null, null, problems));
+                items.add(new CartItem(code, null, null, problems, List.of()));
                 continue;
             }
 
@@ -247,39 +272,77 @@ public class TimetableService {
                     .findByAcademicYearAndTermAndCourseCodeIgnoreCaseOrderBySectionNoAsc(year, term, code);
             if (candidates.isEmpty()) {
                 problems.add("ไม่มีวิชา " + code + " เปิดสอนในภาคเรียน " + term + "/" + year);
-                items.add(new CartItem(code, null, null, problems));
+                items.add(new CartItem(code, null, null, problems, List.of()));
                 continue;
             }
-            Optional<ClassSection> own = candidates.stream().filter(s -> s.getSectionNo().equalsIgnoreCase(group)).findFirst();
-            if (own.isEmpty()) {
-                problems.add("วิชานี้ไม่มีกลุ่มเรียนของ Sec " + group + " (เปิดเฉพาะ Sec "
-                        + candidates.stream().map(ClassSection::getSectionNo).collect(Collectors.joining(", ")) + ")");
-                items.add(new CartItem(code, null, null, problems));
+            Optional<ClassSection> taken = existing.stream().filter(o -> o.getCourseCode().equalsIgnoreCase(code)).findFirst();
+            if (taken.isPresent()) {
+                problems.add("ลงทะเบียนหรือส่งคำขอวิชานี้ไว้แล้ว");
+                items.add(new CartItem(code, toView(taken.get()), seatsLeft(taken.get()), problems, List.of()));
                 continue;
             }
+            List<SessionView> choices = candidates.stream()
+                    .filter(c -> c.getApprovalStatus() == ApprovalStatus.APPROVED).map(this::toView).toList();
 
-            ClassSection s = own.get();
-            if (s.getApprovalStatus() != ApprovalStatus.APPROVED) {
-                problems.add("กลุ่มเรียนนี้ยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ");
+            ClassSection s = null;
+            List<String> sectionProblems = null;
+            String wanted = wantedSecs.get(code);
+            if (wanted != null) {
+                // The Sec the student picked, whichever one it is
+                s = candidates.stream().filter(c -> c.getSectionNo().equalsIgnoreCase(wanted)).findFirst().orElse(null);
+                if (s == null) {
+                    problems.add("วิชานี้ไม่มี Sec " + wanted + " (เปิด Sec "
+                            + candidates.stream().map(ClassSection::getSectionNo).collect(Collectors.joining(", ")) + ")");
+                    items.add(new CartItem(code, null, null, problems, choices));
+                    continue;
+                }
+                sectionProblems = sectionProblems(s, code, existing, picked);
+            } else {
+                // Nothing picked yet: suggest the first Sec that can be taken, the home Sec name first
+                List<ClassSection> ranked = candidates.stream()
+                        .sorted(Comparator.comparing((ClassSection c) -> c.getApprovalStatus() != ApprovalStatus.APPROVED)
+                                .thenComparing(c -> !c.getSectionNo().equalsIgnoreCase(group))
+                                .thenComparing(ClassSection::getSectionNo))
+                        .toList();
+                for (ClassSection candidate : ranked) {
+                    List<String> found = sectionProblems(candidate, code, existing, picked);
+                    if (s == null || found.isEmpty()) {
+                        s = candidate;
+                        sectionProblems = found;
+                    }
+                    if (found.isEmpty()) break;
+                }
             }
-            existing.stream().filter(o -> o.getCourseCode().equalsIgnoreCase(code)).findFirst()
-                    .ifPresent(o -> problems.add("ลงทะเบียนหรือส่งคำขอวิชานี้ไว้แล้ว"));
-            existing.stream().filter(o -> !o.getCourseCode().equalsIgnoreCase(code) && overlaps(s, o)).forEach(o ->
-                    problems.add("เวลาเรียนชนกับ " + o.getCourseCode() + " " + o.getCourseName() + " (" + timeOf(o) + ")"));
-            picked.stream().filter(o -> overlaps(s, o)).forEach(o ->
-                    problems.add("เวลาเรียนชนกับ " + o.getCourseCode() + " ที่เลือกไว้ในรายการ (" + timeOf(o) + ")"));
-            Long seatsLeft = s.getCapacity() == null ? null
-                    : Math.max(0, s.getCapacity() - enrollmentRepository.countBySectionIdAndStatusIn(s.getId(), ACTIVE));
-            if (seatsLeft != null && seatsLeft == 0) {
-                problems.add("ที่นั่งเต็มแล้ว");
-            }
+            problems.addAll(sectionProblems);
             picked.add(s);
-            items.add(new CartItem(code, toView(s), seatsLeft, problems));
+            items.add(new CartItem(code, toView(s), seatsLeft(s), problems, choices));
         }
 
         int credits = picked.stream().mapToInt(ClassSection::getCredits).sum();
         boolean ok = !items.isEmpty() && items.stream().allMatch(i -> i.problems().isEmpty());
         return new RegistrationCheck(group, year, term, items, credits, ok);
+    }
+
+    /** Why one section of a course cannot go into the cart: not approved, time clashes or no seats left */
+    private List<String> sectionProblems(ClassSection s, String code, List<ClassSection> existing, List<ClassSection> picked) {
+        List<String> problems = new ArrayList<>();
+        if (s.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            problems.add("กลุ่มเรียนนี้ยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ");
+        }
+        existing.stream().filter(o -> !o.getCourseCode().equalsIgnoreCase(code) && overlaps(s, o)).forEach(o ->
+                problems.add("เวลาเรียนชนกับ " + o.getCourseCode() + " " + o.getCourseName() + " (" + timeOf(o) + ")"));
+        picked.stream().filter(o -> overlaps(s, o)).forEach(o ->
+                problems.add("เวลาเรียนชนกับ " + o.getCourseCode() + " ที่เลือกไว้ในรายการ (" + timeOf(o) + ")"));
+        Long left = seatsLeft(s);
+        if (left != null && left == 0) {
+            problems.add("ที่นั่งเต็มแล้ว");
+        }
+        return problems;
+    }
+
+    private Long seatsLeft(ClassSection s) {
+        return s.getCapacity() == null ? null
+                : Math.max(0, s.getCapacity() - enrollmentRepository.countBySectionIdAndStatusIn(s.getId(), ACTIVE));
     }
 
     /**
@@ -315,8 +378,10 @@ public class TimetableService {
     /** Single course by code (kept for the API); goes through the same checks as the cart */
     @Transactional
     public SessionView enroll(Actor actor, String studentId, EnrollmentRequest req) {
+        Map<String, String> sections = null;
         if (req.getSectionId() != null) {
             ClassSection s = findSection(req.getSectionId());
+            sections = Map.of(s.getCourseCode(), s.getSectionNo());
             req.setCourseCode(s.getCourseCode());
             req.setAcademicYear(s.getAcademicYear());
             req.setTerm(s.getTerm());
@@ -329,7 +394,8 @@ public class TimetableService {
             req.setTerm(open.getTerm());
         }
         RegistrationCheck done = submitRegistration(actor, studentId,
-                new RegistrationCartRequest(req.getAcademicYear(), req.getTerm(), List.of(req.getCourseCode() == null ? "" : req.getCourseCode())));
+                new RegistrationCartRequest(req.getAcademicYear(), req.getTerm(),
+                        List.of(req.getCourseCode() == null ? "" : req.getCourseCode()), sections));
         return done.items().get(0).section();
     }
 
@@ -477,6 +543,8 @@ public class TimetableService {
                     "กลุ่มเรียนนี้มีนักศึกษาลงทะเบียนแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อปิดกลุ่มเรียน");
         }
         enrollmentRepository.deleteBySectionId(sectionId);
+        instructorGradeRepository.deleteBySectionId(sectionId);
+        gradeSubmissionRepository.findById(sectionId).ifPresent(gradeSubmissionRepository::delete);
         sectionRepository.delete(s);
     }
 

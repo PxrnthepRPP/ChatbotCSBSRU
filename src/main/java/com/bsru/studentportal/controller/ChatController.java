@@ -87,7 +87,8 @@ public class ChatController {
         }
         return CurrentUser.studentId(authentication)
                 .map(id -> StudentRecordTools.STUDENT_MEMORY_PREFIX + id)
-                .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id))
+                .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id
+                        + (CurrentUser.isDemoAdvisor(authentication) ? AdvisorTools.SEES_ALL_SUFFIX : "")))
                 .orElse("staff:" + authentication.getName());
     }
 

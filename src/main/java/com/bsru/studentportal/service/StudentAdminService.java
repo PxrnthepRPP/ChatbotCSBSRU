@@ -45,6 +45,8 @@ public class StudentAdminService {
     private final GraduationAuditRepository graduationAuditRepository;
     private final SectionEnrollmentRepository enrollmentRepository;
     private final AccountService accountService;
+    private final CohortAdvisorService cohortAdvisorService;
+    private final com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository;
 
     @Transactional
     public Student create(StudentRequest req) {
@@ -60,15 +62,16 @@ public class StudentAdminService {
         s.setYear(1);
         s.setGpa(0.0);
         s.setStatus(STATUSES.get(0));
+        s.setSimulated(Boolean.TRUE.equals(req.getSimulated()));
+        s.setAdmissionYear(2500 + Integer.parseInt(id.substring(0, 2)));
         apply(s, req);
+        applyCohortAdvisor(s);
         if (isBlank(s.getNameTh())) {
             throw new StudentAdminException(HttpStatus.BAD_REQUEST, "กรุณากรอกชื่อ-สกุล (ไทย)");
         }
         if (isBlank(s.getNameEn())) s.setNameEn(s.getNameTh());
         s.setFaculty("คณะวิทยาศาสตร์และเทคโนโลยี");
         s.setDepartment("สาขาวิทยาการคอมพิวเตอร์");
-        s.setAdmissionYear(2500 + Integer.parseInt(id.substring(0, 2)));
-        s.setSimulated(Boolean.TRUE.equals(req.getSimulated()));
         Student saved = studentRepository.save(s);
         // Login account for real students: first password = student id, must be changed at the first login
         if (!saved.isSimulated()) accountService.createStudentAccount(id);
@@ -102,6 +105,7 @@ public class StudentAdminService {
         Student s = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentAdminException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId));
         apply(s, req);
+        applyCohortAdvisor(s);
         if (isBlank(s.getNameTh())) {
             throw new StudentAdminException(HttpStatus.BAD_REQUEST, "กรุณากรอกชื่อ-สกุล (ไทย)");
         }
@@ -157,6 +161,7 @@ public class StudentAdminService {
         if (!studentRepository.existsById(studentId)) {
             throw new StudentAdminException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId);
         }
+        instructorGradeRepository.deleteAll(instructorGradeRepository.findByStudentStudentId(studentId));
         enrollmentRepository.deleteAll(enrollmentRepository.findByStudentStudentId(studentId));
         courseGradeRepository.deleteAll(courseGradeRepository.findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId));
         petitionRepository.deleteAll(petitionRepository.findByStudentStudentId(studentId));
@@ -187,7 +192,15 @@ public class StudentAdminService {
             }
             s.setStatus(req.getStatus());
         }
-        if (req.getAdvisorId() != null) {
+        if (req.getAdvisorId() != null && !s.isSimulated()) {
+            // Real students get their cohort's advisor (applyCohortAdvisor); another advisor is a mistake
+            String cohortAdvisor = cohortAdvisorService.advisorOfCohort(CohortAdvisorService.cohortOf(s))
+                    .map(a -> a.getId()).orElse(null);
+            if (!req.getAdvisorId().isBlank() && !req.getAdvisorId().equals(cohortAdvisor)) {
+                throw new StudentAdminException(HttpStatus.BAD_REQUEST, "อาจารย์ที่ปรึกษาของนักศึกษากำหนดตามรุ่น (รุ่น "
+                        + CohortAdvisorService.cohortOf(s) + ") เปลี่ยนได้ที่การ์ด \"อาจารย์ที่ปรึกษาประจำรุ่น\" ในหน้าจัดการอาจารย์");
+            }
+        } else if (req.getAdvisorId() != null) {
             s.setAdvisor(req.getAdvisorId().isBlank() ? null : advisorRepository.findById(req.getAdvisorId())
                     .orElseThrow(() -> new StudentAdminException(HttpStatus.BAD_REQUEST, "ไม่พบอาจารย์รหัส " + req.getAdvisorId())));
         }
@@ -202,6 +215,12 @@ public class StudentAdminService {
         if (req.getEmploymentStatus() != null) s.setEmploymentStatus(blankToNull(req.getEmploymentStatus()));
         if (req.getCompanyName() != null) s.setCompanyName(blankToNull(req.getCompanyName()));
         if (req.getSalaryRange() != null) s.setSalaryRange(blankToNull(req.getSalaryRange()));
+    }
+
+    /** A real student's advisor is always the advisor of their cohort (none until the admin sets one) */
+    private void applyCohortAdvisor(Student s) {
+        if (s.isSimulated()) return;
+        s.setAdvisor(cohortAdvisorService.advisorOfCohort(CohortAdvisorService.cohortOf(s)).orElse(null));
     }
 
     private static boolean isBlank(String v) {

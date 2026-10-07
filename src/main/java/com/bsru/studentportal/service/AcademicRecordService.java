@@ -1,15 +1,22 @@
 package com.bsru.studentportal.service;
 
+import com.bsru.studentportal.model.ClassSection;
 import com.bsru.studentportal.model.CourseGrade;
+import com.bsru.studentportal.model.CourseGradeSchedule;
 import com.bsru.studentportal.model.GraduationProgress;
+import com.bsru.studentportal.model.SectionEnrollment.EnrollmentStatus;
 import com.bsru.studentportal.repository.CourseGradeRepository;
+import com.bsru.studentportal.repository.CourseGradeScheduleRepository;
 import com.bsru.studentportal.repository.GraduationProgressRepository;
+import com.bsru.studentportal.repository.InstructorGradeRepository;
+import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -38,19 +45,90 @@ public class AcademicRecordService {
         }
     }
 
+    /** A grade a teacher entered that the admin has released (counted like any other grade) */
+    public record ReleasedGrade(int academicYear, int term, String courseCode, String courseName, int credits,
+                                String grade, Double gradePoint) {}
+
     private final CourseGradeRepository courseGradeRepository;
     private final GraduationProgressRepository graduationProgressRepository;
     private final GraduationAuditService graduationAudits;
+    private final InstructorGradeRepository instructorGradeRepository;
+    private final CourseGradeScheduleRepository gradeScheduleRepository;
+    private final SectionEnrollmentRepository enrollmentRepository;
 
     /**
      * Grades by semester. The graduation audit holds every course the student took, so when a student
      * has one it is the source (same GPA as the profile, the graduation page and the advisor);
-     * the course_grades table is only used for students without an audit.
+     * the course_grades table is only used for students without an audit. Grades teachers entered are
+     * added once the admin releases them, replacing the same course in the same term.
      */
     @Transactional(readOnly = true)
     public GradeReport gradesOf(String studentId) {
         Optional<JsonNode> audit = graduationAudits.auditOf(studentId).map(GraduationAuditService.AuditResult::audit);
-        return audit.isPresent() ? fromAudit(studentId, audit.get()) : fromCourseGrades(studentId);
+        GradeReport base = audit.isPresent() ? fromAudit(studentId, audit.get()) : fromCourseGrades(studentId);
+        return withReleasedGrades(base, releasedGradesOf(studentId));
+    }
+
+    /** Teacher grades of a student whose course is released (release time passed) and who is still enrolled */
+    @Transactional(readOnly = true)
+    public List<ReleasedGrade> releasedGradesOf(String studentId) {
+        LocalDateTime now = LocalDateTime.now();
+        return instructorGradeRepository.findByStudentStudentId(studentId).stream()
+                .filter(g -> {
+                    ClassSection sec = g.getSection();
+                    return gradeScheduleRepository
+                            .findByAcademicYearAndTermAndCourseCodeIgnoreCase(sec.getAcademicYear(), sec.getTerm(), sec.getCourseCode())
+                            .map(CourseGradeSchedule::getReleaseAt)
+                            .filter(at -> !at.isAfter(now))
+                            .isPresent();
+                })
+                .filter(g -> enrollmentRepository.findByStudentStudentIdAndSectionId(studentId, g.getSection().getId())
+                        .filter(e -> e.getStatus() == EnrollmentStatus.CONFIRMED).isPresent())
+                .map(g -> {
+                    ClassSection sec = g.getSection();
+                    return new ReleasedGrade(sec.getAcademicYear(), sec.getTerm(), sec.getCourseCode(), sec.getCourseName(),
+                            sec.getCredits(), g.getGrade(), GRADE_POINTS.get(g.getGrade()));
+                })
+                .toList();
+    }
+
+    /** Valid letter grades and their points */
+    public static boolean isLetterGrade(String grade) {
+        return grade != null && GRADE_POINTS.containsKey(grade);
+    }
+
+    private GradeReport withReleasedGrades(GradeReport base, List<ReleasedGrade> released) {
+        if (released.isEmpty()) return base;
+        Map<Integer, List<Course>> byTerm = new TreeMap<>(Comparator.reverseOrder());
+        for (Semester sem : base.semesters()) {
+            byTerm.put(sem.academicYear() * 10 + sem.term(), new ArrayList<>(sem.courses()));
+        }
+        for (ReleasedGrade g : released) {
+            List<Course> courses = byTerm.computeIfAbsent(g.academicYear() * 10 + g.term(), k -> new ArrayList<>());
+            courses.removeIf(c -> c.code().equalsIgnoreCase(g.courseCode()));
+            courses.add(new Course(g.courseCode(), g.courseName(), g.credits(), g.grade(), g.gradePoint()));
+        }
+        List<Semester> semesters = new ArrayList<>();
+        double totalPoints = 0;
+        int totalGraded = 0;
+        for (Map.Entry<Integer, List<Course>> e : byTerm.entrySet()) {
+            int year = e.getKey() / 10;
+            int term = e.getKey() % 10;
+            double points = 0;
+            int graded = 0;
+            int registered = 0;
+            for (Course c : e.getValue()) {
+                registered += c.credits();
+                if (c.gradePoint() != null) {
+                    points += c.gradePoint() * c.credits();
+                    graded += c.credits();
+                }
+            }
+            semesters.add(new Semester("Term " + term + "/" + year, year, term, e.getValue(), registered, graded, gpa(points, graded)));
+            totalPoints += points;
+            totalGraded += graded;
+        }
+        return new GradeReport(base.studentId(), semesters, totalGraded, gpa(totalPoints, totalGraded));
     }
 
     private static final Map<String, Double> GRADE_POINTS = Map.of(

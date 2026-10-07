@@ -1,10 +1,11 @@
-import { esc, statusBadge, getBatch, debounce, showToast } from '../utils.js';
+import { esc, statusBadge, getBatch, debounce, showToast, NAME_PREFIXES, splitNamePrefix, withNamePrefix, splitFirstLast, joinFirstLast } from '../utils.js';
 import { impersonateStudent } from '../auth.js';
 import { fetchAPI } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { renderStatusDonutChart } from '../components/statusChart.js';
 import { renderCareerDataList } from '../components/careerList.js';
 import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../components/careerCatalog.js';
+import { openGradeEditor } from '../components/gradeEditor.js';
 
 export const MOCK_ADVISORS = [
     { id: 'ADV001', nameTh: 'ผศ.ดร.วิชัย เทคโนโลยี', nameEn: 'Asst.Prof.Dr. Wichai Technology', email: 'wichai.t@bsru.ac.th', phone: '02-473-7000 ต่อ 4001', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 12 },
@@ -310,6 +311,7 @@ function renderAdminDashboard() {
         <div id="adminRegistrationCard"></div>
         <div id="adminEnrollmentRequestsCard"></div>
         <div id="adminSectionsCard"></div>
+        <div id="adminGradesCard"></div>
 
         <div class="dashboard-grid">
             <div id="statusChartContainer"></div>
@@ -336,6 +338,125 @@ function renderAdminDashboard() {
     renderRegistrationCard();
     renderEnrollmentRequestsCard();
     renderAdminSectionsCard();
+    renderAdminGradesCard();
+}
+
+/* ============================================================
+   GRADES: deadline for teachers, release to students (per course, every Sec together)
+   ============================================================ */
+let adminGradesTerm = null;   // "year/term" shown in the grades card
+const GRADE_TIME = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+async function renderAdminGradesCard() {
+    const container = document.getElementById('adminGradesCard');
+    if (!container) return;
+    let courses;
+    try {
+        courses = await fetchAPI('/grade-schedules', 'GET', null, 8000);
+    } catch (err) {
+        container.innerHTML = '';
+        return;
+    }
+    if (!container.isConnected) return;
+
+    const terms = [...new Set(courses.map(c => `${c.academicYear}/${c.term}`))];
+    if (!adminGradesTerm || !terms.includes(adminGradesTerm)) adminGradesTerm = terms[0] || null;
+    const shown = courses.filter(c => `${c.academicYear}/${c.term}` === adminGradesTerm);
+    const local = iso => iso ? String(iso).slice(0, 16) : '';
+    const when = iso => iso ? GRADE_TIME.format(new Date(iso)) : '';
+    const now = Date.now();
+
+    const rows = shown.map((c, i) => {
+        const late = c.submitDeadline && new Date(c.submitDeadline).getTime() < now;
+        const secs = c.sections.map(s => `
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:2px 0;font-size:0.82rem">
+                <strong>${esc(s.sectionNo)}</strong> ${esc(s.instructorName || '-')} · ใส่ ${s.graded}/${s.students}
+                ${s.submitted ? `<span class="badge badge-green" title="${esc(when(s.submittedAt))}">ส่งแล้ว</span>`
+                    : `<span class="badge ${late ? 'badge-red' : 'badge-amber'}">${late ? 'ไม่ส่งตามกำหนด' : 'ยังไม่ส่ง'}</span>`}
+                <button class="btn btn-sm btn-ghost grades-edit" data-section-id="${s.sectionId}" style="padding:2px 8px">แก้เกรด</button>
+            </div>`).join('');
+        const releaseState = c.released
+            ? `<span class="badge badge-green">ประกาศแล้ว ${esc(when(c.releaseAt))}</span>`
+            : c.releaseAt ? `<span class="badge badge-blue">ตั้งไว้ ${esc(when(c.releaseAt))}</span>` : '<span class="badge badge-amber">ยังไม่ประกาศ</span>';
+        return `
+            <tr data-idx="${i}">
+                <td><span class="badge badge-blue">${esc(c.courseCode)}</span><div style="font-size:0.82rem">${esc(c.courseName)}</div></td>
+                <td>${secs}</td>
+                <td><input type="datetime-local" class="batch-select grades-deadline" value="${local(c.submitDeadline)}"></td>
+                <td>${releaseState}<div style="margin-top:4px"><input type="datetime-local" class="batch-select grades-release" value="${c.released ? '' : local(c.releaseAt)}" ${c.released ? 'disabled' : ''}></div></td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-sm btn-orange grades-save">บันทึก</button>
+                    ${c.released
+                        ? '<button class="btn btn-sm btn-ghost grades-unrelease">ยกเลิกประกาศ</button>'
+                        : '<button class="btn btn-sm btn-ghost grades-release-now">ประกาศผลทันที</button>'}
+                </td>
+            </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-title">📝 เกรดรายวิชา: วันส่งเกรด และประกาศผล</div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                อาจารย์ใส่และส่งเกรดได้จนถึงวันส่งของแต่ละวิชา หลังจากนั้นเฉพาะผู้ดูแลระบบแก้ได้ ·
+                ประกาศผลทีละวิชา (ทุก Sec พร้อมกัน) กดประกาศทันทีหรือตั้งวันเวลาล่วงหน้า · นักศึกษาเห็นเกรดและนำไปคิด GPA เมื่อประกาศแล้วเท่านั้น
+            </p>
+            <div class="batch-filter-bar" style="margin-bottom:12px">
+                <label>ภาคเรียน</label>
+                <select class="batch-select" id="gradesTermSelect">${terms.map(t => {
+                    const [y, tm] = t.split('/');
+                    return `<option value="${t}" ${t === adminGradesTerm ? 'selected' : ''}>${tm}/${y}</option>`;
+                }).join('')}</select>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>วิชา</th><th>Sec · อาจารย์ · สถานะส่ง</th><th>วันส่งเกรด</th><th>ประกาศผล</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีรายวิชา</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="adminGradeEditor"></div>
+        </div>`;
+
+    container.querySelector('#gradesTermSelect')?.addEventListener('change', e => {
+        adminGradesTerm = e.target.value;
+        renderAdminGradesCard();
+    });
+
+    const saveSchedule = async (c, submitDeadline, releaseAt, message) => {
+        try {
+            await fetchAPI('/grade-schedules', 'PUT', {
+                academicYear: c.academicYear, term: c.term, courseCode: c.courseCode, submitDeadline, releaseAt,
+            }, 10000);
+            showToast('success', esc(message));
+            renderAdminGradesCard();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
+    };
+    container.querySelectorAll('tr[data-idx]').forEach(row => {
+        const c = shown[Number(row.dataset.idx)];
+        const deadline = () => row.querySelector('.grades-deadline').value || null;
+        row.querySelector('.grades-save').addEventListener('click', () => {
+            const release = c.released ? c.releaseAt : (row.querySelector('.grades-release').value || null);
+            saveSchedule(c, deadline(), release, `บันทึกกำหนดการเกรด ${c.courseCode} แล้ว`);
+        });
+        row.querySelector('.grades-release-now')?.addEventListener('click', () => {
+            const notSent = c.sections.filter(s => !s.submitted).map(s => s.sectionNo);
+            const warn = notSent.length ? `\n⚠️ Sec ${notSent.join(', ')} ยังไม่ส่งเกรด` : '';
+            if (!confirm(`ประกาศผล ${c.courseCode} ทุก Sec ตอนนี้? นักศึกษาจะเห็นเกรดและนำไปคิด GPA ทันที${warn}`)) return;
+            saveSchedule(c, deadline(), 'now', `ประกาศผล ${c.courseCode} แล้ว`);
+        });
+        row.querySelector('.grades-unrelease')?.addEventListener('click', () => {
+            if (!confirm(`ยกเลิกประกาศผล ${c.courseCode}? นักศึกษาจะไม่เห็นเกรดวิชานี้และ GPA จะคำนวณใหม่`)) return;
+            saveSchedule(c, deadline(), null, `ยกเลิกประกาศผล ${c.courseCode} แล้ว`);
+        });
+        row.querySelectorAll('.grades-edit').forEach(btn => btn.addEventListener('click', () => {
+            const panel = document.getElementById('adminGradeEditor');
+            openGradeEditor(panel, Number(btn.dataset.sectionId), {
+                toast: showToast, errorText: apiErrorText, isAdmin: true, onChange: () => {},
+            });
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }));
+    });
 }
 
 /* ============================================================
@@ -595,6 +716,7 @@ async function renderAdminSectionsCard() {
    the admin confirms or rejects each request.
    ============================================================ */
 const REQUEST_TIME = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+const expandedRequestStudents = new Set();   // students whose course list is open, kept across refreshes
 
 async function renderEnrollmentRequestsCard() {
     const container = document.getElementById('adminEnrollmentRequestsCard');
@@ -610,29 +732,56 @@ async function renderEnrollmentRequestsCard() {
     // The dashboard may have re-rendered while waiting for the API
     if (!container.isConnected) return;
 
-    const rows = requests.map(r => `
-        <tr data-id="${r.enrollmentId}">
-            <td><input type="checkbox" class="req-check" value="${r.enrollmentId}"></td>
-            <td><strong>${esc(r.studentId)}</strong><div style="font-size:0.82rem">${esc(r.studentName)}</div></td>
-            <td><span class="badge badge-purple">${esc(r.studentSection)}</span></td>
-            <td><span class="badge badge-blue">${esc(r.section.courseCode)}</span><div style="font-size:0.82rem">${esc(r.section.courseName)}</div></td>
-            <td>${r.section.term}/${r.section.academicYear} · ${esc(r.section.sectionNo)}</td>
-            <td class="hide-mobile">${esc(r.section.dayName)} ${esc(r.section.startTime)}–${esc(r.section.endTime)}</td>
-            <td class="hide-mobile">${r.section.enrolledCount}${r.section.capacity ? ' / ' + r.section.capacity : ''}</td>
-            <td class="hide-mobile" style="font-size:0.8rem">${esc(REQUEST_TIME.format(new Date(r.requestedAt)))}</td>
-            <td style="white-space:nowrap">
-                <button class="btn btn-sm btn-orange req-confirm">ยืนยัน</button>
-                <button class="btn btn-sm btn-ghost req-reject">ไม่อนุมัติ</button>
-            </td>
-        </tr>`).join('');
+    // One row per student; the arrow opens the courses they asked for
+    const groups = new Map();
+    requests.forEach(r => {
+        if (!groups.has(r.studentId)) groups.set(r.studentId, []);
+        groups.get(r.studentId).push(r);
+    });
+    const rows = [...groups.entries()].map(([studentId, items]) => {
+        const first = items[0];
+        const open = expandedRequestStudents.has(studentId);
+        const credits = items.reduce((sum, r) => sum + (r.section.credits || 0), 0);
+        const terms = [...new Set(items.map(r => `${r.section.term}/${r.section.academicYear}`))].join(', ');
+        const latest = Math.max(...items.map(r => new Date(r.requestedAt).getTime()));
+        const courseRows = items.map(r => `
+            <tr class="req-course-row" data-student="${esc(studentId)}" data-id="${r.enrollmentId}" ${open ? '' : 'hidden'} style="background:var(--bg-subtle, rgba(0,0,0,0.03))">
+                <td><input type="checkbox" class="req-check" value="${r.enrollmentId}" data-student="${esc(studentId)}"></td>
+                <td colspan="2" style="padding-left:32px"><span class="badge badge-blue">${esc(r.section.courseCode)}</span> <span style="font-size:0.82rem">${esc(r.section.courseName)} (${r.section.credits} หน่วยกิต)</span></td>
+                <td>${r.section.term}/${r.section.academicYear} · ${esc(r.section.sectionNo)}</td>
+                <td class="hide-mobile">${esc(r.section.dayName)} ${esc(r.section.startTime)}–${esc(r.section.endTime)}</td>
+                <td class="hide-mobile">ที่นั่ง ${r.section.enrolledCount}${r.section.capacity ? ' / ' + r.section.capacity : ''}</td>
+                <td class="hide-mobile" style="font-size:0.8rem">${esc(REQUEST_TIME.format(new Date(r.requestedAt)))}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-sm btn-orange req-confirm">ยืนยัน</button>
+                    <button class="btn btn-sm btn-ghost req-reject">ไม่อนุมัติ</button>
+                </td>
+            </tr>`).join('');
+        return `
+            <tr class="req-student-row" data-student="${esc(studentId)}">
+                <td><input type="checkbox" class="req-student-check" data-student="${esc(studentId)}" title="เลือกทุกวิชาของนักศึกษาคนนี้"></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-ghost req-toggle" aria-expanded="${open}" title="ดูรายวิชา" style="padding:2px 8px;margin-right:6px">${open ? '▼' : '▶'}</button>
+                    <strong>${esc(studentId)}</strong><div style="font-size:0.82rem;margin-left:38px">${esc(first.studentName)}</div>
+                </td>
+                <td><span class="badge badge-purple">${esc(first.studentSection)}</span></td>
+                <td><strong>${items.length}</strong> วิชา · ${credits} หน่วยกิต<div style="font-size:0.8rem;color:var(--text-muted)">ภาค ${esc(terms)}</div></td>
+                <td class="hide-mobile" colspan="2" style="font-size:0.82rem">${items.map(r => esc(r.section.courseCode)).join(', ')}</td>
+                <td class="hide-mobile" style="font-size:0.8rem">${esc(REQUEST_TIME.format(new Date(latest)))}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-sm btn-orange req-confirm-student">ยืนยันทั้งหมด</button>
+                    <button class="btn btn-sm btn-ghost req-reject-student">ไม่อนุมัติทั้งหมด</button>
+                </td>
+            </tr>${courseRows}`;
+    }).join('');
 
     container.innerHTML = `
         <div class="card">
             <div class="card-title">📝 คำขอลงทะเบียนของนักศึกษา
-                ${requests.length ? `<span class="badge badge-amber" style="font-size:0.75rem">รอยืนยัน ${requests.length}</span>` : ''}
+                ${requests.length ? `<span class="badge badge-amber" style="font-size:0.75rem">รอยืนยัน ${groups.size} คน · ${requests.length} วิชา</span>` : ''}
             </div>
             <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
-                นักศึกษาเลือกวิชาแล้วกดยืนยันลงทะเบียน คำขอจะมารอที่นี่ · คำขอที่รออยู่จองที่นั่งไว้แล้ว · ไม่อนุมัติแล้วที่นั่งจะว่าง และนักศึกษาจะเห็นเหตุผล
+                นักศึกษาเลือกวิชาแล้วกดยืนยันลงทะเบียน คำขอจะมารอที่นี่ แยกตามนักศึกษา (กด ▶ เพื่อดูรายวิชา) · คำขอที่รออยู่จองที่นั่งไว้แล้ว · ไม่อนุมัติแล้วที่นั่งจะว่าง และนักศึกษาจะเห็นเหตุผล
             </p>
             ${requests.length ? `
             <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
@@ -641,8 +790,8 @@ async function renderEnrollmentRequestsCard() {
             </div>` : ''}
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th><input type="checkbox" id="reqCheckAll" title="เลือกทั้งหมด"></th><th>นักศึกษา</th><th>Sec</th><th>วิชา</th><th>ภาค · กลุ่ม</th><th class="hide-mobile">วัน-เวลา</th><th class="hide-mobile">ที่นั่ง</th><th class="hide-mobile">ส่งเมื่อ</th><th></th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">ไม่มีคำขอที่รอยืนยัน</td></tr>'}</tbody>
+                    <thead><tr><th><input type="checkbox" id="reqCheckAll" title="เลือกทั้งหมด"></th><th>นักศึกษา</th><th>Sec แรกเข้า</th><th>วิชาที่ขอ</th><th class="hide-mobile" colspan="2">รายวิชา / วัน-เวลา · ที่นั่ง</th><th class="hide-mobile">ส่งเมื่อ</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">ไม่มีคำขอที่รอยืนยัน</td></tr>'}</tbody>
                 </table>
             </div>
         </div>`;
@@ -674,12 +823,42 @@ async function renderEnrollmentRequestsCard() {
     };
 
     const selectedIds = () => [...container.querySelectorAll('.req-check:checked')].map(c => Number(c.value));
+    const studentIds = (studentId) => requests.filter(r => r.studentId === studentId).map(r => r.enrollmentId);
+    const courseChecks = (studentId) => [...container.querySelectorAll('.req-check')].filter(c => c.dataset.student === studentId);
     container.querySelector('#reqCheckAll')?.addEventListener('change', e => {
-        container.querySelectorAll('.req-check').forEach(c => { c.checked = e.target.checked; });
+        container.querySelectorAll('.req-check, .req-student-check').forEach(c => { c.checked = e.target.checked; c.indeterminate = false; });
     });
     container.querySelector('#reqConfirmSelected')?.addEventListener('click', () => review(selectedIds(), 'CONFIRMED'));
     container.querySelector('#reqRejectSelected')?.addEventListener('click', () => review(selectedIds(), 'REJECTED'));
-    container.querySelectorAll('tr[data-id]').forEach(row => {
+    container.querySelectorAll('tr.req-student-row').forEach(row => {
+        const studentId = row.dataset.student;
+        const studentCheck = row.querySelector('.req-student-check');
+        row.querySelector('.req-toggle').addEventListener('click', (e) => {
+            const open = !expandedRequestStudents.has(studentId);
+            if (open) expandedRequestStudents.add(studentId); else expandedRequestStudents.delete(studentId);
+            e.currentTarget.textContent = open ? '▼' : '▶';
+            e.currentTarget.setAttribute('aria-expanded', String(open));
+            container.querySelectorAll('tr.req-course-row').forEach(r => {
+                if (r.dataset.student === studentId) r.hidden = !open;
+            });
+        });
+        studentCheck.addEventListener('change', () => {
+            courseChecks(studentId).forEach(c => { c.checked = studentCheck.checked; });
+        });
+        row.querySelector('.req-confirm-student').addEventListener('click', () => review(studentIds(studentId), 'CONFIRMED'));
+        row.querySelector('.req-reject-student').addEventListener('click', () => review(studentIds(studentId), 'REJECTED'));
+    });
+    // Ticking single courses updates the student's box (all / some / none)
+    container.querySelectorAll('.req-check').forEach(c => c.addEventListener('change', () => {
+        const checks = courseChecks(c.dataset.student);
+        const ticked = checks.filter(x => x.checked).length;
+        const studentCheck = [...container.querySelectorAll('.req-student-check')].find(x => x.dataset.student === c.dataset.student);
+        if (studentCheck) {
+            studentCheck.checked = ticked === checks.length;
+            studentCheck.indeterminate = ticked > 0 && ticked < checks.length;
+        }
+    }));
+    container.querySelectorAll('tr.req-course-row').forEach(row => {
         const id = Number(row.dataset.id);
         row.querySelector('.req-confirm').addEventListener('click', () => review([id], 'CONFIRMED'));
         row.querySelector('.req-reject').addEventListener('click', () => review([id], 'REJECTED'));
@@ -703,6 +882,7 @@ function renderManageAdvisors() {
         </tr>`).join('');
 
     document.getElementById('manageAdvisorsContent').innerHTML = `
+        <div id="adminCohortAdvisorsCard"></div>
         <div class="card">
             <div class="toolbar">
                 <div class="card-title" style="margin-bottom:0">👩‍🏫 รายชื่ออาจารย์ที่ปรึกษา <span class="badge badge-purple">${MOCK_ADVISORS.length} คน</span></div>
@@ -717,6 +897,7 @@ function renderManageAdvisors() {
         </div>
     `;
 
+    renderCohortAdvisorsCard();
     document.getElementById('addAdvisorBtn').addEventListener('click', () => openAdvisorModal('add'));
     document.querySelectorAll('.edit-advisor-btn').forEach(b => b.addEventListener('click', () => openAdvisorModal('edit', parseInt(b.dataset.idx))));
     document.querySelectorAll('.del-advisor-btn').forEach(b => b.addEventListener('click', () => {
@@ -727,6 +908,83 @@ function renderManageAdvisors() {
             renderAdminDashboard();
         }
     }));
+}
+
+/** Advisor of each cohort (admission year): one advisor per cohort, applied to every real student in it */
+async function renderCohortAdvisorsCard() {
+    const container = document.getElementById('adminCohortAdvisorsCard');
+    if (!container) return;
+    let cohorts;
+    try {
+        cohorts = await fetchAPI('/cohort-advisors');
+    } catch (err) {
+        container.innerHTML = '';
+        return;
+    }
+    if (!container.isConnected) return;
+
+    const advisorOptions = (selected) => `<option value="">— ยังไม่มีที่ปรึกษา —</option>` + MOCK_ADVISORS.map(a =>
+        `<option value="${esc(a.id)}" ${a.id === selected ? 'selected' : ''}>${esc(a.id)} · ${esc(a.nameTh)}</option>`).join('');
+    const rows = cohorts.map(c => `
+        <tr data-year="${c.admissionYear}">
+            <td><strong>รุ่น ${c.admissionYear}</strong><div style="font-size:0.8rem;color:var(--text-muted)">รหัส ${String(c.admissionYear).slice(2)}xxxxxxxx</div></td>
+            <td>${c.realStudents} คน${c.simulatedStudents ? `<div style="font-size:0.8rem;color:var(--text-muted)">+ จำลอง ${c.simulatedStudents} (ไม่นับ)</div>` : ''}</td>
+            <td><select class="batch-select cohort-advisor">${advisorOptions(c.advisorId)}</select></td>
+            <td>${c.advisorId ? '<span class="badge badge-green">มีที่ปรึกษา</span>' : '<span class="badge badge-amber">ยังไม่มี</span>'}</td>
+            <td><button class="btn btn-sm btn-orange cohort-save">บันทึก</button></td>
+        </tr>`).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-title">🎓 อาจารย์ที่ปรึกษาประจำรุ่น</div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                1 รุ่น (ปีที่เข้าศึกษา) มีอาจารย์ที่ปรึกษา 1 คน อาจารย์ 1 คนดูแลได้หลายรุ่น · นักศึกษาจริงทุกคนในรุ่นจะได้ที่ปรึกษาคนนี้ (รวมคนที่เพิ่มเข้ามาภายหลัง) · นักศึกษาจำลองไม่นับ
+            </p>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>รุ่น</th><th>นักศึกษาจริง</th><th>อาจารย์ที่ปรึกษา</th><th>สถานะ</th><th></th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีนักศึกษา</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center">
+                <span style="font-size:0.85rem">เพิ่มรุ่นใหม่ (ยังไม่มีนักศึกษา):</span>
+                <input type="number" id="cohortNewYear" class="batch-select" placeholder="เช่น 2569" min="2500" max="2700" style="width:120px">
+                <select id="cohortNewAdvisor" class="batch-select">${advisorOptions(null)}</select>
+                <button class="btn btn-sm btn-orange" id="cohortNewSave">บันทึก</button>
+            </div>
+        </div>`;
+
+    const save = async (year, advisorId) => {
+        try {
+            await fetchAPI(`/cohort-advisors/${encodeURIComponent(year)}`, 'PUT', { advisorId }, 8000);
+            const name = MOCK_ADVISORS.find(a => a.id === advisorId)?.nameTh;
+            showToast('success', advisorId ? `ตั้ง ${esc(name || advisorId)} เป็นที่ปรึกษารุ่น ${year} แล้ว` : `ยกเลิกที่ปรึกษารุ่น ${year} แล้ว`);
+            // Students' advisors changed: reload them so the student list and counts match
+            const live = await fetchAPI('/students').catch(() => null);
+            if (Array.isArray(live)) {
+                MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...live.map(toPoolStudent));
+                const counts = {};
+                live.forEach(st => { const id = st.advisor?.id; if (id) counts[id] = (counts[id] || 0) + 1; });
+                MOCK_ADVISORS.forEach(a => { a.studentsCount = counts[a.id] || 0; });
+                renderManageStudents();
+            }
+            renderManageAdvisors();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
+    };
+    container.querySelectorAll('tr[data-year]').forEach(row => {
+        row.querySelector('.cohort-save').addEventListener('click', () =>
+            save(row.dataset.year, row.querySelector('.cohort-advisor').value));
+    });
+    container.querySelector('#cohortNewSave').addEventListener('click', () => {
+        const year = parseInt(container.querySelector('#cohortNewYear').value, 10);
+        if (!(year >= 2500 && year <= 2700)) {
+            showToast('error', 'กรุณาใส่ปีที่เข้าศึกษาเป็นปี พ.ศ. เช่น 2569');
+            return;
+        }
+        save(year, container.querySelector('#cohortNewAdvisor').value);
+    });
 }
 
 function openAdvisorModal(mode, idx) {
@@ -770,6 +1028,8 @@ function openAdvisorModal(mode, idx) {
     crudModal.classList.add('open');
 }
 
+const selectedSecStudents = new Set();   // ids ticked for setting Sec แรกเข้า together, kept across re-renders
+
 function renderManageStudents() {
     const batches = [...new Set(MOCK_STUDENTS_POOL.map(s => getBatch(s.studentId)))].sort().reverse();
 
@@ -790,11 +1050,15 @@ function renderManageStudents() {
         filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
     }
 
+    // Ordered by student id
+    filtered = [...filtered].sort((a, b) => a.studentId.localeCompare(b.studentId));
+
     const rows = filtered.map((s) => {
         const realIdx = MOCK_STUDENTS_POOL.indexOf(s);
         const batch = getBatch(s.studentId);
         return `
         <tr>
+            <td>${s.studentSection ? `<input type="checkbox" class="sec-bulk-check" value="${esc(s.studentId)}" ${selectedSecStudents.has(s.studentId) ? 'checked' : ''}>` : ''}</td>
             <td><strong>${esc(s.studentId)}</strong></td>
             <td>${esc(s.nameTh)} <span class="batch-tag">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
@@ -830,9 +1094,16 @@ function renderManageStudents() {
             <input type="file" id="auditUploadInput" accept=".json,application/json" hidden>
         </div>
         <div class="card">
+            ${studentsFromDb ? `
+            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
+                <span style="font-size:0.88rem">เลือกแล้ว <strong id="secBulkCount">${selectedSecStudents.size}</strong> คน · ตั้ง Sec แรกเข้าเป็น</span>
+                <select class="batch-select" id="secBulkValue"><option value="D1">D1</option><option value="D2">D2</option></select>
+                <button class="btn btn-sm btn-orange" id="secBulkApply">ตั้ง Sec ให้ที่เลือก</button>
+                <button class="btn btn-sm btn-ghost" id="secBulkClear">ล้างที่เลือก</button>
+            </div>` : ''}
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th>Sec</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>${studentsFromDb ? '<input type="checkbox" id="secBulkAll" title="เลือกทั้งหมดที่แสดงอยู่">' : ''}</th><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th title="Sec ตอนแรกเข้า ใช้อ้างอิงเท่านั้น">Sec แรกเข้า</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -889,6 +1160,7 @@ function renderManageStudents() {
             showToast('error', esc(apiErrorText(err)));
         }
     }));
+    bindSecBulkControls();
     bindGraduationAuditButtons();
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;
@@ -969,6 +1241,63 @@ function bindGraduationAuditButtons() {
     });
 }
 
+/** Tick several students and set their Sec แรกเข้า at once (same API as the per-row dropdown) */
+function bindSecBulkControls() {
+    const checks = [...document.querySelectorAll('.sec-bulk-check')];
+    const countEl = document.getElementById('secBulkCount');
+    const allBox = document.getElementById('secBulkAll');
+    const refresh = () => {
+        if (countEl) countEl.textContent = selectedSecStudents.size;
+        if (allBox) {
+            const ticked = checks.filter(c => c.checked).length;
+            allBox.checked = checks.length > 0 && ticked === checks.length;
+            allBox.indeterminate = ticked > 0 && ticked < checks.length;
+        }
+    };
+    refresh();
+    checks.forEach(c => c.addEventListener('change', () => {
+        if (c.checked) selectedSecStudents.add(c.value); else selectedSecStudents.delete(c.value);
+        refresh();
+    }));
+    allBox?.addEventListener('change', () => {
+        checks.forEach(c => {
+            c.checked = allBox.checked;
+            if (c.checked) selectedSecStudents.add(c.value); else selectedSecStudents.delete(c.value);
+        });
+        refresh();
+    });
+    document.getElementById('secBulkClear')?.addEventListener('click', () => {
+        selectedSecStudents.clear();
+        renderManageStudents();
+    });
+    document.getElementById('secBulkApply')?.addEventListener('click', async (e) => {
+        const ids = [...selectedSecStudents];
+        const sec = document.getElementById('secBulkValue').value;
+        if (ids.length === 0) {
+            showToast('error', 'กรุณาเลือกนักศึกษาอย่างน้อย 1 คน');
+            return;
+        }
+        if (!confirm(`ตั้ง Sec แรกเข้าเป็น ${sec} ให้นักศึกษา ${ids.length} คน?`)) return;
+        e.currentTarget.disabled = true;
+        const results = await Promise.allSettled(ids.map(id =>
+            fetchAPI(`/students/${encodeURIComponent(id)}/section`, 'PUT', { studentSection: sec }, 8000)));
+        const failed = [];
+        results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+                const student = MOCK_STUDENTS_POOL.find(s => s.studentId === ids[i]);
+                if (student) student.studentSection = sec;
+                selectedSecStudents.delete(ids[i]);
+            } else {
+                failed.push(`${ids[i]}: ${apiErrorText(r.reason)}`);
+            }
+        });
+        const done = ids.length - failed.length;
+        if (done) showToast('success', esc(`ตั้ง Sec ${sec} ให้ ${done} คนแล้ว`));
+        if (failed.length) showToast('error', esc(`ไม่สำเร็จ ${failed.length} คน — ${failed.join(', ')}`));
+        renderManageStudents();
+    });
+}
+
 function openStudentModal(mode, idx) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -997,16 +1326,26 @@ function openStudentModal(mode, idx) {
         ${SALARY_RANGES.map(sr => `<option value="${esc(sr)}" ${s.salaryRange === sr ? 'selected' : ''}>${esc(sr)}</option>`).join('')}
     `;
 
+    const REQ = '<span style="color:#dc2626" title="ต้องกรอก">*</span>';
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขนักศึกษา' : 'เพิ่มนักศึกษาใหม่';
     modalBody.innerHTML = `
-        <div class="modal-field"><label>รหัสนักศึกษา</label><input id="mfSid" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (ไทย)</label><input id="mfSnameTh" value="${esc(s.nameTh || '')}"></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}"></div>
-        <div class="modal-field"><label>ชั้นปี</label><input id="mfSyear" type="number" min="1" max="6" value="${s.year || 1}"></div>
-        <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
-        <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
-        <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
-        ${studentsFromDb ? `<div class="modal-field"><label>Sec</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">ช่องที่มี ${REQ} ต้องกรอก · ช่องที่เขียนว่า (ถ้ามี) เว้นว่างได้</p>
+        <div class="modal-field"><label>รหัสนักศึกษา ${REQ}</label><input id="mfSid" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
+        <div class="modal-field"><label>คำนำหน้า ${REQ}</label><select id="mfSprefix">
+            <option value="">-- เลือกคำนำหน้า --</option>
+            ${NAME_PREFIXES.map(p => `<option value="${p.th}" ${splitNamePrefix(s.nameTh).prefix === p.th ? 'selected' : ''}>${p.th} (${p.en})</option>`).join('')}
+        </select></div>
+        <div class="modal-field"><label>ชื่อ (ไทย) ${REQ}</label><input id="mfSfirstTh" value="${esc(splitFirstLast(splitNamePrefix(s.nameTh).name).first)}" placeholder="เช่น สมชาย"></div>
+        <div class="modal-field"><label>นามสกุล (ไทย) ${REQ}</label><input id="mfSlastTh" value="${esc(splitFirstLast(splitNamePrefix(s.nameTh).name).last)}" placeholder="เช่น ใจดี"></div>
+        <div class="modal-field"><label>ชื่อ (Eng) ${REQ}</label><input id="mfSfirstEn" value="${esc(splitFirstLast(withNamePrefix('', '', s.nameEn).nameEn).first)}" placeholder="e.g. Somchai"></div>
+        <div class="modal-field"><label>นามสกุล (Eng) ${REQ}</label><input id="mfSlastEn" value="${esc(splitFirstLast(withNamePrefix('', '', s.nameEn).nameEn).last)}" placeholder="e.g. Jaidee"></div>
+        <div class="modal-field"><label>ชั้นปี ${REQ}</label><input id="mfSyear" type="number" min="1" max="6" value="${s.year || 1}"></div>
+        <div class="modal-field"><label>GPA ${REQ}</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
+        <div class="modal-field"><label>สถานะ ${REQ}</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
+        ${studentsFromDb && mode === 'edit' && !s.simulated
+            ? `<div class="modal-field"><label>อาจารย์ที่ปรึกษา (กำหนดตามรุ่น)</label><input readonly style="opacity:0.6" value="${esc(MOCK_ADVISORS.find(a => a.id === s.advisor)?.nameTh || (s.advisor || 'ยังไม่มีที่ปรึกษา'))}"><input type="hidden" id="mfSadvisor" value=""></div>`
+            : `<div class="modal-field"><label>อาจารย์ที่ปรึกษา${studentsFromDb ? ' (ถ้ามี · ใช้กับข้อมูลจำลอง นักศึกษาจริงได้ที่ปรึกษาประจำรุ่นอัตโนมัติ)' : ' '+REQ}</label><select id="mfSadvisor">${studentsFromDb ? '<option value="">— ไม่ระบุ —</option>' : ''}${advisorOpts}</select></div>`}
+        ${studentsFromDb ? `<div class="modal-field"><label>Sec แรกเข้า ${REQ} (ใช้อ้างอิง นักศึกษาลงวิชาได้ทุก Sec)</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
         ${studentsFromDb && mode !== 'edit' ? `<label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:0.88rem;cursor:pointer"><input type="checkbox" id="mfSsimulated" checked style="width:auto"> เป็นข้อมูลจำลอง (แสดงในแดชบอร์ดอย่างเดียว ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน)</label>` : ''}
         ${studentsFromDb ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">💾 บันทึกลงฐานข้อมูลจริง · รหัสนักศึกษาเป็นตัวเลข 10 หลัก · ถ้าไม่ใช่ข้อมูลจำลอง นักศึกษาล็อกอินด้วยรหัสนี้ได้ทันที</p>' : ''}
         
@@ -1015,15 +1354,15 @@ function openStudentModal(mode, idx) {
                 💼 ข้อมูลสายอาชีพและภาวะการมีงานทำ (บัณฑิต)
             </div>
             <div class="modal-field">
-                <label>สถานะการทำงาน</label>
+                <label>สถานะการทำงาน (ถ้ามี)</label>
                 <select id="mfSempStatus">${empStatusOpts}</select>
             </div>
             <div class="modal-field">
-                <label>สายอาชีพหลัก</label>
+                <label>สายอาชีพหลัก (ถ้ามี)</label>
                 <select id="mfScareerSelect">${careerOpts}</select>
             </div>
             <div class="modal-field" id="mfScareerCustomWrap" style="${selectedCareerId === 'other' ? 'display:block;' : 'display:none;'}">
-                <label>ระบุสายอาชีพเพิ่มเติม</label>
+                <label>ระบุสายอาชีพเพิ่มเติม ${REQ}</label>
                 <input id="mfScareerCustom" placeholder="พิมพ์ชื่อตำแหน่งหรือสายอาชีพ..." value="${esc(customCareerVal)}">
             </div>
             <div class="modal-field">
@@ -1064,10 +1403,29 @@ function openStudentModal(mode, idx) {
             finalCareer = undefined;
         }
 
+        const prefix = document.getElementById('mfSprefix').value;
+        const val = id => document.getElementById(id)?.value ?? '';
+        // Every field marked * must be filled; a student saved without a title (e.g. 6621207044) may stay without one
+        const required = [
+            ['mfSid', 'รหัสนักศึกษา'],
+            ...(mode !== 'edit' || splitNamePrefix(s.nameTh).prefix ? [['mfSprefix', 'คำนำหน้า']] : []),
+            ['mfSfirstTh', 'ชื่อ (ไทย)'], ['mfSlastTh', 'นามสกุล (ไทย)'],
+            ['mfSfirstEn', 'ชื่อ (Eng)'], ['mfSlastEn', 'นามสกุล (Eng)'],
+            ['mfSyear', 'ชั้นปี'], ['mfSgpa', 'GPA'], ['mfSstatus', 'สถานะ'],
+            ...(studentsFromDb ? [] : [['mfSadvisor', 'อาจารย์ที่ปรึกษา']]),
+            ...(statusVal === 'จบการศึกษา' && careerSelectVal === 'other' ? [['mfScareerCustom', 'ระบุสายอาชีพเพิ่มเติม']] : []),
+        ];
+        const missing = required.filter(([id]) => !String(val(id)).trim());
+        modalBody.querySelectorAll('input, select').forEach(el => { el.style.borderColor = ''; });
+        missing.forEach(([id]) => { const el = document.getElementById(id); if (el) el.style.borderColor = '#dc2626'; });
+        if (missing.length) return alert('กรุณากรอกข้อมูลให้ครบ:\n- ' + missing.map(([, label]) => label).join('\n- '));
+        if (!/^\d{10}$/.test(val('mfSid').trim())) return alert('รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก');
+        const names = withNamePrefix(prefix, joinFirstLast(val('mfSfirstTh'), val('mfSlastTh')),
+            joinFirstLast(val('mfSfirstEn'), val('mfSlastEn')));
         const data = {
             studentId: document.getElementById('mfSid').value.trim(),
-            nameTh: document.getElementById('mfSnameTh').value.trim(),
-            nameEn: document.getElementById('mfSnameEn').value.trim(),
+            nameTh: names.nameTh,
+            nameEn: names.nameEn,
             year: parseInt(document.getElementById('mfSyear').value) || 1,
             gpa: parseFloat(document.getElementById('mfSgpa').value) || 0,
             status: statusVal,
@@ -1087,7 +1445,9 @@ function openStudentModal(mode, idx) {
                 year: data.year,
                 gpa: data.gpa,
                 status: data.status,
-                advisorId: data.advisor || '',
+                // Real students get the cohort advisor on the server; only simulated ones take the picked advisor
+                advisorId: (mode === 'edit' ? s.simulated : document.getElementById('mfSsimulated')?.checked)
+                    ? (data.advisor || '') : undefined,
                 studentSection: document.getElementById('mfSsection')?.value,
                 simulated: document.getElementById('mfSsimulated')?.checked ?? undefined,
                 // Career fields only apply to graduates; '' clears them
