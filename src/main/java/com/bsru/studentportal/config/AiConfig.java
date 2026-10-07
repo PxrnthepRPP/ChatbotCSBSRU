@@ -27,7 +27,7 @@ public class AiConfig {
     @Value("${gemini.api.key:demo-api-key}")
     private String geminiApiKey;
 
-    @Value("${gemini.model-name:gemini-3.7-flash}")
+    @Value("${gemini.model-name:gemini-3.5-flash-lite}")
     private String modelName;
 
     @Value("${gemini.embedding-model-name:gemini-embedding-001}")

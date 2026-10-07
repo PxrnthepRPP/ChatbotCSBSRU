@@ -81,7 +81,7 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
             Write-Host "[INFO] Starting database container (bsru_vector_db)..." -ForegroundColor Yellow
             docker start bsru_vector_db 2>$null
             if ($LASTEXITCODE -ne 0) {
-                docker compose up -d bsru_vector_db 2>$null
+                docker compose up -d database 2>$null
             }
         }
     } catch {}
