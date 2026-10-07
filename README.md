@@ -19,8 +19,8 @@
 | เอกสาร | กลุ่มเป้าหมาย | ขอบเขตและเนื้อหาหลัก |
 |---|---|---|
 | 📘 [**`README.md`**](README.md) *(หน้านี้)* | **ทุกคน (General / Evaluator)** | ภาพรวมระบบ, ฟีเจอร์เด่น, แผนผังสถาปัตยกรรมระดับสูง และวิธีเริ่มต้นใช้งานด่วนใน 3 นาที |
-| 🚀 [**`USER_GUIDE.md`**](USER_GUIDE.md) | **ผู้ใช้งาน / ผู้ทดสอบระบบ (User & Tester)** | ขั้นตอนการติดตั้งอย่างละเอียด, บัญชีทดสอบ (Credentials), คู่มือทดสอบฟังก์ชันทุกเมนู และตารางแก้ปัญหา (Troubleshooting) |
-| 📑 [**`DOCUMENTATION.md`**](DOCUMENTATION.md) | **นักพัฒนา / วิศวกร (Developer & Technical)** | สถาปัตยกรรมเชิงลึก, Spring Security 6 & JWT Lifecycle, LangChain4j RAG Pipeline, REST API Specs และ Database DDL Schema |
+| 🚀 [**`USER_GUIDE.md`**](docs/USER_GUIDE.md) | **ผู้ใช้งาน / ผู้ทดสอบระบบ (User & Tester)** | ขั้นตอนการติดตั้งอย่างละเอียด, บัญชีทดสอบ (Credentials), คู่มือทดสอบฟังก์ชันทุกเมนู และตารางแก้ปัญหา (Troubleshooting) |
+| 📑 [**`DOCUMENTATION.md`**](docs/DOCUMENTATION.md) | **นักพัฒนา / วิศวกร (Developer & Technical)** | สถาปัตยกรรมเชิงลึก, Spring Security 6 & JWT Lifecycle, LangChain4j RAG Pipeline, REST API Specs และ Database DDL Schema |
 
 ---
 
@@ -148,18 +148,33 @@ docker compose up -d --build
 ```
 ChatbotCSBSRU/
 ├── README.md                 # หน้านี้: สรุปภาพรวมและ Quick Start
-├── USER_GUIDE.md             # คู่มือการติดตั้งและทดสอบฟังก์ชันฉบับละเอียด
-├── DOCUMENTATION.md          # เอกสารสถาปัตยกรรมและรายละเอียดเชิงเทคนิค
-├── .env.example              # ตัวอย่าง Environment Variables
-├── .env                      # ค่าจริง (Ignored by Git ปลอดภัยจากคีย์รั่วไหล)
-├── start-backend.ps1         # สคริปต์เริ่ม Backend สำหรับ PowerShell
-├── start-backend.bat         # สคริปต์เริ่ม Backend สำหรับ Windows CMD
-├── docker-compose.yml        # คอนฟิกูเรชัน PostgreSQL 16 + pgvector
+├── start-backend.bat         # ดับเบิลคลิกเพื่อเริ่ม Backend (เรียก start-backend.ps1)
+├── start-backend.ps1         # สคริปต์เริ่ม Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
+├── .env.example              # ตัวอย่าง Environment Variables (คัดลอกเป็น .env — ไม่ commit)
+├── docker-compose.yml        # PostgreSQL 16 + pgvector, Backend และ Frontend (nginx)
+├── Dockerfile                # Build image ของ Spring Boot Backend
 ├── pom.xml                   # Maven Dependencies & Plugins
-├── index.html                # Single Page Application UI Entry Point
-├── js/                       # ES6 JavaScript Modules (Roles, Components, API, Auth)
-├── css/                      # Modular CSS Design System (Theme, Mobile Styles)
-└── src/                      # Java Spring Boot 3 Source Code & Resources
+│
+├── index.html                # ── Frontend (เสิร์ฟผ่าน XAMPP ที่ http://localhost/ChatbotCSBSRU/)
+├── assets/                   #    รูปภาพและโลโก้
+├── css/                      #    Modular CSS Design System (main, theme-dark, components/, roles/)
+├── js/                       #    ES6 JavaScript Modules (main, api, auth, components/, roles/)
+│
+├── src/main/                 # ── Backend: Java Spring Boot 3 Source Code & Resources
+│
+├── database/
+│   └── init.sql              # เปิดใช้ส่วนขยาย pgvector ตอนสร้างฐานข้อมูลครั้งแรก
+├── docs/
+│   ├── USER_GUIDE.md         # คู่มือการติดตั้งและทดสอบฟังก์ชันฉบับละเอียด
+│   ├── DOCUMENTATION.md      # เอกสารสถาปัตยกรรมและรายละเอียดเชิงเทคนิค
+│   └── WORKLOG.md            # บันทึกการพัฒนา
+├── scripts/
+│   └── ingest-knowledge.ps1  # นำเข้าเอกสารความรู้ให้ AI Chatbot (RAG)
+└── tests/
+    ├── test-e2e.mjs          # E2E API Test Suite (Node.js)
+    ├── test-e2e-api.ps1      # E2E API Test Suite (PowerShell)
+    ├── test-chatbot.ps1      # ส่งชุดคำถามทดสอบให้แชทบอทและสร้างรายงาน
+    └── chatbot-test-questions.json
 ```
 
 ---

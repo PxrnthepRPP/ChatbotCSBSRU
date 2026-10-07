@@ -10,6 +10,33 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Set-Location -LiteralPath $PSScriptRoot
 
+# ปิด QuickEdit Mode เพื่อป้องกัน Windows Console ค้าง (Freeze) เมื่อคลิกเมาส์ในหน้าต่าง
+try {
+    $consoleUtils = @'
+    using System;
+    using System.Runtime.InteropServices;
+    public class ConsoleUtils {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        public static void DisableQuickEdit() {
+            IntPtr handle = GetStdHandle(-10);
+            uint mode;
+            if (GetConsoleMode(handle, out mode)) {
+                mode &= ~0x0040u; // DISABLE QuickEdit
+                mode |= 0x0080u;  // ENABLE Extended Flags
+                SetConsoleMode(handle, mode);
+            }
+        }
+    }
+'@
+    Add-Type -TypeDefinition $consoleUtils -ErrorAction SilentlyContinue
+    [ConsoleUtils]::DisableQuickEdit()
+} catch {}
+
 Write-Host ""
 Write-Host "  ========================================" -ForegroundColor Cyan
 Write-Host "   BSRU Student Portal - Backend Starter" -ForegroundColor Cyan
@@ -83,7 +110,18 @@ $keyPreview = if ($env:GEMINI_API_KEY -and $env:GEMINI_API_KEY.Length -gt 10) { 
 Write-Host "[INFO] Gemini API Key: $keyPreview" -ForegroundColor Gray
 Write-Host "[INFO] Database:       $env:SPRING_DATASOURCE_URL" -ForegroundColor Gray
 Write-Host "[INFO] Server Port:    $env:SERVER_PORT" -ForegroundColor Gray
-Write-Host ""
+# 4.1 ตรวจสอบว่า Port กำลังทำงานอยู่แล้วหรือไม่
+$portToCheck = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 8080 }
+$existingConn = Get-NetTCPConnection -LocalPort $portToCheck -State Listen -ErrorAction SilentlyContinue
+if ($existingConn) {
+    Write-Host "[OK] Backend กำลังทำงานอยู่แล้วบน Port $portToCheck (PID: $($existingConn.OwningProcess[0]))" -ForegroundColor Green
+    Write-Host "[INFO] สามารถเปิดใช้งานเว็บได้ทันทีที่: http://localhost/ChatbotCSBSRU/" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "กดปุ่มใดก็ได้เพื่อปิดหน้าต่างนี้..." -ForegroundColor Gray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 0
+}
+
 Write-Host "[INFO] Starting Spring Boot Backend ..." -ForegroundColor Green
 Write-Host ""
 

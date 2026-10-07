@@ -1,4 +1,4 @@
-package com.bsru.studentportal.config;
+package com.bsru.studentportal.ai;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;

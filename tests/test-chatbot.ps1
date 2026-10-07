@@ -4,8 +4,8 @@
 # Sends every question in chatbot-test-questions.json to /api/chat
 # and writes the answers to chatbot-test-report.md for review.
 #
-# Usage:  .\test-chatbot.ps1
-#         .\test-chatbot.ps1 -Only A3,C1
+# Usage:  .\tests\test-chatbot.ps1
+#         .\tests\test-chatbot.ps1 -Only A3,C1
 # ============================================================
 param(
     [string[]]$Only = @(),

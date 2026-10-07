@@ -10,13 +10,14 @@ function recordResult(testName, passed, details, latencyMs = 0) {
 }
 
 async function runTests() {
-  console.log('====================================================');
-  console.log('🚀 BSRU STUDENT PORTAL - END-TO-END (E2E) API TEST');
-  console.log('====================================================\n');
+  console.log('======================================================================');
+  console.log('🚀 BSRU STUDENT PORTAL - COMPREHENSIVE END-TO-END (E2E) TEST SUITE');
+  console.log('======================================================================\n');
 
   let adminToken = null;
   let advisorToken = null;
   let studentToken = null;
+  let studentUserId = null;
   let targetStudentCode = null;
   let createdPetitionId = null;
 
@@ -43,16 +44,17 @@ async function runTests() {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'student', password: '1234' }),
+      body: JSON.stringify({ username: 'student', password: 'password' }),
     });
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
     const pass = res.status === 200 && data.role === 'ROLE_STUDENT' && !!data.token;
     studentToken = data.token;
+    studentUserId = data.userId;
     recordResult(
       'Student Login (POST /api/auth/login)',
       pass,
-      `User: ${data.username}, Role: ${data.role}, DisplayName: ${data.displayName}`,
+      `User: ${data.username}, Role: ${data.role}, DisplayName: ${data.displayName}, StudentID: ${studentUserId}`,
       ms
     );
   } catch (err) {
@@ -65,7 +67,7 @@ async function runTests() {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'advisor', password: '1234' }),
+      body: JSON.stringify({ username: 'advisor', password: 'password' }),
     });
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
@@ -87,7 +89,7 @@ async function runTests() {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'admin', password: '1234' }),
+      body: JSON.stringify({ username: 'admin', password: 'password' }),
     });
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
@@ -103,28 +105,48 @@ async function runTests() {
     recordResult('Admin Login (POST /api/auth/login)', false, err.message);
   }
 
-  // 5. Authentication Validation - Empty / Invalid Username
+  // 5. Auth Validation - Blank Username (400 Bad Request)
   try {
     const t0 = performance.now();
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: '', password: '1234' }),
+      body: JSON.stringify({ username: '', password: 'password' }),
     });
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
     const pass = res.status === 400 && !!data.error;
     recordResult(
-      'Auth Validation: Reject Blank Username (400 Bad Request)',
+      'Auth Security: Reject Blank Username (400 Bad Request)',
       pass,
-      `Status Code: ${res.status}, Error Message: ${data.error}`,
+      `Status: ${res.status}, Message: ${data.error}`,
       ms
     );
   } catch (err) {
-    recordResult('Auth Validation: Reject Blank Username (400 Bad Request)', false, err.message);
+    recordResult('Auth Security: Reject Blank Username (400 Bad Request)', false, err.message);
   }
 
-  // 6. Students List API (GET /api/students)
+  // 6. Auth Validation - Invalid Password (401 Unauthorized)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'test_invalid_user', password: 'wrongpassword' }),
+    });
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 401;
+    recordResult(
+      'Auth Security: Reject Invalid Password (401 Unauthorized)',
+      pass,
+      `Status: ${res.status} (Access Rejected)`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Auth Security: Reject Invalid Password (401 Unauthorized)', false, err.message);
+  }
+
+  // 7. Students List API (GET /api/students as Admin)
   try {
     const t0 = performance.now();
     const res = await fetch(`${BASE_URL}/students`, {
@@ -134,38 +156,134 @@ async function runTests() {
     const ms = Math.round(performance.now() - t0);
     const pass = res.status === 200 && Array.isArray(data) && data.length > 0;
     if (pass) {
-      targetStudentCode = data[0].studentId;
+      // Pick another student code different from the logged in student
+      const otherStudent = data.find((s) => s.studentId !== studentUserId);
+      targetStudentCode = otherStudent ? otherStudent.studentId : data[0].studentId;
     }
     recordResult(
       'Retrieve Students List (GET /api/students)',
       pass,
-      `Total count: ${data.length}, First student: ${data[0]?.nameTh} (${data[0]?.studentId})`,
+      `Total count: ${data.length}, Sample student: ${data[0]?.nameTh} (${data[0]?.studentId})`,
       ms
     );
   } catch (err) {
     recordResult('Retrieve Students List (GET /api/students)', false, err.message);
   }
 
-  // 7. Student Detail API (GET /api/students/:studentId)
+  // 8. Student Profile Self-Access (GET /api/students/:studentId as Student)
   try {
     const t0 = performance.now();
-    const res = await fetch(`${BASE_URL}/students/${targetStudentCode}`, {
+    const res = await fetch(`${BASE_URL}/students/${studentUserId}`, {
       headers: { Authorization: `Bearer ${studentToken}` },
     });
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
-    const pass = res.status === 200 && data.studentId === targetStudentCode;
+    const pass = res.status === 200 && data.studentId === studentUserId;
     recordResult(
-      'Retrieve Student Profile Detail (GET /api/students/:studentId)',
+      'Student Profile Self-Access (GET /api/students/:selfId)',
       pass,
       `StudentId: ${data.studentId}, Name: ${data.nameTh}, GPA: ${data.gpa}, Year: ${data.year}, Status: ${data.status}`,
       ms
     );
   } catch (err) {
-    recordResult('Retrieve Student Profile Detail (GET /api/students/:studentId)', false, err.message);
+    recordResult('Student Profile Self-Access (GET /api/students/:selfId)', false, err.message);
   }
 
-  // 8. Student Career Update (PATCH /api/students/:studentId/career)
+  // 9. Student Privacy Boundary: Block Student from Viewing Another Student (403 Forbidden)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/students/${targetStudentCode}`, {
+      headers: { Authorization: `Bearer ${studentToken}` },
+    });
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 403;
+    recordResult(
+      'Student Privacy Boundary: Reject Viewing Other Student Profile (403 Forbidden)',
+      pass,
+      `Status: ${res.status} (Access Denied as expected to protect privacy)`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Student Privacy Boundary: Reject Viewing Other Student Profile (403 Forbidden)', false, err.message);
+  }
+
+  // 10. Admin Access to Any Student Profile (GET /api/students/:studentId as Admin)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/students/${targetStudentCode}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && data.studentId === targetStudentCode;
+    recordResult(
+      'Admin Access to Any Student Profile (GET /api/students/:targetId)',
+      pass,
+      `StudentId: ${data.studentId}, Name: ${data.nameTh}, GPA: ${data.gpa}`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Admin Access to Any Student Profile (GET /api/students/:targetId)', false, err.message);
+  }
+
+  // 11. Student Academic Records & Grades (GET /api/students/:studentId/grades)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/students/${studentUserId}/grades`, {
+      headers: { Authorization: `Bearer ${studentToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && (data.gpa !== undefined || Array.isArray(data.terms));
+    recordResult(
+      'Academic Records & Grades (GET /api/students/:id/grades)',
+      pass,
+      `GPA: ${data.gpa ?? 'N/A'}, Total Credits: ${data.totalCredits ?? 'N/A'}, Terms: ${data.terms?.length ?? 0}`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Academic Records & Grades (GET /api/students/:id/grades)', false, err.message);
+  }
+
+  // 12. Graduation Progress (GET /api/students/:studentId/graduation-progress)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/students/${studentUserId}/graduation-progress`, {
+      headers: { Authorization: `Bearer ${studentToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && data.requiredCredits > 0;
+    recordResult(
+      'Graduation Progress Tracking (GET /api/students/:id/graduation-progress)',
+      pass,
+      `Credits: ${data.earnedCredits}/${data.requiredCredits}, Status: ${data.status}, Core: ${data.coreEarned}/${data.coreRequired}`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Graduation Progress Tracking (GET /api/students/:id/graduation-progress)', false, err.message);
+  }
+
+  // 13. Student Timetable (GET /api/students/:studentId/timetable)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/students/${studentUserId}/timetable`, {
+      headers: { Authorization: `Bearer ${studentToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && Array.isArray(data);
+    recordResult(
+      'Student Timetable Schedule (GET /api/students/:id/timetable)',
+      pass,
+      `Terms count: ${data.length}, First term: ${data[0]?.termLabel || data[0]?.academicYear || 'Term 1'}, Courses: ${data[0]?.sections?.length || 0}`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Student Timetable Schedule (GET /api/students/:id/timetable)', false, err.message);
+  }
+
+  // 14. Student Career Update (PATCH /api/students/:studentId/career)
   try {
     const t0 = performance.now();
     const updateBody = {
@@ -174,7 +292,7 @@ async function runTests() {
       companyName: 'BSRU Tech Innovations Ltd.',
       salaryRange: '30,001 - 45,000 บาท',
     };
-    const res = await fetch(`${BASE_URL}/students/${targetStudentCode}/career`, {
+    const res = await fetch(`${BASE_URL}/students/${studentUserId}/career`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -189,16 +307,16 @@ async function runTests() {
       data.careerPath === 'Full-Stack Developer' &&
       data.companyName === 'BSRU Tech Innovations Ltd.';
     recordResult(
-      'Graduate Career Tracking Update (PATCH /api/students/:studentId/career)',
+      'Graduate Career Tracking Update (PATCH /api/students/:id/career)',
       pass,
-      `Updated Career: ${data.careerPath}, Status: ${data.employmentStatus}, Company: ${data.companyName}`,
+      `Career: ${data.careerPath}, Status: ${data.employmentStatus}, Company: ${data.companyName}`,
       ms
     );
   } catch (err) {
-    recordResult('Graduate Career Tracking Update (PATCH /api/students/:studentId/career)', false, err.message);
+    recordResult('Graduate Career Tracking Update (PATCH /api/students/:id/career)', false, err.message);
   }
 
-  // 9. Advisors List API (GET /api/advisors)
+  // 15. Advisors List API (GET /api/advisors)
   try {
     const t0 = performance.now();
     const res = await fetch(`${BASE_URL}/advisors`, {
@@ -217,11 +335,49 @@ async function runTests() {
     recordResult('Retrieve Advisors List (GET /api/advisors)', false, err.message);
   }
 
-  // 10. Academic Petition Creation (POST /api/petitions)
+  // 16. Advisor Profile (GET /api/advisors/me as Advisor)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/advisors/me`, {
+      headers: { Authorization: `Bearer ${advisorToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && !!data.id;
+    recordResult(
+      'Advisor Profile Insight (GET /api/advisors/me)',
+      pass,
+      `ID: ${data.id}, Name: ${data.nameTh}, Email: ${data.email}`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Advisor Profile Insight (GET /api/advisors/me)', false, err.message);
+  }
+
+  // 17. Advisor Advisees & Risk Check (GET /api/advisors/me/advisees as Advisor)
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`${BASE_URL}/advisors/me/advisees`, {
+      headers: { Authorization: `Bearer ${advisorToken}` },
+    });
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const pass = res.status === 200 && Array.isArray(data);
+    recordResult(
+      'Advisor Advisees & Risk Screening (GET /api/advisors/me/advisees)',
+      pass,
+      `Total Advisees: ${data.length}, Risk screening active`,
+      ms
+    );
+  } catch (err) {
+    recordResult('Advisor Advisees & Risk Screening (GET /api/advisors/me/advisees)', false, err.message);
+  }
+
+  // 18. Academic Petition Creation (POST /api/petitions)
   try {
     const t0 = performance.now();
     const petitionPayload = {
-      studentId: targetStudentCode,
+      studentId: studentUserId,
       type: 'คำร้องขอสอบหัวข้อโครงงานวิจัย',
       title: 'ขอสอบหัวข้อปริญญานิพนธ์ประจำภาคเรียนที่ 1/2569',
       details: 'ขออนุมัติสอบหัวข้อโครงงานวิจัยเรื่อง ระบบผู้ช่วยอัจฉริยะสำหรับนักศึกษาด้วย RAG และ Gemini',
@@ -251,7 +407,7 @@ async function runTests() {
     recordResult('Submit Academic Petition (POST /api/petitions)', false, err.message);
   }
 
-  // 11. Academic Petitions List (GET /api/petitions)
+  // 19. Academic Petitions List (GET /api/petitions)
   try {
     const t0 = performance.now();
     const res = await fetch(`${BASE_URL}/petitions`, {
@@ -270,7 +426,7 @@ async function runTests() {
     recordResult('Retrieve Petitions List (GET /api/petitions)', false, err.message);
   }
 
-  // 12. Admin Review Petition Status (PATCH /api/petitions/:id/status)
+  // 20. Admin Review Petition Status (PATCH /api/petitions/:id/status)
   if (createdPetitionId) {
     try {
       const t0 = performance.now();
@@ -300,7 +456,7 @@ async function runTests() {
     }
   }
 
-  // 13. AI Chatbot Assistant (POST /api/chat)
+  // 21. AI Chatbot Assistant (POST /api/chat)
   try {
     const t0 = performance.now();
     const chatPayload = {
@@ -325,7 +481,7 @@ async function runTests() {
     recordResult('AI Chatbot RAG Assistant (POST /api/chat)', false, err.message);
   }
 
-  // 14. Admin Knowledge Ingestion (POST /api/admin/knowledge/ingest)
+  // 22. Admin Knowledge Ingestion (POST /api/admin/knowledge/ingest)
   try {
     const t0 = performance.now();
     const ingestPayload = {
@@ -353,7 +509,7 @@ async function runTests() {
     recordResult('Admin Knowledge Ingestion to Vector DB (POST /api/admin/knowledge/ingest)', false, err.message);
   }
 
-  // 15. Security Boundary: Reject Unauthorized Request without Bearer Token
+  // 23. Security Boundary: Reject Unauthorized Ingestion without Token (401/403)
   try {
     const t0 = performance.now();
     const res = await fetch(`${BASE_URL}/admin/knowledge/ingest`, {
@@ -378,9 +534,9 @@ async function runTests() {
   const passedCount = results.filter((r) => r.passed).length;
   const failedCount = total - passedCount;
 
-  console.log('\n====================================================');
+  console.log('\n======================================================================');
   console.log(`📊 E2E API TEST SUMMARY: ${passedCount}/${total} PASSED (${failedCount} FAILED)`);
-  console.log('====================================================\n');
+  console.log('======================================================================\n');
 
   return { total, passedCount, failedCount, results };
 }

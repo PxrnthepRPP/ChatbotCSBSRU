@@ -1,17 +1,20 @@
 package com.bsru.studentportal.controller;
 
+import com.bsru.studentportal.ai.AdvisorTools;
+import com.bsru.studentportal.ai.ChatbotService;
+import com.bsru.studentportal.ai.StudentRecordTools;
 import com.bsru.studentportal.dto.ChatRequest;
 import com.bsru.studentportal.dto.ChatResponse;
 import com.bsru.studentportal.security.CurrentUser;
-import com.bsru.studentportal.service.AdvisorTools;
-import com.bsru.studentportal.service.ChatbotService;
-import com.bsru.studentportal.service.StudentRecordTools;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -23,6 +26,9 @@ public class ChatController {
 
     private final ChatbotService chatbotService;
     private final ChatMemoryStore chatMemoryStore;
+
+    @org.springframework.beans.factory.annotation.Value("${gemini.api.key:demo-api-key}")
+    private String geminiApiKey;
 
     @PostMapping("/chat")
     public ResponseEntity<?> chat(
@@ -37,6 +43,16 @@ public class ChatController {
         String sessionId = resolveSessionId(request, authentication);
 
         log.info("Incoming chat request from sessionId: {}, message: {}", sessionId, userMessage);
+
+        // หากยังไม่ได้ใส่ Gemini API Key จริง (ขึ้นต้นด้วย AIza...) ให้ตอบด้วยระบบผู้ช่วยจำลองทันที (ไม่ค้างรอ Timeout)
+        if (geminiApiKey == null || !geminiApiKey.startsWith("AIza") || geminiApiKey.length() < 25) {
+            log.info("Gemini API key not configured with a valid AIza key. Returning instant assistant fallback.");
+            String fallbackReply = generateFallbackResponse(userMessage);
+            return ResponseEntity.ok(ChatResponse.builder()
+                    .reply(fallbackReply)
+                    .sessionId(sessionId)
+                    .build());
+        }
 
         try {
             String aiReply = askWithFreshMemoryOnError(sessionId, userMessage);
