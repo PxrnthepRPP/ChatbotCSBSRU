@@ -59,8 +59,8 @@ function riskChips(r) {
         .map(t => `<span class="badge badge-red" style="font-size:0.7rem">${t}</span>`).join(' ');
 }
 
-const ASK_ALL = 'ช่วยวิเคราะห์ว่านักศึกษาในความดูแลของฉันคนไหนเสี่ยงพ้นสภาพ (รีไทร์) เสี่ยงตก หรือเสี่ยงต้องถอนรายวิชา เรียงจากเสี่ยงมากไปน้อย พร้อมเหตุผลและแนวทางช่วยเหลือ';
-const askAbout = r => `ช่วยวิเคราะห์นักศึกษา ${r.studentId} ${r.nameTh} ว่ามีความเสี่ยงอะไรบ้าง (พ้นสภาพ ตก ถอนรายวิชา จบช้า) และควรช่วยเหลืออย่างไร`;
+
+const askAbout = r => `ช่วยวิเคราะห์ความเสี่ยงของนักศึกษา ${r.studentId} ${r.nameTh} ว่ามีความเสี่ยงอะไรบ้าง (พ้นสภาพ/รีไทร์ ตก ถอนรายวิชา หรือจบช้า) พร้อมเหตุผลจากผลการเรียนและแนวทางช่วยเหลือ`;
 
 /** Dashboard card: who needs attention, from the same risk check the chatbot uses */
 function riskCardHtml() {
@@ -73,6 +73,7 @@ function riskCardHtml() {
                 <div class="advisee-detail">ปี ${r.year} · GPA ${r.gpa != null ? Number(r.gpa).toFixed(2) : '-'} · ${esc(r.factors[0]?.message || '')}</div>
             </div>
             <div class="advisee-actions">
+                <button class="btn btn-sm btn-orange adv-ai-one-btn" data-sid="${esc(r.studentId)}">🤖 ให้ AI วิเคราะห์ความเสี่ยง</button>
                 <button class="btn btn-sm btn-ghost adv-history-btn" data-sid="${esc(r.studentId)}">ดูประวัติ</button>
             </div>
         </div>`).join('');
@@ -80,7 +81,7 @@ function riskCardHtml() {
         <div class="card">
             <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
                 <span>⚠️ นักศึกษาที่ต้องติดตาม <span class="badge ${flagged.length ? 'badge-red' : 'badge-green'}" style="font-size:0.75rem">${flagged.length} คน</span></span>
-                <button class="btn btn-sm btn-orange adv-ai-all-btn">🤖 ให้ AI วิเคราะห์ความเสี่ยงทั้งหมด</button>
+
             </div>
             <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px">ประเมินเบื้องต้นจากข้อมูลจริงในระบบ (GPA, เกรด F/D, แนวโน้มรายเทอม, หน่วยกิตที่ลง, เวลาเรียนชน) · <a href="#" class="adv-criteria-link">ดูเกณฑ์ที่ใช้</a></p>
             ${rows || '<div style="color:var(--text-muted)">ไม่มีนักศึกษาที่เข้าเกณฑ์เสี่ยง</div>'}
@@ -89,9 +90,9 @@ function riskCardHtml() {
 
 function bindAdviseeButtons(container) {
     container.querySelectorAll('.adv-history-btn').forEach(b => b.addEventListener('click', () => openAdviseeHistory(b.dataset.sid)));
-    container.querySelectorAll('.adv-ai-all-btn').forEach(b => b.addEventListener('click', () => askChatbot(ASK_ALL)));
+
     container.querySelectorAll('.adv-ai-one-btn').forEach(b => b.addEventListener('click', () => {
-        const r = liveAdvisees?.find(x => x.studentId === b.dataset.sid);
+        const r = liveAdvisees?.find(x => x.studentId === b.dataset.sid) || currentAdvisees().find(x => x.studentId === b.dataset.sid);
         document.getElementById('advHistoryModal')?.classList.remove('open');
         if (r) askChatbot(askAbout(r));
     }));
@@ -214,6 +215,63 @@ async function openAdviseeHistory(studentId) {
         ? d.petitions.map(pt => `<div style="font-size:0.85rem">• ${esc(pt.title)} <span class="badge badge-blue" style="font-size:0.7rem">${esc(pt.status)}</span></div>`).join('')
         : '<div style="color:var(--text-muted);font-size:0.85rem">ไม่มีคำร้อง</div>';
 
+    let notes = [];
+    try {
+        const notesRes = await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(studentId)}/notes`, 'GET', null, 8000);
+        if (Array.isArray(notesRes)) notes = notesRes;
+    } catch (e) {
+        notes = [];
+    }
+
+    const renderNotesHtml = (items) => {
+        if (!items || items.length === 0) {
+            return '<div style="color:var(--text-muted);font-size:0.85rem">ยังไม่มีบันทึกการให้คำปรึกษา</div>';
+        }
+        return items.map(n => {
+            const dateStr = n.createdAt ? new Date(n.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const rBadge = n.riskLevelSnapshot ? `<span class="badge badge-amber" style="font-size:0.7rem">${esc(n.riskLevelSnapshot)}</span>` : '';
+            const followUp = n.followUpDate ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">📅 นัดติดตามผล: ${esc(n.followUpDate)}</div>` : '';
+            return `
+                <div class="adv-note-item" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px;background:var(--card-bg)">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <div style="font-size:0.8rem;color:var(--text-muted);font-weight:600">${dateStr} ${rBadge}</div>
+                        <button class="btn btn-ghost btn-sm adv-delete-note-btn" data-nid="${n.id}" data-sid="${esc(studentId)}" style="color:var(--red-500);padding:2px 6px;font-size:0.75rem" title="ลบบันทึก">ลบ</button>
+                    </div>
+                    <div style="font-size:0.88rem;line-height:1.5">${esc(n.summary)}</div>
+                    ${followUp}
+                </div>
+            `;
+        }).join('');
+    };
+
+    const notesSection = `
+        <div id="advNotesList" style="margin-bottom:12px">
+            ${renderNotesHtml(notes)}
+        </div>
+        <div style="background:var(--bg-muted, #f8f9fa);border-radius:6px;padding:12px;border:1px dashed var(--border)">
+            <div style="font-weight:600;font-size:0.85rem;margin-bottom:6px">➕ เพิ่มบันทึกการให้คำปรึกษาใหม่</div>
+            <textarea id="advNoteSummary" rows="2" placeholder="ระบุรายละเอียดการให้คำปรึกษา ปัญหา หรือคำแนะนำ..." style="width:100%;box-sizing:border-box;margin-bottom:8px;font-size:0.85rem;padding:6px 8px;border-radius:4px;border:1px solid var(--border)"></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <div style="flex:1;min-width:140px">
+                    <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">วันนัดติดตามผล (ถ้ามี):</label>
+                    <input type="date" id="advNoteFollowUp" style="width:100%;box-sizing:border-box;font-size:0.82rem;padding:4px 6px;border-radius:4px;border:1px solid var(--border)">
+                </div>
+                <div style="flex:1;min-width:140px">
+                    <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:2px">สถานะความเสี่ยง:</label>
+                    <select id="advNoteRisk" style="width:100%;box-sizing:border-box;font-size:0.82rem;padding:4px 6px;border-radius:4px;border:1px solid var(--border)">
+                        <option value="NORMAL" ${r.level === 'NORMAL' ? 'selected' : ''}>ปกติ (NORMAL)</option>
+                        <option value="ACADEMIC_WARNING" ${r.level === 'ACADEMIC_WARNING' ? 'selected' : ''}>เฝ้าระวัง (WARNING)</option>
+                        <option value="AT_RISK" ${r.level === 'AT_RISK' ? 'selected' : ''}>มีความเสี่ยง (AT_RISK)</option>
+                        <option value="CRITICAL" ${r.level === 'CRITICAL' ? 'selected' : ''}>วิกฤต (CRITICAL)</option>
+                    </select>
+                </div>
+                <div style="align-self:flex-end">
+                    <button class="btn btn-sm btn-primary" id="advNoteSaveBtn" style="padding:6px 14px">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    `;
+
     const overlay = showAdvisorModal(`ประวัติ ${r.studentId} ${r.nameTh}`, `
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start">
             <div>
@@ -222,7 +280,7 @@ async function openAdviseeHistory(studentId) {
                 <div style="margin-top:4px">${riskBadge(r)} ${riskChips(r)}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn btn-sm btn-orange adv-ai-one-btn" data-sid="${esc(r.studentId)}">🤖 ให้ AI วิเคราะห์</button>
+                <button class="btn btn-sm btn-orange adv-ai-one-btn" data-sid="${esc(r.studentId)}">🤖 ให้ AI วิเคราะห์ความเสี่ยง</button>
                 <button class="btn btn-sm btn-ghost adv-history-imp-btn">จำลองมุมมองนักศึกษา</button>
             </div>
         </div>
@@ -235,11 +293,69 @@ async function openAdviseeHistory(studentId) {
         ${section('🎓 ตรวจสอบจบ', audit)}
         ${section('🗓️ ตารางเรียนเทอมปัจจุบัน', timetable)}
         ${section('📝 คำร้อง', petitions)}
+        ${section('📋 บันทึกการให้คำปรึกษา (Advising Notes)', notesSection)}
     `);
     bindAdviseeButtons(overlay);
     overlay.querySelector('.adv-history-imp-btn').addEventListener('click', () => {
         overlay.classList.remove('open');
         impersonateStudent(r.studentId, r.nameTh);
+    });
+
+    const refreshNotesUi = async () => {
+        try {
+            const updated = await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(studentId)}/notes`, 'GET', null, 8000);
+            const container = overlay.querySelector('#advNotesList');
+            if (container) {
+                container.innerHTML = renderNotesHtml(Array.isArray(updated) ? updated : []);
+                bindNoteDeleteEvents();
+            }
+        } catch (e) { /* ignored */ }
+    };
+
+    const bindNoteDeleteEvents = () => {
+        overlay.querySelectorAll('.adv-delete-note-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const nid = btn.dataset.nid;
+                const sid = btn.dataset.sid;
+                if (!confirm('ยืนยันลบบันทึกการให้คำปรึกษานี้หรือไม่?')) return;
+                try {
+                    await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(sid)}/notes/${encodeURIComponent(nid)}`, 'DELETE', null, 8000);
+                    showAdvisorToast('success', 'ลบบันทึกการให้คำปรึกษาสำเร็จ');
+                    await refreshNotesUi();
+                } catch (err) {
+                    showAdvisorToast('error', 'ลบบันทึกไม่สำเร็จ: ' + esc(apiErrorText(err)));
+                }
+            });
+        });
+    };
+
+    bindNoteDeleteEvents();
+
+    overlay.querySelector('#advNoteSaveBtn')?.addEventListener('click', async () => {
+        const summaryEl = overlay.querySelector('#advNoteSummary');
+        const summary = summaryEl ? summaryEl.value.trim() : '';
+        if (!summary) {
+            showAdvisorToast('error', 'กรุณาระบุรายละเอียดบันทึกการให้คำปรึกษา');
+            return;
+        }
+        const followUpEl = overlay.querySelector('#advNoteFollowUp');
+        const followUpDate = followUpEl && followUpEl.value ? followUpEl.value : null;
+        const riskEl = overlay.querySelector('#advNoteRisk');
+        const riskLevelSnapshot = riskEl ? riskEl.value : null;
+
+        try {
+            await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(studentId)}/notes`, 'POST', {
+                summary,
+                followUpDate,
+                riskLevelSnapshot
+            }, 8000);
+            showAdvisorToast('success', 'บันทึกการให้คำปรึกษาสำเร็จ');
+            if (summaryEl) summaryEl.value = '';
+            if (followUpEl) followUpEl.value = '';
+            await refreshNotesUi();
+        } catch (err) {
+            showAdvisorToast('error', 'บันทึกไม่สำเร็จ: ' + esc(apiErrorText(err)));
+        }
     });
 }
 
@@ -420,9 +536,9 @@ function renderMyAdvisees() {
                 <button class="btn btn-sm btn-orange adv-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
                 ${s.risk
                     ? `<button class="btn btn-sm btn-ghost adv-history-btn" data-sid="${esc(s.studentId)}">ดูประวัติ</button>
-                       <button class="btn btn-sm btn-ghost adv-ai-one-btn" data-sid="${esc(s.studentId)}" title="ให้ AI วิเคราะห์">🤖</button>
+                       <button class="btn btn-sm btn-ghost adv-ai-one-btn" data-sid="${esc(s.studentId)}" title="ให้ AI วิเคราะห์ความเสี่ยงรายบุคคล">🤖 วิเคราะห์ความเสี่ยง</button>
                        ${s.risk.simulated ? `<button class="btn btn-sm btn-ghost adv-del-sim-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="ลบข้อมูลจำลอง">🗑️</button>` : ''}`
-                    : '<button class="btn btn-sm btn-ghost" disabled title="ต้องเชื่อมต่อ backend">ดูประวัติ</button>'}
+                    : `<button class="btn btn-sm btn-ghost" disabled title="ต้องเชื่อมต่อ backend">ดูประวัติ</button> <button class="btn btn-sm btn-ghost adv-ai-one-btn" data-sid="${esc(s.studentId)}" title="ให้ AI วิเคราะห์ความเสี่ยงรายบุคคล">🤖 วิเคราะห์ความเสี่ยง</button>`}
             </div>
         </div>
     `).join('');
@@ -886,7 +1002,6 @@ function sectionsCardHtml(sections) {
                     <tbody>${rows || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">ยังไม่มีกลุ่มเรียนที่สอน</td></tr>'}</tbody>
                 </table>
             </div>
-            <div id="advSectionStudents"></div>
         </div>`;
 }
 
@@ -1017,18 +1132,154 @@ function bindSectionsCard(sections) {
         });
 
         row.querySelector('.adv-sec-students').addEventListener('click', async () => {
-            const panel = $('advSectionStudents');
             try {
                 const students = await fetchAPI(`/sections/${section.sectionId}/students`);
-                const items = students.map(st => `<li>${esc(st.studentId)} — ${esc(st.nameTh)}${st.status === 'PENDING' ? ' <span class="badge badge-amber">รอแอดมินยืนยัน</span>' : ''}</li>`).join('');
-                panel.innerHTML = `
-                    <div class="app-form-panel" style="margin-top:12px">
-                        <div style="font-weight:600;margin-bottom:6px">👥 ${esc(section.courseCode)} กลุ่ม ${esc(section.sectionNo)} — ${students.length} คน</div>
-                        ${items ? `<ul style="margin:0;padding-left:20px">${items}</ul>` : '<div style="color:var(--text-muted)">ยังไม่มีนักศึกษาลงทะเบียน</div>'}
-                    </div>`;
+                openSectionStudentsModal(section, Array.isArray(students) ? students : []);
             } catch (err) {
                 showAdvisorToast('error', esc(apiErrorText(err)));
             }
         });
     });
+}
+
+/** Full-screen roster view for a course section */
+function openSectionStudentsModal(section, students) {
+    let overlay = document.getElementById('advSectionRosterModal');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'advSectionRosterModal';
+        overlay.className = 'modal-overlay';
+        overlay.style.padding = '0';
+        document.body.appendChild(overlay);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('open')) {
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
+    let searchQuery = '';
+    let statusFilter = 'ALL';
+    const confirmedCount = students.filter(st => st.status !== 'PENDING').length;
+    const pendingCount = students.filter(st => st.status === 'PENDING').length;
+    const seatText = section.capacity ? `${students.length} / ${section.capacity} ???????` : `${students.length} ??`;
+
+    const closeRoster = () => {
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    };
+
+    overlay.innerHTML = `
+        <div class="modal-card" style="width:100vw !important;max-width:100vw !important;height:100vh !important;max-height:100vh !important;margin:0 !important;border-radius:0 !important;display:flex;flex-direction:column;overflow:hidden">
+            <div class="modal-header" style="padding:16px 24px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                <div>
+                    <h3 style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:1.15rem">
+                        <span>?? ????????????????????????</span>
+                        <span class="badge badge-blue">${esc(section.courseCode)}</span>
+                        <span>${esc(section.courseName)}</span>
+                        <span class="badge badge-green">????? ${esc(section.sectionNo)}</span>
+                    </h3>
+                    <div style="font-size:0.84rem;color:var(--text-muted);margin-top:4px">
+                        ???????? ${esc(section.term)}/${esc(section.academicYear)} ? ${esc(section.dayName)} ${esc(section.startTime)}?${esc(section.endTime)} ? ???? ${esc(section.room || '-')} ? ????????? <strong>${esc(seatText)}</strong>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-orange" id="advSectionRosterClose" style="padding:8px 16px">
+                    ? ??????????? (Esc)
+                </button>
+            </div>
+            <div class="modal-body" style="padding:20px 24px;flex:1;display:flex;flex-direction:column;overflow:hidden;gap:14px">
+                <div class="batch-filter-bar" style="margin:0;flex-shrink:0">
+                    <label>?????</label>
+                    <select class="batch-select" id="advRosterStatusFilter">
+                        <option value="ALL">??????? (${students.length} ??)</option>
+                        <option value="ENROLLED">?????????? (${confirmedCount} ??)</option>
+                        <option value="PENDING">?????????????? (${pendingCount} ??)</option>
+                    </select>
+                    <div class="filter-result-count" id="advRosterCountText">???? <strong>${students.length}</strong> ??? ${students.length} ??</div>
+                    <div class="toolbar-search" style="margin-left:auto">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="advRosterSearchInput" placeholder="????????????????? ????????-???????...">
+                    </div>
+                </div>
+                <div class="card" style="padding:0;flex:1;overflow:auto;margin:0">
+                    <table class="data-table" style="width:100%">
+                        <thead style="position:sticky;top:0;z-index:2">
+                            <tr>
+                                <th style="width:64px;text-align:center">#</th>
+                                <th style="width:160px">????????????</th>
+                                <th style="width:100px">????</th>
+                                <th>????-???????</th>
+                                <th class="hide-mobile" style="width:140px">?????? / ?????</th>
+                                <th class="hide-mobile">????????????</th>
+                                <th style="width:160px">??????????????</th>
+                            </tr>
+                        </thead>
+                        <tbody id="advRosterTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+
+    const renderRows = () => {
+        const q = searchQuery.toLowerCase();
+        const filtered = students.filter(st => {
+            if (statusFilter === 'PENDING' && st.status !== 'PENDING') return false;
+            if (statusFilter === 'ENROLLED' && st.status === 'PENDING') return false;
+            if (!q) return true;
+            return (st.studentId || '').toLowerCase().includes(q)
+                || (st.nameTh || '').toLowerCase().includes(q)
+                || (st.nameEn || '').toLowerCase().includes(q);
+        });
+
+        const countEl = overlay.querySelector('#advRosterCountText');
+        if (countEl) {
+            countEl.innerHTML = `???? <strong>${filtered.length}</strong> ??? ${students.length} ??`;
+        }
+
+        const tbody = overlay.querySelector('#advRosterTableBody');
+        if (!tbody) return;
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted)">${students.length === 0 ? '????????????????????????????????????????' : '?????????????????????????????'}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((st, idx) => {
+            const batch = getBatch(st.studentId || '');
+            const yearSec = [st.year ? `?? ${esc(st.year)}` : '', st.studentSection ? `Sec ${esc(st.studentSection)}` : ''].filter(Boolean).join(' ? ') || '-';
+            const contact = [st.email ? esc(st.email) : '', st.phone ? esc(st.phone) : ''].filter(Boolean).join(' ? ') || '-';
+            const stBadge = st.status === 'PENDING'
+                ? '<span class="badge badge-amber">??????????????</span>'
+                : '<span class="badge badge-green">??????????</span>';
+            return `
+                <tr>
+                    <td style="text-align:center;color:var(--text-muted)">${idx + 1}</td>
+                    <td><strong>${esc(st.studentId)}</strong></td>
+                    <td>${batch ? `<span class="batch-tag batch-${batch}">???? ${batch}</span>` : '-'}</td>
+                    <td>
+                        <div style="font-weight:600">${esc(st.nameTh)}</div>
+                        ${st.nameEn ? `<div style="font-size:0.78rem;color:var(--text-muted)">${esc(st.nameEn)}</div>` : ''}
+                    </td>
+                    <td class="hide-mobile">${yearSec}</td>
+                    <td class="hide-mobile" style="font-size:0.82rem;color:var(--text-muted)">${contact}</td>
+                    <td>${stBadge}</td>
+                </tr>`;
+        }).join('');
+    };
+
+    renderRows();
+
+    overlay.querySelector('#advSectionRosterClose')?.addEventListener('click', closeRoster);
+    overlay.querySelector('#advRosterStatusFilter')?.addEventListener('change', (e) => {
+        statusFilter = e.target.value;
+        renderRows();
+    });
+    overlay.querySelector('#advRosterSearchInput')?.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        renderRows();
+    });
+
+    document.body.style.overflow = 'hidden';
+    overlay.classList.add('open');
+    overlay.querySelector('#advRosterSearchInput')?.focus();
 }

@@ -68,3 +68,12 @@ $RECYCLE.BIN/
 
 # Chatbot test output (contains AI answers, regenerate with tests/test-chatbot.ps1)
 tests/chatbot-test-report.md
+
+
+# Runtime Uploads & Multi-Agent Workspace State
+uploads/
+.agents/
+PROJECT.md
+TEST_INFRA.md
+TEST_READY.md
+docs/IMPLEMENTATION_PLAN.md

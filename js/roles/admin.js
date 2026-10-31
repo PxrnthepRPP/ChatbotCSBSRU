@@ -1,10 +1,10 @@
 import { esc, statusBadge, getBatch, debounce, showToast } from '../utils.js';
 import { impersonateStudent } from '../auth.js';
-import { fetchAPI } from '../api.js';
+import { fetchAPI, viewPdfAttachmentAPI, API_BASE_URL } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { renderStatusDonutChart } from '../components/statusChart.js';
-import { renderCareerDataList } from '../components/careerList.js';
-import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../components/careerCatalog.js';
+import { renderCareerDataList, aggregateCareerList } from '../components/careerList.js';
+import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES, getCareerCategory } from '../components/careerCatalog.js';
 import { renderGpaTrendChart, renderStatusStackedBar, renderCareerShiftMatrix } from '../components/yearTrendCharts.js';
 
 export const MOCK_ADVISORS = [
@@ -172,6 +172,7 @@ export async function initAdminDashboard() {
     renderManageAdvisors();
     renderManageStudents();
     renderManagePetitions();
+    renderKnowledgeManagement();
 
     // 2. Fetch live data from Spring Boot REST API
     try {
@@ -214,10 +215,14 @@ export async function initAdminDashboard() {
                     type: p.type,
                     title: p.title,
                     details: p.details,
-                    attachment: p.attachment,
+                    attachment: p.attachment || (p.attachmentPath ? p.attachmentPath.split(/[/\\]/).pop() : null),
+                    attachmentPath: p.attachmentPath,
                     submittedAt: dateStr,
                     status: p.status || 'รอดำเนินการ',
+                    advisorComment: p.advisorComment || '',
+                    advisorReviewedAt: p.advisorReviewedAt || '',
                     adminComment: p.adminComment || '',
+                    adminReviewedAt: p.adminReviewedAt || '',
                 };
             });
             MOCK_PETITIONS_LOG.splice(0, MOCK_PETITIONS_LOG.length, ...formattedPetitions);
@@ -502,6 +507,19 @@ function renderAdminDashboard() {
     ]).then(() => {
         renderStatusDonutChart('statusChartContainer', filteredStudents);
         renderCareerDataList('careerListContainer', filteredStudents);
+        const careerHeader = document.querySelector('#careerListContainer .career-list-header');
+        if (careerHeader && !document.getElementById('exportCareerCsvBtn')) {
+            const expBtn = document.createElement('button');
+            expBtn.id = 'exportCareerCsvBtn';
+            expBtn.className = 'btn btn-sm btn-secondary';
+            expBtn.style.marginLeft = 'auto';
+            expBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                ส่งออก CSV
+            `;
+            expBtn.addEventListener('click', () => exportCareerStatisticsCsv(filteredStudents));
+            careerHeader.appendChild(expBtn);
+        }
 
         // Render Year-over-Year analytics when multiple batches selected
         if (isMultiMode) {
@@ -515,6 +533,28 @@ function renderAdminDashboard() {
     renderRegistrationCard();
     renderEnrollmentRequestsCard();
     renderAdminSectionsCard();
+}
+
+export function exportCareerStatisticsCsv(students) {
+    const list = students || (typeof filteredStudents !== 'undefined' ? filteredStudents : MOCK_STUDENTS_POOL);
+    const data = aggregateCareerList(list);
+    let csv = 'อันดับ,สายอาชีพ,หมวดหมู่,จำนวนบัณฑิต (คน),สัดส่วน (%)\n';
+    data.forEach((item, index) => {
+        const cat = getCareerCategory(item.career);
+        const catName = cat === 'unemployed' ? 'ว่างงาน' : cat === 'business' ? 'ธุรกิจส่วนตัว' : 'งานตรงสาย IT/CS';
+        const escField = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+        csv += `${index + 1},${escField(item.career)},${escField(catName)},${item.count},${item.percentage}%\n`;
+    });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bsru_career_statistics_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('success', 'ส่งออกสถิติสายอาชีพบัณฑิตเป็นไฟล์ CSV (UTF-8 with BOM) เรียบร้อย');
 }
 
 /* ============================================================
@@ -1059,6 +1099,15 @@ function renderManageStudents() {
                 <input type="text" id="adminStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
             </div>
             <button class="btn btn-success" id="addStudentBtn">เพิ่มนักศึกษา</button>
+            <button class="btn btn-primary" id="exportStudentCsvBtn" title="ส่งออกข้อมูลนักศึกษาเป็นไฟล์ CSV (UTF-8 with BOM)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                ส่งออก CSV
+            </button>
+            <button class="btn btn-secondary" id="importStudentCsvBtn" title="นำเข้าข้อมูลนักศึกษาแบบกลุ่มจากไฟล์ CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                นำเข้า CSV
+            </button>
+            <input type="file" id="importStudentCsvInput" accept=".csv,text/csv" hidden>
             <input type="file" id="auditUploadInput" accept=".json,application/json" hidden>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
@@ -1129,6 +1178,73 @@ function renderManageStudents() {
     });
 
     document.getElementById('addStudentBtn').addEventListener('click', () => openStudentModal('add'));
+
+    document.getElementById('exportStudentCsvBtn')?.addEventListener('click', async () => {
+        try {
+            let blob;
+            try {
+                const token = localStorage.getItem('bsru_token') || sessionStorage.getItem('bsru_token') || sessionStorage.getItem('token') || localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const baseUrl = (typeof API_BASE_URL !== 'undefined' && API_BASE_URL) ? API_BASE_URL : '/api';
+                const res = await fetch(`${baseUrl}/students/export-csv`, { headers });
+                if (res.ok) {
+                    blob = await res.blob();
+                }
+            } catch (netErr) { /* fallback to client-side generation */ }
+
+            if (!blob) {
+                let csv = 'studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n';
+                const exportList = (typeof filtered !== 'undefined' && filtered && filtered.length)
+                    ? filtered
+                    : (typeof filteredStudents !== 'undefined' && filteredStudents && filteredStudents.length
+                        ? filteredStudents
+                        : (Array.isArray(MOCK_STUDENTS_POOL) ? MOCK_STUDENTS_POOL : []));
+                exportList.forEach(s => {
+                    const escField = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+                    csv += `${s.studentId},${escField(s.nameTh)},${escField(s.nameEn)},${escField(s.email || `${s.studentId}@bsru.ac.th`)},${escField(s.phone)},${escField(s.faculty || 'คณะวิทยาศาสตร์และเทคโนโลยี')},${escField(s.department || 'สาขาวิทยาการคอมพิวเตอร์')},${s.year || 1},${escField(s.status || 'กำลังศึกษา')},${escField(s.advisor || '')},${s.gpa != null ? Number(s.gpa).toFixed(2) : '0.00'},${escField(s.careerPath || '')}\n`;
+                });
+                blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bsru_students_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('success', 'ส่งออกข้อมูลนักศึกษาเป็นไฟล์ CSV (UTF-8 with BOM) เรียบร้อย');
+        } catch (err) {
+            showToast('error', 'ส่งออก CSV ล้มเหลว: ' + esc(err.message));
+        }
+    });
+
+    const importBtn = document.getElementById('importStudentCsvBtn');
+    const importInput = document.getElementById('importStudentCsvInput');
+    if (importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const res = await fetchAPI('/students/import-csv', 'POST', text, 20000);
+                showToast('success', res.message || 'นำเข้าข้อมูลนักศึกษาสำเร็จ');
+                const liveStudents = await fetchAPI('/students').catch(() => null);
+                if (Array.isArray(liveStudents)) {
+                    MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...liveStudents.map(toPoolStudent));
+                    studentsFromDb = true;
+                }
+                renderManageStudents();
+                renderAdminDashboard();
+            } catch (err) {
+                showToast('error', 'นำเข้า CSV ไม่สำเร็จ: ' + esc(apiErrorText(err)));
+            } finally {
+                importInput.value = '';
+            }
+        });
+    }
     document.querySelectorAll('.edit-student-btn').forEach(b => b.addEventListener('click', () => openStudentModal('edit', parseInt(b.dataset.idx))));
     document.querySelectorAll('.del-student-btn').forEach(b => b.addEventListener('click', async () => {
         const idx = parseInt(b.dataset.idx);
@@ -1415,9 +1531,9 @@ function renderManagePetitions() {
     if (!container) return;
 
     const totalCount = MOCK_PETITIONS_LOG.length;
-    const pendingCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'รอดำเนินการ').length;
+    const pendingCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'รอดำเนินการ' || p.status === 'รออาจารย์ที่ปรึกษาพิจารณา' || p.status === 'รอผู้ดูแลระบบอนุมัติ').length;
     const approvedCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'อนุมัติ').length;
-    const rejectedCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'ปฏิเสธ').length;
+    const rejectedCount = MOCK_PETITIONS_LOG.filter(p => p.status === 'ปฏิเสธ' || p.status === 'ไม่อนุมัติ').length;
 
     // Batches from student IDs in petitions
     const allBatches = [...new Set(MOCK_PETITIONS_LOG.map(p => getBatch(p.studentId)))].sort().reverse();
@@ -1486,8 +1602,8 @@ function renderManagePetitions() {
             <td><span class="petition-type-badge">${esc(p.type)}</span></td>
             <td class="hide-mobile"><span class="petition-log-title" title="${esc(p.title)}">${esc(p.title)}</span></td>
             <td style="text-align:center" class="hide-mobile">
-                ${p.attachment ? `
-                    <span class="petition-pdf-badge" title="${esc(p.attachment)}">
+                ${(p.attachment || p.attachmentPath) ? `
+                    <span class="petition-pdf-badge admin-table-pdf-btn" data-pid="${esc(p.id)}" title="${esc(p.attachment || 'PDF')}" style="cursor:pointer">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         PDF
                     </span>
@@ -1586,9 +1702,12 @@ function renderManagePetitions() {
                 <label>สถานะ</label>
                 <select class="batch-select" id="adminPetStatusFilter">
                     <option value="all" ${adminPetitionsStatus === 'all' ? 'selected' : ''}>ทุกสถานะ (All Status)</option>
-                    <option value="รอดำเนินการ" ${adminPetitionsStatus === 'รอดำเนินการ' ? 'selected' : ''}>⏳ รอดำเนินการ</option>
+                    <option value="รออาจารย์ที่ปรึกษาพิจารณา" ${adminPetitionsStatus === 'รออาจารย์ที่ปรึกษาพิจารณา' ? 'selected' : ''}>⏳ รออาจารย์ที่ปรึกษาพิจารณา</option>
+                    <option value="รอผู้ดูแลระบบอนุมัติ" ${adminPetitionsStatus === 'รอผู้ดูแลระบบอนุมัติ' ? 'selected' : ''}>📋 รอผู้ดูแลระบบอนุมัติ</option>
                     <option value="อนุมัติ" ${adminPetitionsStatus === 'อนุมัติ' ? 'selected' : ''}>✅ อนุมัติ</option>
-                    <option value="ปฏิเสธ" ${adminPetitionsStatus === 'ปฏิเสธ' ? 'selected' : ''}>❌ ปฏิเสธ</option>
+                    <option value="ไม่อนุมัติ" ${adminPetitionsStatus === 'ไม่อนุมัติ' ? 'selected' : ''}>❌ ไม่อนุมัติ</option>
+                    <option value="รอดำเนินการ" ${adminPetitionsStatus === 'รอดำเนินการ' ? 'selected' : ''}>⏳ รอดำเนินการ (เดิม)</option>
+                    <option value="ปฏิเสธ" ${adminPetitionsStatus === 'ปฏิเสธ' ? 'selected' : ''}>❌ ปฏิเสธ (เดิม)</option>
                 </select>
             </div>
 
@@ -1701,6 +1820,17 @@ function renderManagePetitions() {
             openPetitionDetailModal(idx);
         });
     });
+
+    document.querySelectorAll('.admin-table-pdf-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                await viewPdfAttachmentAPI(btn.dataset.pid);
+            } catch (err) {
+                showToast('error', `ไม่สามารถเปิดไฟล์แนบได้: ${err.message}`);
+            }
+        });
+    });
 }
 
 function openPetitionDetailModal(idx) {
@@ -1732,13 +1862,23 @@ function openPetitionDetailModal(idx) {
                 <div class="petition-detail-box">${esc(p.details || 'ไม่มีรายละเอียดเพิ่มเติม')}</div>
             </div>
 
-            ${p.attachment ? `
+            ${(p.attachment || p.attachmentPath) ? `
             <div class="modal-field">
-                <label>ไฟล์แนบ</label>
-                <div class="petition-file-selected" style="pointer-events:all;cursor:pointer;" onclick="alert('จำลองการเปิดไฟล์: ${esc(p.attachment)}')">
+                <label>ไฟล์แนบ (PDF)</label>
+                <div class="petition-file-selected" id="adminModalViewPdfBtn" style="pointer-events:all;cursor:pointer;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <span>${esc(p.attachment)}</span>
-                    <span class="btn btn-sm btn-ghost" style="margin-left:auto">เปิดดูไฟล์ PDF</span>
+                    <span>${esc(p.attachment || 'เอกสารแนบ.pdf')}</span>
+                    <span class="btn btn-sm btn-ghost" style="margin-left:auto">📄 เปิดดูไฟล์ PDF</span>
+                </div>
+            </div>
+            ` : ''}
+
+            ${p.advisorComment ? `
+            <div class="modal-field">
+                <label>ความเห็นของอาจารย์ที่ปรึกษา</label>
+                <div style="font-size:0.88rem;background:var(--brand-50, #eff6ff);padding:10px 14px;border-radius:var(--radius-md);color:var(--brand-700, #1d4ed8);border-left:4px solid #3b82f6">
+                    👨‍🏫 <strong>ความเห็นอาจารย์:</strong> ${esc(p.advisorComment)}
+                    ${p.advisorReviewedAt ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">พิจารณาเมื่อ: ${esc(p.advisorReviewedAt)}</div>` : ''}
                 </div>
             </div>
             ` : ''}
@@ -1748,9 +1888,12 @@ function openPetitionDetailModal(idx) {
             <div class="modal-field">
                 <label for="adminPetitionStatusSelect"><strong>การพิจารณา / ปรับเปลี่ยนสถานะ</strong></label>
                 <select id="adminPetitionStatusSelect" style="width:100%;padding:10px 14px;border:2px solid var(--g-200);border-radius:var(--radius-md);font-size:0.9rem">
-                    <option value="รอดำเนินการ" ${p.status === 'รอดำเนินการ' ? 'selected' : ''}>⏳ รอดำเนินการ (Pending)</option>
+                    <option value="รออาจารย์ที่ปรึกษาพิจารณา" ${p.status === 'รออาจารย์ที่ปรึกษาพิจารณา' ? 'selected' : ''}>⏳ รออาจารย์ที่ปรึกษาพิจารณา (Advisor Review)</option>
+                    <option value="รอผู้ดูแลระบบอนุมัติ" ${p.status === 'รอผู้ดูแลระบบอนุมัติ' ? 'selected' : ''}>📋 รอผู้ดูแลระบบอนุมัติ (Pending Admin)</option>
                     <option value="อนุมัติ" ${p.status === 'อนุมัติ' ? 'selected' : ''}>✅ อนุมัติ (Approved)</option>
-                    <option value="ปฏิเสธ" ${p.status === 'ปฏิเสธ' ? 'selected' : ''}>❌ ปฏิเสธ (Rejected)</option>
+                    <option value="ไม่อนุมัติ" ${p.status === 'ไม่อนุมัติ' ? 'selected' : ''}>❌ ไม่อนุมัติ (Not Approved)</option>
+                    ${p.status === 'รอดำเนินการ' ? `<option value="รอดำเนินการ" selected>⏳ รอดำเนินการ (Legacy Pending)</option>` : ''}
+                    ${p.status === 'ปฏิเสธ' ? `<option value="ปฏิเสธ" selected>❌ ปฏิเสธ (Legacy Rejected)</option>` : ''}
                 </select>
             </div>
 
@@ -1766,11 +1909,19 @@ function openPetitionDetailModal(idx) {
                 </button>
                 <button type="button" class="btn btn-danger" id="adminQuickRejectBtn" style="flex:1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    ปฏิเสธคำร้อง (Reject)
+                    ไม่อนุมัติคำร้อง (Reject)
                 </button>
             </div>
         </div>
     `;
+
+    document.getElementById('adminModalViewPdfBtn')?.addEventListener('click', async () => {
+        try {
+            await viewPdfAttachmentAPI(p.id);
+        } catch (err) {
+            showToast('error', `ไม่สามารถเปิดไฟล์แนบได้: ${err.message}`);
+        }
+    });
 
     const saveBtn = document.getElementById('modalSave');
     const newSaveBtn = saveBtn.cloneNode(true);
@@ -1786,6 +1937,7 @@ function openPetitionDetailModal(idx) {
             const updated = await fetchAPI(`/petitions/${encodeURIComponent(p.id)}/status`, 'PATCH', {
                 status: newStatus,
                 adminComment: newComment,
+                comment: newComment,
             });
             console.log('✅ [Admin] Petition status updated successfully in PostgreSQL:', updated);
 
@@ -1820,10 +1972,376 @@ function openPetitionDetailModal(idx) {
 
     document.getElementById('adminQuickRejectBtn')?.addEventListener('click', () => {
         const comment = document.getElementById('adminPetitionComment').value.trim() || 'ไม่อนุมัติ / เอกสารหรือข้อมูลไม่ครบถ้วน';
-        document.getElementById('adminPetitionStatusSelect').value = 'ปฏิเสธ';
-        handlePetitionStatusUpdate('ปฏิเสธ', comment);
+        document.getElementById('adminPetitionStatusSelect').value = 'ไม่อนุมัติ';
+        handlePetitionStatusUpdate('ไม่อนุมัติ', comment);
     });
 
     crudModal.classList.add('open');
+}
+
+// ================================================================
+// KNOWLEDGE BASE MANAGEMENT (WP-3)
+// ================================================================
+let adminKnowledgeDocuments = [];
+
+export async function renderKnowledgeManagement() {
+    const container = document.getElementById('manageKnowledgeContent');
+    if (!container) return;
+
+    // Render skeleton layout
+    container.innerHTML = `
+        <!-- Stat Row -->
+        <div class="stat-row" id="kbStatRow">
+            <div class="stat-card">
+                <div class="stat-icon purple">📚</div>
+                <div>
+                    <div class="stat-value" id="kbDocCount">${adminKnowledgeDocuments.length}</div>
+                    <div class="stat-label">เอกสารในคลังความรู้</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">🧩</div>
+                <div>
+                    <div class="stat-value" id="kbChunkCount">
+                        ${adminKnowledgeDocuments.reduce((sum, d) => sum + (d.chunkCount || d.chunksCount || 1), 0)}
+                    </div>
+                    <div class="stat-label">ชิ้นส่วน Vector Embeddings</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">⚡</div>
+                <div>
+                    <div class="stat-value">PGVector + RAG</div>
+                    <div class="stat-label">สถานะระบบค้นหาเชิงความหมาย</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingest Document Form Card -->
+        <div class="card kb-form-card" style="margin-bottom: 24px;">
+            <div class="card-header" style="margin-bottom: 16px;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; color: var(--brand-600);">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    นำเข้าเอกสารความรู้ใหม่ (Knowledge Base Ingestion)
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                    อัปโหลดไฟล์ข้อความ (.txt, .md, .csv) หรือวางเนื้อหาระเบียบ ข้อบังคับ หลักสูตร เพื่อสร้าง Vector Embeddings จัดเก็บลง PostgreSQL สำหรับ AI ตอบคำถาม
+                </p>
+            </div>
+
+            <form id="kbIngestForm" onsubmit="return false;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="kbSourceInput" style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+                            ชื่อเอกสาร / แหล่งที่มา (Document Source) <span style="color: var(--red-500); font-weight: 700;">*</span>
+                        </label>
+                        <input type="text" id="kbSourceInput" class="form-control" placeholder="เช่น bsru_curriculum_standard_2026.pdf หรือ ระเบียบการเทียบโอน.txt" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--g-300); border-radius: var(--radius-md); font-size: 0.9rem;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="kbFileInput" style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+                            เลือกไฟล์จากเครื่อง (Optional File Auto-Fill)
+                        </label>
+                        <input type="file" id="kbFileInput" accept=".txt,.md,.markdown,.csv,.json,.pdf" style="width: 100%; padding: 8px 10px; border: 1.5px dashed var(--g-300); border-radius: var(--radius-md); font-size: 0.85rem; background: var(--g-50); cursor: pointer;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="kbContentInput" style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+                        เนื้อหาเอกสาร (Content Text) <span style="color: var(--red-500); font-weight: 700;">*</span>
+                    </label>
+                    <textarea id="kbContentInput" rows="6" class="form-control" placeholder="พิมพ์หรือวางเนื้อหาเอกสารวิชาการที่ต้องการบันทึกเข้าสู่ Vector Database..." style="width: 100%; padding: 12px 14px; border: 1.5px solid var(--g-300); border-radius: var(--radius-md); font-family: inherit; font-size: 0.9rem; line-height: 1.5;" required></textarea>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="kbReplaceExisting" checked style="width: 16px; height: 16px; accent-color: var(--brand-600);">
+                        <span>เขียนทับข้อมูลเดิมหากพบชื่อเอกสารซ้ำ (Replace Existing Chunks)</span>
+                    </label>
+
+                    <button type="button" class="btn btn-primary" id="kbIngestBtn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; font-weight: 600;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        นำเข้าสู่คลังความรู้ (Ingest Document)
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Document List Card -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="card-header" style="padding: 16px 20px; border-bottom: 1px solid var(--g-200); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">📚 รายการเอกสารในคลังความรู้ (Active Knowledge Store)</h3>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0 0 0;">เอกสารที่ระบบนำมาค้นหาเพื่อตอบคำถามนักศึกษาและอาจารย์</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button type="button" class="btn btn-sm btn-ghost" id="kbRefreshBtn" title="รีเฟรชรายการ" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        รีเฟรช
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table" id="kbDocsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px; text-align: center;">ลำดับ</th>
+                            <th>ชื่อเอกสาร / แหล่งที่มา</th>
+                            <th style="width: 140px; text-align: center;">ชิ้นส่วน (Chunks)</th>
+                            <th class="hide-mobile">ตัวอย่างเนื้อหา (Preview)</th>
+                            <th style="width: 120px; text-align: center;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kbDocsTbody">
+                        <tr><td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">กำลังโหลดข้อมูลคลังความรู้...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    // Wire File Picker Reader
+    const fileInput = document.getElementById('kbFileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const sourceInput = document.getElementById('kbSourceInput');
+            if (sourceInput && (!sourceInput.value.trim() || sourceInput.value === 'manual_entry')) {
+                sourceInput.value = file.name;
+            }
+
+            // Read text files directly
+            if (file.type.startsWith('text/') || /\.(txt|md|markdown|csv|json)$/i.test(file.name)) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const contentArea = document.getElementById('kbContentInput');
+                    if (contentArea) contentArea.value = evt.target.result;
+                };
+                reader.readAsText(file, 'UTF-8');
+            } else if (/\.pdf$/i.test(file.name)) {
+                showToast('info', 'เลือกไฟล์ PDF เรียบร้อย: กรุณาพิมพ์หรือวางข้อความสรุปเนื้อหาที่ต้องการนำเข้าสู่ Vector Store');
+            }
+        });
+    }
+
+    // Wire Ingest Submit Button
+    const ingestBtn = document.getElementById('kbIngestBtn');
+    if (ingestBtn) {
+        ingestBtn.addEventListener('click', handleKnowledgeIngest);
+    }
+
+    // Wire Refresh Button
+    const refreshBtn = document.getElementById('kbRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => loadKnowledgeDocuments());
+    }
+
+    // Load initial data
+    await loadKnowledgeDocuments();
+}
+
+async function loadKnowledgeDocuments() {
+    const tbody = document.getElementById('kbDocsTbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted);"><span class="petition-spinner"></span> กำลังดึงข้อมูลจาก Vector Database...</td></tr>`;
+
+    try {
+        const data = await fetchAPI('/admin/knowledge', 'GET', null, 15000);
+        adminKnowledgeDocuments = Array.isArray(data) ? data : (data?.documents || []);
+    } catch (err) {
+        console.warn('⚠️ [Admin] Could not load live knowledge documents, using fallback mock view:', err.message);
+        if (!adminKnowledgeDocuments || adminKnowledgeDocuments.length === 0) {
+            adminKnowledgeDocuments = [];
+        }
+    }
+
+    renderKnowledgeTableRows();
+}
+
+function renderKnowledgeTableRows() {
+    const tbody = document.getElementById('kbDocsTbody');
+    const docCountEl = document.getElementById('kbDocCount');
+    const chunkCountEl = document.getElementById('kbChunkCount');
+    if (!tbody) return;
+
+    const totalChunks = adminKnowledgeDocuments.reduce((sum, d) => sum + (d.chunkCount || d.chunksCount || 1), 0);
+    if (docCountEl) docCountEl.textContent = adminKnowledgeDocuments.length;
+    if (chunkCountEl) chunkCountEl.textContent = totalChunks;
+
+    if (adminKnowledgeDocuments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--text-muted);">ยังไม่มีเอกสารในคลังความรู้ AI คุณสามารถนำเข้าเอกสารฉบับแรกได้จากแบบฟอร์มด้านบน</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = adminKnowledgeDocuments.map((doc, idx) => {
+        const docId = doc.id || doc.source || `doc-${idx}`;
+        const sourceName = doc.source || doc.title || doc.id || 'เอกสารนิรนาม';
+        const chunks = doc.chunkCount !== undefined ? doc.chunkCount : (doc.chunksCount !== undefined ? doc.chunksCount : 1);
+        const preview = doc.snippet || doc.sampleText || doc.preview || doc.content || 'ไม่มีตัวอย่างข้อความ';
+
+        return `
+            <tr>
+                <td style="text-align: center; font-weight: 600; color: var(--text-muted);">${idx + 1}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: var(--brand-600); flex-shrink: 0;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span style="font-weight: 600; color: var(--text-main); word-break: break-all;">${esc(sourceName)}</span>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <span class="badge badge-purple" style="font-weight: 700; padding: 4px 10px; border-radius: 999px;">
+                        ${chunks} Chunks
+                    </span>
+                </td>
+                <td class="hide-mobile" style="color: var(--text-muted); font-size: 0.85rem; max-width: 380px;">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(preview)}">
+                        ${esc(preview)}
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn-sm btn-danger delete-kb-btn" data-id="${esc(docId)}" data-source="${esc(sourceName)}" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px;" title="ลบเอกสารและ Chunks ทั้งหมดออกจาก Vector Store">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        <span>ลบ</span>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Attach delete listeners
+    tbody.querySelectorAll('.delete-kb-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const source = btn.dataset.source;
+            handleKnowledgeDelete(id, source, btn);
+        });
+    });
+}
+
+async function handleKnowledgeIngest() {
+    const sourceInput = document.getElementById('kbSourceInput');
+    const contentInput = document.getElementById('kbContentInput');
+    const replaceExistingBox = document.getElementById('kbReplaceExisting');
+    const ingestBtn = document.getElementById('kbIngestBtn');
+
+    const source = sourceInput?.value.trim();
+    const content = contentInput?.value.trim();
+    const replaceExisting = replaceExistingBox?.checked ?? true;
+
+    if (!source) {
+        showToast('error', 'กรุณาระบุชื่อเอกสารหรือแหล่งที่มา');
+        sourceInput?.focus();
+        return;
+    }
+    if (!content) {
+        showToast('error', 'กรุณากรอกเนื้อหาเอกสารที่ต้องการนำเข้า');
+        contentInput?.focus();
+        return;
+    }
+
+    if (ingestBtn) {
+        ingestBtn.disabled = true;
+        ingestBtn.innerHTML = `<span class="petition-spinner"></span> กำลังนำเข้าและสร้าง Embeddings...`;
+    }
+
+    try {
+        console.log(`📤 [Admin] Ingesting knowledge document "${source}" (${content.length} chars)...`);
+        const res = await fetchAPI('/admin/knowledge/ingest', 'POST', {
+            source,
+            content,
+            replaceExisting,
+        }, 60000);
+
+        console.log('✅ [Admin] Document ingested successfully:', res);
+        showToast('success', `นำเข้าเอกสาร "${source}" เข้าสู่คลังความรู้สำเร็จแล้ว ✅`);
+
+        // Reset form inputs
+        if (sourceInput) sourceInput.value = '';
+        if (contentInput) contentInput.value = '';
+        const fileInput = document.getElementById('kbFileInput');
+        if (fileInput) fileInput.value = '';
+
+        await loadKnowledgeDocuments();
+    } catch (err) {
+        console.error('❌ [Admin] Knowledge ingestion failed:', err);
+        showToast('error', `ไม่สามารถนำเข้าเอกสารได้: ${err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'}`);
+    } finally {
+        if (ingestBtn) {
+            ingestBtn.disabled = false;
+            ingestBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                นำเข้าสู่คลังความรู้ (Ingest Document)
+            `;
+        }
+    }
+}
+
+async function handleKnowledgeDelete(docId, docSource, btnElement) {
+    if (!confirm(`คุณต้องการลบเอกสาร "${docSource}" และเวกเตอร์ชิ้นส่วนทั้งหมดออกจากคลังความรู้ใช่หรือไม่?`)) {
+        return;
+    }
+
+    if (btnElement) {
+        btnElement.disabled = true;
+        btnElement.innerHTML = `<span class="petition-spinner"></span>`;
+    }
+
+    try {
+        console.log(`🗑️ [Admin] Deleting document "${docSource}" (ID: ${docId}) from Vector Database...`);
+        let deleted = false;
+        // First try path variable DELETE /admin/knowledge/{id}
+        try {
+            await fetchAPI(`/admin/knowledge/${encodeURIComponent(docId)}`, 'DELETE', null, 15000);
+            deleted = true;
+        } catch (pathErr) {
+            // Fallback to query param DELETE /admin/knowledge?source=...
+            await fetchAPI(`/admin/knowledge?source=${encodeURIComponent(docSource)}`, 'DELETE', null, 15000);
+            deleted = true;
+        }
+
+        if (deleted) {
+            showToast('success', `ลบเอกสาร "${docSource}" ออกจากคลังความรู้สำเร็จ ✅`);
+            adminKnowledgeDocuments = adminKnowledgeDocuments.filter(d => (d.id !== docId && d.source !== docSource && d.title !== docSource));
+            renderKnowledgeTableRows();
+        }
+    } catch (err) {
+        console.error('❌ [Admin] Failed to delete document:', err);
+        showToast('error', `ไม่สามารถลบเอกสารได้: ${err.message || 'เกิดข้อผิดพลาด'}`);
+        if (btnElement) {
+            btnElement.disabled = false;
+            btnElement.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>ลบ</span>
+            `;
+        }
+    }
 }
 
