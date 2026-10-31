@@ -1,7 +1,10 @@
 package com.bsru.studentportal.config;
 
+import com.bsru.studentportal.security.ChatRateLimitFilter;
 import com.bsru.studentportal.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,16 +28,51 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
+    public ChatRateLimitFilter chatRateLimitFilter() {
+        return new ChatRateLimitFilter();
+    }
+
+    @Bean
+    public FilterRegistrationBean<ChatRateLimitFilter> chatRateLimitFilterRegistration(ChatRateLimitFilter filter) {
+        FilterRegistrationBean<ChatRateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"error\":\"กรุณาเข้าสู่ระบบก่อนใช้งาน (Unauthorized)\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"error\":\"คุณไม่มีสิทธิ์เข้าถึงส่วนนี้ (Forbidden)\"}");
+                })
+            )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/health", "/api/chat", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/health", "/api/chat/**", "/api/forms/**", "/error").permitAll()
+                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(chatRateLimitFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -45,11 +83,28 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost",
                 "http://localhost:*",
+                "https://localhost",
+                "https://localhost:*",
                 "http://127.0.0.1",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "https://127.0.0.1",
+                "https://127.0.0.1:*",
+                "http://192.168.*:*",
+                "http://192.168.*",
+                "https://192.168.*:*",
+                "https://192.168.*",
+                "http://10.*:*",
+                "http://10.*",
+                "https://10.*:*",
+                "https://10.*",
+                "http://172.*:*",
+                "http://172.*",
+                "https://172.*:*",
+                "https://172.*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Content-Disposition", "Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

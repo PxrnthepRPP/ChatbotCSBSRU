@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class KnowledgeIngestRequest {
     private String content;
     private String source;
+    private Boolean replaceExisting;
 }

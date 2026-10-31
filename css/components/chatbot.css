@@ -186,6 +186,7 @@
     flex-shrink: 0;
 }
 
+.cw-clear-btn,
 .cw-expand-btn,
 .cw-close-btn {
     width: 32px;
@@ -203,17 +204,26 @@
     padding: 0;
 }
 
+.cw-clear-btn:hover,
 .cw-expand-btn:hover,
 .cw-close-btn:hover {
     background: rgba(255, 255, 255, 0.18);
     color: #fff;
 }
 
+.cw-clear-btn:active,
 .cw-expand-btn:active,
 .cw-close-btn:active {
     transform: scale(0.92);
 }
 
+.cw-clear-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cw-clear-btn svg,
 .cw-expand-btn svg,
 .cw-close-btn svg {
     width: 16px;
@@ -642,3 +652,522 @@
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* ============================================================
+   MARKDOWN FORMATTING, TABLES & CITATION BADGES (Milestone 2)
+   ============================================================ */
+
+/* ── Message Bubble Adjustments for Rich Content ── */
+.cw-msg.bot {
+    max-width: 88%;
+}
+
+.cw-msg.bot.has-table,
+.cw-msg.bot:has(.cw-table-wrapper) {
+    max-width: 95%;
+}
+
+.cw-msg-content {
+    word-break: break-word;
+}
+
+/* ── Markdown Headings in Chat ── */
+.cw-msg .cw-md-h1,
+.cw-msg .cw-md-h2,
+.cw-msg .cw-md-h3,
+.cw-msg .cw-md-h4 {
+    line-height: 1.35;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+.cw-msg .cw-md-h1:first-child,
+.cw-msg .cw-md-h2:first-child,
+.cw-msg .cw-md-h3:first-child,
+.cw-msg .cw-md-h4:first-child {
+    margin-top: 0;
+}
+
+.cw-msg .cw-md-h1 {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--brand-700, #162f57);
+    border-bottom: 1px solid var(--g-200, #e5e7eb);
+    padding-bottom: 4px;
+}
+
+.cw-msg .cw-md-h2 {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: var(--brand-600, #1b3a6b);
+}
+
+.cw-msg .cw-md-h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--brand-500, #1e3d72);
+}
+
+.cw-msg .cw-md-h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--g-800, #1f2937);
+}
+
+/* ── Markdown Lists ── */
+.cw-msg .cw-md-ul,
+.cw-msg .cw-md-ol {
+    margin: 6px 0;
+    padding-left: 20px;
+    font-size: 0.84rem;
+}
+
+.cw-msg .cw-md-ul li,
+.cw-msg .cw-md-ol li {
+    margin-bottom: 4px;
+    line-height: 1.45;
+}
+
+.cw-msg .cw-md-ul li:last-child,
+.cw-msg .cw-md-ol li:last-child {
+    margin-bottom: 0;
+}
+
+/* ── Markdown Code & Code Blocks ── */
+.cw-inline-code {
+    background: var(--g-100, #f3f4f6);
+    color: var(--brand-700, #162f57);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82em;
+    border: 1px solid var(--g-200, #e5e7eb);
+}
+
+.cw-code-block {
+    background: #111827;
+    color: #f3f4f6;
+    padding: 10px 12px;
+    border-radius: var(--radius-md, 8px);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.cw-code-block code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+}
+
+/* ── Markdown Tables (Responsive & Striped) ── */
+.cw-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin: 8px 0;
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--g-200, #e5e7eb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    -webkit-overflow-scrolling: touch;
+}
+
+.cw-table-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+
+.cw-table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--brand-200, #8baad4);
+    border-radius: 4px;
+}
+
+.cw-md-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    text-align: left;
+    background: #ffffff;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.cw-md-table th {
+    background: var(--brand-50, #e8eef7);
+    color: var(--brand-800, #102342);
+    font-weight: 700;
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--brand-200, #8baad4);
+    white-space: nowrap;
+    font-size: 0.76rem;
+    letter-spacing: 0.01em;
+}
+
+.cw-md-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--g-200, #e5e7eb);
+    color: var(--text-main, #1f2937);
+    vertical-align: top;
+}
+
+.cw-md-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.cw-md-table tbody tr:nth-child(even) {
+    background: var(--g-50, #f9fafb);
+}
+
+.cw-md-table tbody tr:hover {
+    background: var(--brand-50, #e8eef7);
+    transition: background 0.15s ease;
+}
+
+/* ── Source Citation Badges ── */
+.cw-citations {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--g-200, #e5e7eb);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cw-citations-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.70rem;
+    font-weight: 600;
+    color: var(--g-500, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.cw-citations-label svg {
+    width: 13px;
+    height: 13px;
+    color: var(--brand-500, #1e3d72);
+    flex-shrink: 0;
+}
+
+.cw-citations-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cw-citation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    background: var(--brand-50, #e8eef7);
+    color: var(--brand-700, #162f57);
+    border: 1px solid var(--brand-200, #8baad4);
+    font-size: 0.70rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    user-select: none;
+}
+
+.cw-citation-badge svg {
+    width: 12px;
+    height: 12px;
+    color: var(--brand-500, #1e3d72);
+    flex-shrink: 0;
+}
+
+.cw-citation-badge:hover {
+    background: var(--brand-100, #c5d5ec);
+    border-color: var(--brand-400, #2a5ea8);
+    color: var(--brand-800, #102342);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(27, 58, 107, 0.15);
+}
+
+.cw-citation-badge:active {
+    transform: scale(0.96);
+}
+
+/* ── Dark Theme Overrides for Chat Rich Content ── */
+[data-theme="dark"] .cw-msg .cw-md-h1,
+[data-theme="dark"] .cw-msg .cw-md-h2,
+[data-theme="dark"] .cw-msg .cw-md-h3 {
+    color: var(--brand-300, #8fb4ea);
+    border-bottom-color: var(--g-300, #46546b);
+}
+
+[data-theme="dark"] .cw-msg .cw-md-h4 {
+    color: var(--g-700, #d4dce6);
+}
+
+[data-theme="dark"] .cw-inline-code {
+    background: var(--g-100, #253042);
+    color: var(--brand-300, #8fb4ea);
+    border-color: var(--g-200, #2f3b50);
+}
+
+[data-theme="dark"] .cw-table-wrapper {
+    border-color: var(--g-300, #46546b);
+    background: var(--bg-card, #151e2d);
+}
+
+[data-theme="dark"] .cw-md-table {
+    background: var(--bg-card, #151e2d);
+}
+
+[data-theme="dark"] .cw-md-table th {
+    background: var(--brand-100, #22355a);
+    color: var(--brand-300, #8fb4ea);
+    border-bottom-color: var(--brand-200, #3d5f94);
+}
+
+[data-theme="dark"] .cw-md-table td {
+    border-bottom-color: var(--g-200, #2f3b50);
+    color: var(--text-main, #e5eaf1);
+}
+
+[data-theme="dark"] .cw-md-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .cw-md-table tbody tr:hover {
+    background: var(--brand-100, #22355a);
+}
+
+[data-theme="dark"] .cw-citations {
+    border-top-color: var(--g-200, #2f3b50);
+}
+
+[data-theme="dark"] .cw-citations-label {
+    color: var(--g-400, #6b7a90);
+}
+
+[data-theme="dark"] .cw-citations-label svg {
+    color: var(--brand-300, #8fb4ea);
+}
+
+[data-theme="dark"] .cw-citation-badge {
+    background: var(--brand-100, #22355a);
+    color: var(--brand-300, #8fb4ea);
+    border-color: var(--brand-200, #3d5f94);
+}
+
+[data-theme="dark"] .cw-citation-badge svg {
+    color: var(--brand-300, #8fb4ea);
+}
+
+[data-theme="dark"] .cw-citation-badge:hover {
+    background: var(--brand-200, #3d5f94);
+    color: #ffffff;
+    border-color: var(--brand-400, #7aa6e6);
+}
+
+/* ── Official PDF Document Attachment Cards inside Chat Bubble ── */
+.cw-msg.bot.has-attachments {
+    max-width: 95%;
+}
+
+.cw-attachments {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--g-200, #e5e7eb);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cw-attachments-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--brand-700, #162f57);
+    letter-spacing: 0.02em;
+}
+
+.cw-attachments-label svg {
+    width: 14px;
+    height: 14px;
+    color: var(--brand-500, #1e3d72);
+    flex-shrink: 0;
+}
+
+.cw-attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.cw-attachment-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--g-50, #f8fafc);
+    border: 1px solid var(--brand-200, #cbd5e1);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cw-attachment-card:hover {
+    border-color: var(--brand-400, #3b82f6);
+    box-shadow: 0 2px 8px rgba(30, 61, 114, 0.1);
+}
+
+.cw-att-icon {
+    width: 36px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(185, 28, 28, 0.25);
+}
+
+.cw-att-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cw-att-title {
+    font-size: 0.80rem;
+    font-weight: 700;
+    color: var(--text-main, #1e293b);
+    line-height: 1.35;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+.cw-att-code {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: var(--brand-100, #dbeafe);
+    color: var(--brand-700, #1d4ed8);
+    font-size: 0.70rem;
+    font-weight: 800;
+}
+
+.cw-att-summary {
+    font-size: 0.72rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 2px;
+    line-height: 1.35;
+}
+
+.cw-att-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.cw-att-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 0.71rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.cw-att-btn svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.cw-att-btn.preview {
+    background: #ffffff;
+    color: var(--brand-700, #162f57);
+    border: 1px solid var(--brand-200, #93c5fd);
+}
+
+.cw-att-btn.preview:hover {
+    background: var(--brand-50, #eff6ff);
+    border-color: var(--brand-400, #3b82f6);
+}
+
+.cw-att-btn.download {
+    background: linear-gradient(135deg, var(--brand-600, #1b3a6b), var(--brand-500, #2563eb));
+    color: #ffffff;
+    border: 1px solid transparent;
+}
+
+.cw-att-btn.download:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+[data-theme="dark"] .cw-attachments {
+    border-top-color: var(--g-200, #2f3b50);
+}
+
+[data-theme="dark"] .cw-attachments-label {
+    color: var(--brand-300, #93c5fd);
+}
+
+[data-theme="dark"] .cw-attachments-label svg {
+    color: var(--brand-300, #93c5fd);
+}
+
+[data-theme="dark"] .cw-attachment-card {
+    background: rgba(30, 41, 59, 0.75);
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .cw-attachment-card:hover {
+    border-color: var(--brand-400, #60a5fa);
+}
+
+[data-theme="dark"] .cw-att-title {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .cw-att-code {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .cw-att-summary {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .cw-att-btn.preview {
+    background: rgba(15, 23, 42, 0.8);
+    color: #bfdbfe;
+    border-color: rgba(96, 165, 250, 0.35);
+}
+
+[data-theme="dark"] .cw-att-btn.preview:hover {
+    background: rgba(37, 99, 235, 0.22);
+    color: #ffffff;
+}
+
+

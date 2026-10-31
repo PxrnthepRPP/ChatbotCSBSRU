@@ -14,6 +14,7 @@ import { openChangePasswordModal } from './components/password.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
 import { initStudentDashboard } from './roles/student.js';
+import { initNotifications, clearNotifications } from './components/notifications.js';
 
 // ================================================================
 // UTILITY FUNCTIONS (Imported & re-exported for backward compatibility)
@@ -30,11 +31,13 @@ const NAV_CONFIG = {
         { module: 'manage-advisors', label: 'จัดการอาจารย์ที่ปรึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
         { module: 'manage-students', label: 'จัดการนักศึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
         { module: 'manage-petitions', label: 'รายการคำร้องวิชาการ', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>' },
+        { module: 'manage-knowledge', id: 'manage-knowledge', label: 'จัดการคลังความรู้', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v6"/><path d="M9 9h6"/></svg>' },
     ],
     ADVISOR: [
         { module: 'advisor-dashboard', label: 'แดชบอร์ด', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
         { module: 'my-advisees', label: 'นักศึกษาในที่ปรึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
         { module: 'advisor-courses', label: 'จัดการรายวิชา & ประกาศสอบ', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>' },
+
     ],
     STUDENT: [
         { module: 'bibliography', label: 'ประวัตินักศึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
@@ -49,7 +52,9 @@ const NAV_CONFIG = {
 
 const MODULE_TITLES = {
     'admin-dashboard': 'แดชบอร์ดผู้ดูแล', 'manage-advisors': 'จัดการอาจารย์', 'manage-students': 'จัดการนักศึกษา', 'manage-petitions': 'รายการคำร้องวิชาการ',
+    'manage-knowledge': 'จัดการคลังความรู้',
     'advisor-dashboard': 'แดชบอร์ดอาจารย์', 'my-advisees': 'นักศึกษาในที่ปรึกษา', 'advisor-courses': 'จัดการรายวิชา & ประกาศสอบ',
+
     'bibliography': 'ประวัตินักศึกษา', 'timetable': 'ตารางเรียน/สอบ', 'finance': 'การเงิน/ทุนการศึกษา',
     'grades': 'ผลการเรียน', 'graduation': 'ตรวจสอบจบ', 'activity': 'กิจกรรม', 'petitions': 'ยื่นคำร้องวิชาการ',
 };
@@ -78,11 +83,11 @@ function initApp() {
     // ── Read initial state ──
     const initialState = getState();
 
-
     if (initialState.currentRole) {
         loginOverlay.style.display = 'none';
         dashboard.style.display = 'flex';
         initDashboard();
+        initNotifications();
         requirePasswordChangeIfNeeded();
     }
 
@@ -141,6 +146,7 @@ function initApp() {
             loginOverlay.style.display = 'none';
             dashboard.style.display = 'flex';
             await initDashboard();
+            initNotifications();
             requirePasswordChangeIfNeeded();
         }, 300);
     });
@@ -176,6 +182,7 @@ function initApp() {
         e.preventDefault();
         const state = getState();
         if (state.isImpersonating) exitImpersonation();
+        clearNotifications();
         logout();
         window.location.reload();
     });
@@ -183,6 +190,15 @@ function initApp() {
     if (exitImpBtn) {
         exitImpBtn.addEventListener('click', exitImpersonation);
     }
+
+    // Expose navigation helper for notification deep linking
+    window.navigateToModule = (modId) => {
+        if (!modId) return;
+        setState({ activeModule: modId });
+        if (typeof window.closeMobileSidebar === 'function') {
+            window.closeMobileSidebar();
+        }
+    };
 
     // ── State subscriber: active module changes ──
     subscribe('activeModule', (modId) => {
@@ -219,8 +235,6 @@ function initApp() {
 
         closeMobileSidebar();
     });
-
-
 
     // Initialize Chatbot Widget
     initChatbot();

@@ -2,11 +2,55 @@
    BSRU Student Portal — REST API Client Utility
    ================================================================
    Handles asynchronous HTTP communication with the Spring Boot backend
-   (running on port 8080) with automatic JWT Authorization header attachment,
-   JSON serialization, and error handling.
+   with automatic JWT Authorization header attachment, JSON serialization,
+   dynamic base URL resolution, and error handling.
    ================================================================ */
 
-export const API_BASE_URL = 'http://localhost:8080/api';
+/**
+ * Automatically resolve API base URL based on runtime environment.
+ * 
+ * Logic:
+ * 1. Explicit global override: window.__API_BASE_URL__ or window.API_BASE_URL
+ * 2. Non-browser / Node.js test environment: process.env.API_BASE_URL || 'http://localhost:8080/api'
+ * 3. Browser environment:
+ *    - Port 3000 (Docker Nginx reverse proxy) -> '/api'
+ *    - HTTPS protocol (production reverse proxy / TLS) -> '/api'
+ *    - Direct backend port 8080 -> '/api'
+ *    - Port 80 (XAMPP / default HTTP) or custom LAN IP / hostname -> `${protocol}//${hostname}:8080/api`
+ * 
+ * @returns {string} The resolved base URL for API requests.
+ */
+export function resolveApiBaseUrl() {
+    // 1. Manual override via global variable (for testing or custom deployments)
+    if (typeof window !== 'undefined') {
+        if (window.__API_BASE_URL__) {
+            return window.__API_BASE_URL__;
+        }
+        if (typeof window.API_BASE_URL === 'string' && window.API_BASE_URL) {
+            return window.API_BASE_URL;
+        }
+    }
+
+    // 2. Non-browser / Node.js runtime fallback
+    if (typeof window === 'undefined') {
+        if (typeof process !== 'undefined' && process.env && process.env.API_BASE_URL) {
+            return process.env.API_BASE_URL;
+        }
+        return 'http://localhost:8080/api';
+    }
+
+    const { protocol, hostname, port } = window.location;
+
+    // 3. Docker Nginx reverse proxy (port 3000) or Production HTTPS or direct backend port (8080)
+    if (port === '3000' || protocol === 'https:' || port === '8080') {
+        return '/api';
+    }
+
+    // 4. XAMPP (port 80 / empty) or LAN IP access -> backend port 8080
+    return `${protocol}//${hostname}:8080/api`;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * Fetch data from the Spring Boot backend REST API.
@@ -87,3 +131,72 @@ export function logoutAPI() {
     localStorage.removeItem('bsru_user');
     sessionStorage.removeItem('bsru_token');
 }
+
+/**
+ * Upload a multipart file (e.g. PDF petition attachment) to the REST API.
+ * Automatically injects the JWT Bearer token and omits manual Content-Type header
+ * so the browser generates the correct multipart boundary.
+ * 
+ * @param {string} endpoint 
+ * @param {FormData} formData 
+ * @param {number} [timeoutMs=30000] 
+ * @returns {Promise<any>}
+ */
+export async function uploadFileAPI(endpoint, formData, timeoutMs = 30000) {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE_URL}${cleanEndpoint}`;
+
+    const headers = {};
+    const token = localStorage.getItem('bsru_token') || sessionStorage.getItem('bsru_token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: formData,
+            signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => response.statusText);
+            throw new Error(`HTTP ${response.status} (${response.statusText}): ${errorText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        clearTimeout(timer);
+        console.warn(`[uploadFileAPI Error] POST ${url}:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * Open or download an authenticated PDF attachment in a new browser tab.
+ * Uses JWT Bearer token and Blob URL to bypass browser authentication limits.
+ * 
+ * @param {string} petitionId 
+ */
+export async function viewPdfAttachmentAPI(petitionId) {
+    const cleanId = encodeURIComponent(petitionId);
+    const url = `${API_BASE_URL}/petitions/${cleanId}/attachment`;
+    const headers = {};
+    const token = localStorage.getItem('bsru_token') || sessionStorage.getItem('bsru_token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { method: 'GET', headers });
+    if (!response.ok) {
+        const errText = await response.text().catch(() => response.statusText);
+        throw new Error(`HTTP ${response.status}: ${errText}`);
+    }
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+}
+

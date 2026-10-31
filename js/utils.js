@@ -2,6 +2,11 @@
    BSRU Student Portal — Utilities
    ================================================================ */
 
+import { viewPdfAttachmentAPI } from './api.js';
+if (typeof window !== 'undefined') {
+    window.viewPdfAttachment = viewPdfAttachmentAPI;
+}
+
 export function esc(str) { 
     const d = document.createElement('div'); 
     d.textContent = str; 
@@ -22,10 +27,9 @@ export function gradeClass(g) {
 
 export function statusBadge(s) {
     if (s === 'ผ่าน' || s === 'ชำระแล้ว' || s === 'กำลังศึกษา' || s === 'อนุมัติ') return 'badge-green';
-    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ') return 'badge-amber';
-    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ') return 'badge-red';
-    if (s === 'จบการศึกษา') return 'badge-blue';
-    if (s === 'พ้นสภาพ') return 'badge-red';
+    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ' || s === 'รออาจารย์ที่ปรึกษาพิจารณา') return 'badge-amber';
+    if (s === 'รอผู้ดูแลระบบอนุมัติ' || s === 'จบการศึกษา') return 'badge-blue';
+    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ' || s === 'พ้นสภาพ') return 'badge-red';
     return 'badge-purple';
 }
 
@@ -95,4 +99,5 @@ export function showToast(type, message) {
     }, 4500);
 }
 
-export { fetchAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
+export { fetchAPI, uploadFileAPI, viewPdfAttachmentAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
+
