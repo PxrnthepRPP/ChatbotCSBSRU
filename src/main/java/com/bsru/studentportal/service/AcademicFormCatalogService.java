@@ -325,7 +325,15 @@ public class AcademicFormCatalogService {
         return (q.contains("เอกสารทั้งหมด") || q.contains("แบบฟอร์มทั้งหมด") || q.contains("คำร้องทั้งหมด")
                 || q.contains("มีแบบฟอร์มอะไร") || q.contains("มีแบบฟอร์มคำร้อง") || q.contains("มีเอกสารอะไร")
                 || q.contains("มีใบคำร้องอะไร") || q.contains("ขอแบบฟอร์มคำร้อง") || q.contains("รวมแบบฟอร์ม")
-                || q.contains("ดาวน์โหลดแบบฟอร์ม") || q.contains("ดาวน์โหลดเอกสาร") || q.contains("เอกสาร ทบ"));
+                || q.contains("ดาวน์โหลดแบบฟอร์ม") || q.contains("ดาวน์โหลดเอกสาร") || q.contains("ดาวน์โหลดไฟล์")
+                || q.contains("เอกสาร ทบ") || q.contains("ขอ ทบ") || q.contains("แบบฟอร์ม ทบ")
+                || q.contains("ขอเอกสาร") || q.contains("ขอแบบฟอร์ม") || q.contains("ขอฟอร์ม")
+                || q.contains("ขอใบคำร้อง") || q.contains("ส่งเอกสาร") || q.contains("ส่งแบบฟอร์ม")
+                || q.contains("ส่งไฟล์") || q.contains("ขอไฟล์") || q.contains("เอกสารคำร้อง")
+                || q.contains("แบบฟอร์มคำร้อง") || q.contains("ใบคำร้องทั้งหมด")
+                || (q.contains("เอกสาร") && (q.contains("ขอ") || q.contains("โหลด") || q.contains("ดาวน์โหลด") || q.contains("ส่ง") || q.contains("ดู") || q.contains("มี")))
+                || (q.contains("แบบฟอร์ม") && (q.contains("ขอ") || q.contains("โหลด") || q.contains("ดาวน์โหลด") || q.contains("ส่ง") || q.contains("ดู") || q.contains("มี")))
+                || (q.contains("ทบ") && (q.contains("ขอ") || q.contains("โหลด") || q.contains("ดาวน์โหลด") || q.contains("ส่ง") || q.contains("มี"))));
     }
 
     /**
