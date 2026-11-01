@@ -77,3 +77,6 @@ PROJECT.md
 TEST_INFRA.md
 TEST_READY.md
 docs/IMPLEMENTATION_PLAN.md
+
+# Claude Code agent worktrees
+.claude/worktrees/

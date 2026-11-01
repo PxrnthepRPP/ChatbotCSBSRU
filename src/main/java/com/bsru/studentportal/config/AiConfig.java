@@ -43,7 +43,7 @@ public class AiConfig {
     @Value("${spring.datasource.username:bsru_admin}")
     private String dbUser;
 
-    @Value("${spring.datasource.password:bsru_password}")
+    @Value("${spring.datasource.password}")
     private String dbPassword;
 
     @Bean
