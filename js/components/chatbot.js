@@ -487,7 +487,7 @@ export function initChatbot() {
                     const attachments = role === 'bot'
                         ? (Array.isArray(entry.attachments) && entry.attachments.length ? entry.attachments : inferAttachmentsFromBotText(text))
                         : [];
-                    addCwMsg(role, text, sources, attachments, false);
+                    addCwMsg(role, text, sources, attachments);
                 });
                 return;
             }
@@ -750,7 +750,6 @@ export function initChatbot() {
         let reply = '';
         let sources = [];
         let attachments = [];
-        let usedOfflineFallback = false;
 
         try {
             console.log('🤖 [Chatbot] Sending user query to Spring Boot AI Backend (/api/chat)...');
@@ -778,7 +777,6 @@ export function initChatbot() {
             }
         } catch (err) {
             console.warn('⚠️ [Chatbot] Backend offline or unreachable, using domain assistant mode:', err.message);
-            usedOfflineFallback = true;
             const offlineForms = matchClientForms(text);
             reply = getSmartOfflineReply(text, offlineForms);
             sources = [];
@@ -788,26 +786,22 @@ export function initChatbot() {
         const t = document.getElementById('cwTyping');
         if (t) t.remove();
 
-        addCwMsg('bot', reply, sources, attachments, usedOfflineFallback);
+        addCwMsg('bot', reply, sources, attachments);
 
         cwWaiting = false;
         cwSendBtn.disabled = !cwInput.value.trim();
         cwInput.focus();
     }
 
-    function buildAttachmentUrls(att, preferStaticFiles) {
+    function buildAttachmentUrls(att) {
         const safeFile = encodeURIComponent(att.fileName || '');
-        if (preferStaticFiles) {
-            const staticUrl = `./uploads/forms/${safeFile}`;
-            return { previewUrl: staticUrl, downloadUrl: staticUrl };
-        }
         return {
             previewUrl: `${API_BASE_URL}/forms/${safeFile}`,
             downloadUrl: `${API_BASE_URL}/forms/${safeFile}?download=true`
         };
     }
 
-    function addCwMsg(role, text, sources = [], attachments = [], preferStaticFiles = false) {
+    function addCwMsg(role, text, sources = [], attachments = []) {
         const div = document.createElement('div');
         div.className = `cw-msg ${role}`;
 
@@ -844,7 +838,7 @@ export function initChatbot() {
                 attList.className = 'cw-attachments-list';
 
                 validAttachments.forEach(att => {
-                    const { previewUrl, downloadUrl } = buildAttachmentUrls(att, preferStaticFiles);
+                    const { previewUrl, downloadUrl } = buildAttachmentUrls(att);
                     const downloadName = att.downloadName || att.fileName;
                     const card = document.createElement('div');
                     card.className = 'cw-attachment-card';
