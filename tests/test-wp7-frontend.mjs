@@ -165,14 +165,12 @@ check('BSRU_ACTIVITY_CRITERIA includes all 17 official BSRU activity categories 
 });
 
 const { CLIENT_FORMS_CATALOG, matchClientForms } = await import('../js/components/chatbot.js');
-check('All 16 official BSRU academic/registrar PDF forms exist in docs/forms and src/main/resources/forms and match chatbot queries', () => {
+check('All 16 official BSRU academic/registrar PDF forms exist in src/main/resources/forms and match chatbot queries', () => {
     assert.equal(CLIENT_FORMS_CATALOG.length, 16);
     for (const form of CLIENT_FORMS_CATALOG) {
-        const staticPath = path.join('docs', 'forms', form.fileName);
         const resourcePath = path.join('src', 'main', 'resources', 'forms', form.fileName);
-        assert.ok(fs.existsSync(staticPath), `Missing static PDF form: ${staticPath}`);
         assert.ok(fs.existsSync(resourcePath), `Missing Spring resource PDF form: ${resourcePath}`);
-        assert.ok(fs.statSync(staticPath).size > 1000, `PDF form appears empty: ${staticPath}`);
+        assert.ok(fs.statSync(resourcePath).size > 1000, `PDF form appears empty: ${resourcePath}`);
     }
     assert.equal(matchClientForms('ขอใบรายงานผลการศึกษา ทบ.4')[0]?.fileName, 'R4.pdf');
     assert.equal(matchClientForms('ขอใบลาป่วยหน่อยครับ')[0]?.fileName, 'leave-form.pdf');

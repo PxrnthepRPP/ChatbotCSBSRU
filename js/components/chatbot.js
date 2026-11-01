@@ -414,20 +414,20 @@ export function initChatbot() {
     if (_chatbotInitialized) return;
     _chatbotInitialized = true;
 
-    const chatbotFab    = document.getElementById('chatbotFab');
+    const chatbotFab = document.getElementById('chatbotFab');
     const chatbotWindow = document.getElementById('chatbotWindow');
-    const cwCloseBtn    = document.getElementById('cwCloseBtn');
-    const cwExpandBtn   = document.getElementById('cwExpandBtn');
-    const cwClearBtn    = document.getElementById('cwClearBtn');
-    const cwHeader      = document.getElementById('cwHeader');
-    const cwMessages    = document.getElementById('cwMessages');
-    const cwInput       = document.getElementById('cwInput');
-    const cwSendBtn     = document.getElementById('cwSendBtn');
-    const fabBadge      = document.getElementById('fabBadge');
+    const cwCloseBtn = document.getElementById('cwCloseBtn');
+    const cwExpandBtn = document.getElementById('cwExpandBtn');
+    const cwClearBtn = document.getElementById('cwClearBtn');
+    const cwHeader = document.getElementById('cwHeader');
+    const cwMessages = document.getElementById('cwMessages');
+    const cwInput = document.getElementById('cwInput');
+    const cwSendBtn = document.getElementById('cwSendBtn');
+    const fabBadge = document.getElementById('fabBadge');
 
-    let chatbotOpen   = false;
-    let cwWaiting     = false;
-    let welcomeShown  = false;
+    let chatbotOpen = false;
+    let cwWaiting = false;
+    let welcomeShown = false;
     let historyLoaded = false;
 
     if (!chatbotFab) return;
