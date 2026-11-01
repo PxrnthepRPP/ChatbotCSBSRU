@@ -55,7 +55,6 @@ services:
       - ./css:/usr/share/nginx/html/css:ro
       - ./js:/usr/share/nginx/html/js:ro
       - ./assets:/usr/share/nginx/html/assets:ro
-      - ./uploads/forms:/usr/share/nginx/html/uploads/forms:ro
       - ./docs/forms:/usr/share/nginx/html/docs/forms:ro
     depends_on:
       - backend
