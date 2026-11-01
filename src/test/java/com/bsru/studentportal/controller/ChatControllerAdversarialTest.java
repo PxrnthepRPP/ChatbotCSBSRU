@@ -337,7 +337,7 @@ class ChatControllerAdversarialTest {
     // =========================================================================
 
     @Test
-    @DisplayName("Adversarial: Anonymous unauthenticated chat uses guest prefix")
+    @DisplayName("Adversarial: Anonymous chat keeps a well-formed browser guest id (stored under guest: prefix)")
     void testAnonymousChatSessionIdResolution() {
         ChatRequest req = new ChatRequest();
         req.setMessage("สวัสดี");
@@ -347,21 +347,38 @@ class ChatControllerAdversarialTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         ChatResponse chatResponse = (ChatResponse) response.getBody();
-        assertEquals("guest:browser-client-42", chatResponse.getSessionId());
+        assertEquals("browser-client-42", chatResponse.getSessionId());
+        verify(chatMemoryStore).updateMessages(eq("guest:browser-client-42"), any());
     }
 
     @Test
-    @DisplayName("Adversarial: Anonymous chat with null sessionId uses default guest session")
+    @DisplayName("Adversarial: Anonymous chat with null sessionId gets a fresh random id (no shared guest session)")
     void testAnonymousChatWithNullSessionIdResolution() {
         ChatRequest req = new ChatRequest();
         req.setMessage("สวัสดี");
         req.setSessionId(null);
 
-        ResponseEntity<?> response = chatController.chat(req, null);
+        ChatResponse first = (ChatResponse) chatController.chat(req, null).getBody();
+        ChatResponse second = (ChatResponse) chatController.chat(req, null).getBody();
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        ChatResponse chatResponse = (ChatResponse) response.getBody();
-        assertEquals("guest:guest-session", chatResponse.getSessionId());
+        assertNotNull(first.getSessionId());
+        assertTrue(first.getSessionId().matches("[A-Za-z0-9-]{16,64}"), "server must generate a valid guest id");
+        assertNotEquals(first.getSessionId(), second.getSessionId(), "guests must never share a session");
+        assertNotEquals("guest-session", first.getSessionId());
+    }
+
+    @Test
+    @DisplayName("Adversarial: Anonymous chat cannot pick a logged-in user's key as its session id")
+    void testAnonymousChatCannotImpersonateStudentKey() {
+        ChatRequest req = new ChatRequest();
+        req.setMessage("สวัสดี");
+        req.setSessionId("student:6421100042");
+
+        ChatResponse chatResponse = (ChatResponse) chatController.chat(req, null).getBody();
+
+        assertNotEquals("student:6421100042", chatResponse.getSessionId());
+        verify(chatMemoryStore, never()).updateMessages(eq("student:6421100042"), any());
+        verify(chatMemoryStore, never()).updateMessages(eq("guest:student:6421100042"), any());
     }
 
     @Test

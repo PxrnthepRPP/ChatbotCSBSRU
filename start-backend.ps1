@@ -73,6 +73,44 @@ Get-Content $envFile -Encoding UTF8 | ForEach-Object {
 }
 Write-Host "[OK] Environment variables loaded." -ForegroundColor Green
 
+# 1.1 Profile: รันบนเครื่องใช้ dev (แสดง SQL log) ถ้าไม่ได้กำหนดไว้เอง
+if (-not $env:SPRING_PROFILES_ACTIVE) {
+    $env:SPRING_PROFILES_ACTIVE = "dev"
+}
+
+# 1.2 JWT_SECRET: backend ไม่มีค่า default แล้ว ถ้าว่างหรือยังเป็นค่าเก่าที่เคยอยู่ใน repo (สาธารณะ)
+#     ให้สร้างค่าสุ่มใหม่และบันทึกลง .env (token เดิมจะใช้ไม่ได้ ต้อง login ใหม่)
+$legacyJwtSecret = "bsru-student-portal-super-secure-and-ultra-secret-jwt-signing-key-2026-cs-bsru-thailand"
+if (-not $env:JWT_SECRET -or $env:JWT_SECRET -eq $legacyJwtSecret) {
+    $bytes = New-Object byte[] 64
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($bytes)
+    $rng.Dispose()
+    $newSecret = [Convert]::ToBase64String($bytes)
+
+    $updatedLines = New-Object System.Collections.Generic.List[string]
+    $replaced = $false
+    foreach ($envLine in (Get-Content $envFile -Encoding UTF8)) {
+        if ($envLine -match '^\s*JWT_SECRET\s*=') {
+            $updatedLines.Add("JWT_SECRET=$newSecret")
+            $replaced = $true
+        } else {
+            $updatedLines.Add($envLine)
+        }
+    }
+    if (-not $replaced) { $updatedLines.Add("JWT_SECRET=$newSecret") }
+    [System.IO.File]::WriteAllLines($envFile, $updatedLines, (New-Object System.Text.UTF8Encoding($false)))
+
+    $env:JWT_SECRET = $newSecret
+    Write-Host "[OK] Generated a new random JWT_SECRET and saved it to .env" -ForegroundColor Green
+} elseif ([System.Text.Encoding]::UTF8.GetByteCount($env:JWT_SECRET) -lt 32) {
+    Write-Host "[ERR] JWT_SECRET in .env is shorter than 32 bytes. Generate one with: openssl rand -base64 64" -ForegroundColor Red
+}
+
+if (-not $env:SPRING_DATASOURCE_PASSWORD) {
+    Write-Host "[ERR] SPRING_DATASOURCE_PASSWORD is not set in .env - the backend will not start." -ForegroundColor Red
+}
+
 # 2. ตรวจสอบ Docker Database
 if (Get-Command docker -ErrorAction SilentlyContinue) {
     try {
@@ -110,6 +148,7 @@ $keyPreview = if ($env:GEMINI_API_KEY -and $env:GEMINI_API_KEY.Length -gt 10) { 
 Write-Host "[INFO] Gemini API Key: $keyPreview" -ForegroundColor Gray
 Write-Host "[INFO] Database:       $env:SPRING_DATASOURCE_URL" -ForegroundColor Gray
 Write-Host "[INFO] Server Port:    $env:SERVER_PORT" -ForegroundColor Gray
+Write-Host "[INFO] Profile:        $env:SPRING_PROFILES_ACTIVE" -ForegroundColor Gray
 # 4.1 ตรวจสอบว่า Port กำลังทำงานอยู่แล้วหรือไม่
 $portToCheck = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 8080 }
 $existingConn = Get-NetTCPConnection -LocalPort $portToCheck -State Listen -ErrorAction SilentlyContinue

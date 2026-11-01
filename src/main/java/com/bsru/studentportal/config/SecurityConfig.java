@@ -4,6 +4,8 @@ import com.bsru.studentportal.security.ChatRateLimitFilter;
 import com.bsru.studentportal.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,14 +20,21 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+
+    /** อ่านจาก env APP_CORS_ORIGINS (ผ่าน app.cors.allowed-origins ใน application.properties) */
+    @Value("${app.cors.allowed-origins:}")
+    private String corsAllowedOrigins;
 
     @Bean
     public ChatRateLimitFilter chatRateLimitFilter() {
@@ -77,31 +86,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * CORS มีที่เดียวคือที่นี่ (ลบ CorsConfig แบบ WebMvcConfigurer ออกแล้ว)
+     * APP_CORS_ORIGINS = รายการ origin pattern คั่นด้วย comma เช่น https://portal.bsru.ac.th,https://*.bsru.ac.th
+     * ถ้าไม่ตั้ง: อนุญาตเฉพาะ localhost / 127.0.0.1 / IP ภายใน 192.168.x.x, 10.x.x.x, 172.16-31.x.x
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost",
-                "http://localhost:*",
-                "https://localhost",
-                "https://localhost:*",
-                "http://127.0.0.1",
-                "http://127.0.0.1:*",
-                "https://127.0.0.1",
-                "https://127.0.0.1:*",
-                "http://192.168.*:*",
-                "http://192.168.*",
-                "https://192.168.*:*",
-                "https://192.168.*",
-                "http://10.*:*",
-                "http://10.*",
-                "https://10.*:*",
-                "https://10.*",
-                "http://172.*:*",
-                "http://172.*",
-                "https://172.*:*",
-                "https://172.*"
-        ));
+        List<String> configuredOrigins = parseOrigins(corsAllowedOrigins);
+
+        CorsConfiguration configuration;
+        if (configuredOrigins.isEmpty()) {
+            configuration = new LocalNetworkCorsConfiguration();
+        } else {
+            if (configuredOrigins.contains("*")) {
+                log.warn("APP_CORS_ORIGINS contains '*': every website may call this API with credentials. "
+                        + "List the real frontend origins instead.");
+            }
+            configuration = new CorsConfiguration();
+            configuration.setAllowedOriginPatterns(configuredOrigins);
+        }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Content-Disposition", "Authorization"));
@@ -111,6 +115,37 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    static List<String> parseOrigins(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
+    /**
+     * origin ค่าเริ่มต้นสำหรับพัฒนาในเครื่อง/วง LAN — ตรวจรูป IP ครบทุกส่วน
+     * (wildcard แบบ http://192.168.* จะยอม http://192.168.1.attacker.com ด้วย จึงไม่ใช้)
+     */
+    static final Pattern LOCAL_NETWORK_ORIGIN = Pattern.compile(
+            "^https?://(localhost"
+                    + "|127\\.0\\.0\\.1"
+                    + "|192\\.168\\.\\d{1,3}\\.\\d{1,3}"
+                    + "|10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+                    + "|172\\.(1[6-9]|2\\d|3[01])\\.\\d{1,3}\\.\\d{1,3})"
+                    + "(:\\d{1,5})?$",
+            Pattern.CASE_INSENSITIVE);
+
+    /** ใช้เมื่อไม่ได้ตั้ง APP_CORS_ORIGINS: ยอมเฉพาะ origin ที่ตรงกับ LOCAL_NETWORK_ORIGIN */
+    static final class LocalNetworkCorsConfiguration extends CorsConfiguration {
+        @Override
+        public String checkOrigin(String origin) {
+            if (origin == null || origin.isBlank()) return null;
+            String trimmed = origin.trim();
+            return LOCAL_NETWORK_ORIGIN.matcher(trimmed).matches() ? trimmed : null;
+        }
     }
 
     @Bean
