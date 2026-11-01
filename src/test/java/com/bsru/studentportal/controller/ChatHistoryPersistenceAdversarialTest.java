@@ -202,7 +202,8 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals("USER", userEntry.getSender());
         assertEquals("user", userEntry.getRole());
         assertEquals("สวัสดีครับ มีคำถามเรื่องการยื่นคำร้อง", userEntry.getMessage());
-        assertEquals("test-session-001", userEntry.getSessionId());
+        // logged-in: key comes from the JWT, the client-supplied sessionId is ignored
+        assertEquals("student:6421100042", userEntry.getSessionId());
         assertEquals("student:6421100042", userEntry.getUserKey());
         assertNull(userEntry.getSources(), "User query must have null sources");
         assertNotNull(userEntry.getTimestamp());
@@ -212,7 +213,7 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals("bot", botEntry.getRole());
         assertNotNull(botEntry.getMessage());
         assertTrue(botEntry.getMessage().contains("คำร้องวิชาการ"), "Fallback message should contain relevant guidance");
-        assertEquals("test-session-001", botEntry.getSessionId());
+        assertEquals("student:6421100042", botEntry.getSessionId());
         assertEquals("student:6421100042", botEntry.getUserKey());
         assertNotNull(botEntry.getTimestamp());
     }
@@ -289,37 +290,37 @@ class ChatHistoryPersistenceAdversarialTest {
     // =========================================================================
 
     @Test
-    @DisplayName("Empirical: Independent session IDs are strictly isolated and do NOT leak conversation entries")
+    @DisplayName("Empirical: Independent users are strictly isolated even when they pass each other's session ids")
     void testSessionIsolationBetweenDistinctSessions() {
-        // User 1 chats in session-alpha
+        // User 1 chats (the client sessionId is ignored for logged-in users)
         ChatRequest reqA = new ChatRequest();
         reqA.setMessage("คำถามจากผู้ใช้ A");
         reqA.setSessionId("session-alpha");
         chatController.chat(reqA, studentAuth);
 
-        // User 2 chats in session-beta
+        // User 2 chats
         ChatRequest reqB = new ChatRequest();
         reqB.setMessage("คำถามจากผู้ใช้ B");
         reqB.setSessionId("session-beta");
         chatController.chat(reqB, otherStudentAuth);
 
-        // Retrieve session-alpha history
-        ResponseEntity<?> respA = chatController.getChatHistory("session-alpha", null, studentAuth);
+        // User 1 asks for user 2's "session" -> still only sees their own history
+        ResponseEntity<?> respA = chatController.getChatHistory("session-beta", "student:6421100099", studentAuth);
         @SuppressWarnings("unchecked")
         List<ChatHistoryEntry> listA = (List<ChatHistoryEntry>) respA.getBody();
         assertNotNull(listA);
-        assertEquals(2, listA.size(), "Session Alpha must contain exactly 2 entries");
-        assertTrue(listA.stream().allMatch(e -> "session-alpha".equals(e.getSessionId())));
-        assertTrue(listA.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ B")), "Session Alpha must not leak Session Beta messages");
+        assertEquals(2, listA.size(), "User A must see exactly their own 2 entries");
+        assertTrue(listA.stream().allMatch(e -> "student:6421100042".equals(e.getSessionId())));
+        assertTrue(listA.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ B")), "User A must not see User B messages");
 
-        // Retrieve session-beta history
-        ResponseEntity<?> respB = chatController.getChatHistory("session-beta", null, otherStudentAuth);
+        // User 2 retrieves their history
+        ResponseEntity<?> respB = chatController.getChatHistory("session-alpha", null, otherStudentAuth);
         @SuppressWarnings("unchecked")
         List<ChatHistoryEntry> listB = (List<ChatHistoryEntry>) respB.getBody();
         assertNotNull(listB);
-        assertEquals(2, listB.size(), "Session Beta must contain exactly 2 entries");
-        assertTrue(listB.stream().allMatch(e -> "session-beta".equals(e.getSessionId())));
-        assertTrue(listB.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ A")), "Session Beta must not leak Session Alpha messages");
+        assertEquals(2, listB.size(), "User B must see exactly their own 2 entries");
+        assertTrue(listB.stream().allMatch(e -> "student:6421100099".equals(e.getSessionId())));
+        assertTrue(listB.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ A")), "User B must not see User A messages");
     }
 
     @Test
@@ -357,9 +358,9 @@ class ChatHistoryPersistenceAdversarialTest {
     }
 
     @Test
-    @DisplayName("Empirical: Non-existent sessionId query returns HTTP 200 with empty array (not 404, not null, not 500)")
+    @DisplayName("Empirical: Unknown guest session returns HTTP 200 with empty array (not 404, not null, not 500)")
     void testNonExistentSessionReturnsEmptyArray() {
-        ResponseEntity<?> response = chatController.getChatHistory("uuid-does-not-exist-9999", null, studentAuth);
+        ResponseEntity<?> response = chatController.getChatHistory("8d0e3c1a-0000-4000-8000-does0not0exist", null, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -434,7 +435,7 @@ class ChatHistoryPersistenceAdversarialTest {
         chatController.chat(req2, studentAuth);
 
         assertEquals(4, inMemoryHistoryTable.size());
-        assertTrue(inMemoryChatMemory.containsKey(sessionId));
+        assertTrue(inMemoryChatMemory.containsKey("student:6421100042"));
 
         // Execute clear request
         ResponseEntity<?> clearResp = chatController.clearChatHistory(sessionId, null, studentAuth);
@@ -448,7 +449,7 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals(0, inMemoryHistoryTable.size(), "All records for session must be purged");
 
         // Verify LangChain4j ChatMemoryStore was cleared
-        assertFalse(inMemoryChatMemory.containsKey(sessionId), "Chat memory for session must be purged");
+        assertFalse(inMemoryChatMemory.containsKey("student:6421100042"), "Chat memory for session must be purged");
 
         // Subsequent GET must return empty array
         ResponseEntity<?> getResp = chatController.getChatHistory(sessionId, null, studentAuth);
@@ -547,9 +548,10 @@ class ChatHistoryPersistenceAdversarialTest {
                         startLatch.await(); // Synchronize all 25 threads to strike at exact same microsecond
                         ChatRequest req = new ChatRequest();
                         req.setMessage("Concurrent message from thread " + index);
-                        req.setSessionId("thread-sess-" + index);
+                        // distinct anonymous guests (each browser tab has its own random id)
+                        req.setSessionId("thread-guest-session-" + index);
 
-                        ResponseEntity<?> response = chatController.chat(req, studentAuth);
+                        ResponseEntity<?> response = chatController.chat(req, null);
                         if (response.getStatusCode() == HttpStatus.OK) {
                             successCount.incrementAndGet();
                         } else {
@@ -578,7 +580,7 @@ class ChatHistoryPersistenceAdversarialTest {
 
         // Each individual session must have exactly 2 entries and no cross-talk
         for (int i = 0; i < threadCount; i++) {
-            String sess = "thread-sess-" + i;
+            String sess = "guest:thread-guest-session-" + i;
             long count = inMemoryHistoryTable.stream().filter(e -> sess.equals(e.getSessionId())).count();
             assertEquals(2, count, "Session " + sess + " must have exactly 2 entries (1 user, 1 bot)");
         }

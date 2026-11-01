@@ -16,14 +16,35 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:bsru-student-portal-super-secure-and-ultra-secret-jwt-signing-key-2026-cs-bsru-thailand}")
-    private String secret;
+    /** HS256 ต้องใช้ key อย่างน้อย 256 bit (32 bytes) */
+    static final int MIN_SECRET_BYTES = 32;
 
-    @Value("${jwt.expiration-ms:86400000}")
-    private long expirationMs;
+    private final SecretKey signingKey;
+    private final long expirationMs;
+
+    /**
+     * ไม่มีค่า default ของ secret — ถ้าไม่ได้ตั้ง JWT_SECRET แอปจะไม่ยอม start
+     * สร้างค่าใหม่ได้ด้วย: openssl rand -base64 64
+     */
+    public JwtUtil(@Value("${jwt.secret:}") String secret,
+                   @Value("${jwt.expiration-ms:86400000}") long expirationMs) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT secret is not configured: set the JWT_SECRET environment variable "
+                            + "(generate one with: openssl rand -base64 64)");
+        }
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "JWT_SECRET is too short (" + secretBytes.length + " bytes); at least " + MIN_SECRET_BYTES
+                            + " bytes are required (generate one with: openssl rand -base64 64)");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(secretBytes);
+        this.expirationMs = expirationMs;
+    }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return signingKey;
     }
 
     public String generateToken(String username, String role, Map<String, Object> extraClaims) {
