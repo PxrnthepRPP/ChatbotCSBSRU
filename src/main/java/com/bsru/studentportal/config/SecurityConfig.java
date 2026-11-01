@@ -67,7 +67,7 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/health", "/api/chat/**", "/api/forms/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/health", "/api/chat/**", "/api/forms/**", "/api/uploads/forms/**", "/error").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .anyRequest().authenticated()
             )

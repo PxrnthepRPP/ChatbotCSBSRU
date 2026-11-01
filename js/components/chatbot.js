@@ -191,7 +191,15 @@ function isGeneralFormCatalogQuery(q) {
         q.includes('เอกสารทั้งหมด') || q.includes('แบบฟอร์มทั้งหมด') || q.includes('คำร้องทั้งหมด') ||
         q.includes('มีแบบฟอร์มอะไร') || q.includes('มีแบบฟอร์มคำร้อง') || q.includes('มีเอกสารอะไร') ||
         q.includes('มีใบคำร้องอะไร') || q.includes('ขอแบบฟอร์มคำร้อง') || q.includes('รวมแบบฟอร์ม') ||
-        q.includes('ดาวน์โหลดแบบฟอร์ม') || q.includes('ดาวน์โหลดเอกสาร') || q.includes('เอกสาร ทบ')
+        q.includes('ดาวน์โหลดแบบฟอร์ม') || q.includes('ดาวน์โหลดเอกสาร') || q.includes('ดาวน์โหลดไฟล์') ||
+        q.includes('เอกสาร ทบ') || q.includes('ขอ ทบ') || q.includes('แบบฟอร์ม ทบ') ||
+        q.includes('ขอเอกสาร') || q.includes('ขอแบบฟอร์ม') || q.includes('ขอฟอร์ม') ||
+        q.includes('ขอใบคำร้อง') || q.includes('ส่งเอกสาร') || q.includes('ส่งแบบฟอร์ม') ||
+        q.includes('ส่งไฟล์') || q.includes('ขอไฟล์') || q.includes('เอกสารคำร้อง') ||
+        q.includes('แบบฟอร์มคำร้อง') || q.includes('ใบคำร้องทั้งหมด') ||
+        (q.includes('เอกสาร') && (q.includes('ขอ') || q.includes('โหลด') || q.includes('ดาวน์โหลด') || q.includes('ส่ง') || q.includes('ดู') || q.includes('มี'))) ||
+        (q.includes('แบบฟอร์ม') && (q.includes('ขอ') || q.includes('โหลด') || q.includes('ดาวน์โหลด') || q.includes('ส่ง') || q.includes('ดู') || q.includes('มี'))) ||
+        (q.includes('ทบ') && (q.includes('ขอ') || q.includes('โหลด') || q.includes('ดาวน์โหลด') || q.includes('ส่ง') || q.includes('มี')))
     );
 }
 
@@ -736,6 +744,14 @@ export function initChatbot() {
             if (Array.isArray(data.attachments)) {
                 attachments = data.attachments;
             }
+            if (!attachments || attachments.length === 0) {
+                const clientMatched = matchClientForms(text);
+                if (clientMatched.length > 0) {
+                    attachments = clientMatched;
+                } else {
+                    attachments = inferAttachmentsFromBotText(reply);
+                }
+            }
         } catch (err) {
             console.warn('⚠️ [Chatbot] Backend offline or unreachable, using domain assistant mode:', err.message);
             usedOfflineFallback = true;
@@ -758,7 +774,7 @@ export function initChatbot() {
     function buildAttachmentUrls(att, preferStaticFiles) {
         const safeFile = encodeURIComponent(att.fileName || '');
         if (preferStaticFiles) {
-            const staticUrl = `./docs/forms/${safeFile}`;
+            const staticUrl = `./uploads/forms/${safeFile}`;
             return { previewUrl: staticUrl, downloadUrl: staticUrl };
         }
         return {
