@@ -1,0 +1,481 @@
+/* main.css part — profile, finance, semester tabs, activity cards. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* Profile */
+.profile-top {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap
+}
+
+.profile-avatar-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, var(--brand-200), var(--brand-100));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 3px solid var(--brand-300);
+    box-shadow: 0 4px 12px rgba(31, 71, 133, 0.12);
+    cursor: pointer;
+    transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.profile-avatar-wrap:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(31, 71, 133, 0.2);
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.avatar-upload-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.75);
+    color: #fff;
+    padding: 5px 0;
+    font-size: 0.70rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--t-fast);
+    backdrop-filter: blur(3px);
+    cursor: pointer;
+}
+
+.profile-avatar-wrap:hover .avatar-upload-overlay {
+    opacity: 1;
+}
+
+.topbar-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.profile-avatar-wrap svg {
+    width: 60px;
+    height: 60px;
+    color: var(--brand-500);
+}
+
+/* ── Enhanced Student Profile View ── */
+.profile-hero-card {
+    background: #ffffff;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--g-200);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.profile-hero-top {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--g-100);
+    margin-bottom: 20px;
+}
+
+.profile-avatar-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.profile-avatar-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.profile-avatar-btn {
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--brand-700);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--g-50);
+    border: 1px solid var(--g-200);
+    transition: all var(--t-fast);
+}
+
+.profile-avatar-btn:hover {
+    background: var(--brand-50);
+    border-color: var(--brand-200);
+}
+
+.profile-avatar-btn.text-danger {
+    color: var(--red-600);
+}
+
+.profile-avatar-btn.text-danger:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.profile-headline {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-name {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--brand-800);
+    line-height: 1.3;
+    margin-bottom: 4px;
+}
+
+.profile-id-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--g-600);
+    font-weight: 600;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.profile-id-badge .id-tag {
+    background: rgba(30, 61, 114, 0.08);
+    color: var(--brand-700);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+}
+
+.profile-id-badge .id-divider {
+    color: var(--g-300);
+}
+
+.profile-id-badge .name-en {
+    color: var(--g-600);
+    font-weight: 500;
+}
+
+.profile-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.profile-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.76rem;
+    font-weight: 600;
+    background: var(--g-100);
+    color: var(--g-700);
+}
+
+.badge-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    margin-right: 5px;
+}
+
+.profile-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+    transition: all var(--t-fast);
+}
+
+.profile-edit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+}
+
+/* Sections Container */
+.profile-sections-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.profile-section-box {
+    background: #f8fafc;
+    border: 1px solid var(--g-200);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--brand-700);
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--g-200);
+    margin-bottom: 4px;
+}
+
+.profile-section-title .pst-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.profile-rows-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.p-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    gap: 12px;
+    font-size: 0.84rem;
+}
+
+.p-row:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.p-label {
+    color: var(--g-500);
+    font-weight: 500;
+    flex-shrink: 0;
+    min-width: 80px;
+    text-align: left;
+}
+
+.p-val {
+    color: var(--g-900);
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+.p-val.p-link {
+    color: var(--brand-600);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: color var(--t-fast);
+}
+
+.p-val.p-link:hover {
+    color: var(--brand-700);
+    text-decoration: underline;
+}
+
+.p-row-address {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding-top: 10px;
+}
+
+.p-val-address {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid var(--g-200);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    width: 100%;
+    font-size: 0.82rem;
+    color: var(--g-800);
+    line-height: 1.5;
+    text-align: left;
+    word-break: break-word;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 220px
+}
+
+.profile-id {
+    font-size: 0.85rem;
+    color: var(--brand-600);
+    font-weight: 600;
+    margin-bottom: 12px
+}
+
+.profile-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px
+}
+
+.profile-item {
+    display: flex;
+    gap: 6px;
+    font-size: 0.84rem
+}
+
+.profile-item .label {
+    color: var(--text-muted);
+    min-width: 80px
+}
+
+.profile-item .value {
+    color: var(--g-800);
+    font-weight: 600
+}
+
+/* Finance summary */
+.finance-summary {
+    background: linear-gradient(135deg, var(--brand-700), var(--brand-500));
+    color: #fff;
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--sh-brand)
+}
+
+.finance-summary h3 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-bottom: 8px
+}
+
+.finance-amount {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: -0.02em
+}
+
+.finance-sub {
+    font-size: 0.78rem;
+    opacity: 0.7;
+    margin-top: 4px
+}
+
+/* Semester tabs */
+.semester-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap
+}
+
+.sem-tab {
+    padding: 8px 18px;
+    border-radius: var(--radius-full);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--g-500);
+    border: 1.5px solid var(--g-200);
+    background: white;
+    transition: all var(--t-fast)
+}
+
+.sem-tab:hover {
+    border-color: var(--brand-300);
+    color: var(--brand-600)
+}
+
+.sem-tab.active {
+    background: var(--brand-600);
+    color: #fff;
+    border-color: var(--brand-600);
+    box-shadow: 0 2px 8px rgba(31, 71, 133, 0.3)
+}
+
+/* Activity cards */
+.activity-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 18px 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--g-100);
+    box-shadow: var(--sh-sm);
+    margin-bottom: 14px;
+    transition: box-shadow var(--t-fast), transform var(--t-fast)
+}
+
+.activity-card:hover {
+    box-shadow: var(--sh-md);
+    transform: translateY(-1px)
+}
+
+.activity-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0
+}
+
+.activity-body {
+    flex: 1
+}
+
+.activity-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--g-800);
+    margin-bottom: 3px
+}
+
+.activity-meta {
+    font-size: 0.76rem;
+    color: var(--text-muted)
+}
+
+.activity-status {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    align-self: center;
+    white-space: nowrap
+}
+
+

@@ -1,0 +1,112 @@
+/* main.css part — CRUD modal. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   MODAL (CRUD)
+   ============================================================ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    padding: 20px;
+}
+
+.modal-overlay.open {
+    display: flex
+}
+
+.modal-card {
+    background: #fff;
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: cardEnter 0.35s var(--ease) both;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--g-100);
+}
+
+.modal-header h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--g-800)
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g-400);
+    transition: all var(--t-fast)
+}
+
+.modal-close:hover {
+    background: var(--g-100);
+    color: var(--g-700)
+}
+
+.modal-close svg {
+    width: 20px;
+    height: 20px
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--g-100);
+    background: var(--g-50)
+}
+
+/* Form fields inside modal */
+.modal-field {
+    margin-bottom: 16px
+}
+
+.modal-field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--g-700);
+    margin-bottom: 6px
+}
+
+.modal-field input,
+.modal-field select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--g-200);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    color: var(--text-main);
+    background: var(--g-50);
+    outline: none;
+    transition: border-color var(--t-fast);
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+    border-color: var(--brand-400);
+    background: #fff
+}
+

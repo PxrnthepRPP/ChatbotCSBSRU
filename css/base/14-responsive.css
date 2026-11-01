@@ -1,0 +1,396 @@
+/* main.css part — responsive breakpoints. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:860px) {
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 280px !important;
+        max-width: 85vw !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        z-index: 9999 !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: none !important;
+        visibility: visible !important;
+        display: flex !important;
+    }
+
+    .sidebar.open {
+        transform: translateX(0) !important;
+        box-shadow: 8px 0 35px rgba(0, 0, 0, 0.55) !important;
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 9990 !important;
+        background: rgba(10, 25, 47, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        cursor: pointer;
+    }
+
+    .sidebar-overlay.visible {
+        display: block !important;
+    }
+
+    .sidebar-close-btn {
+        display: flex !important;
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        border-radius: var(--radius-sm);
+        font-size: 1.2rem;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: none;
+        transition: all var(--t-fast);
+        z-index: 10001;
+    }
+
+    .sidebar-close-btn:hover {
+        background: rgba(239, 68, 68, 0.45);
+        color: #fff;
+    }
+
+    .topbar {
+        display: flex !important;
+    }
+
+    .hamburger {
+        display: inline-flex !important;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: calc(var(--topbar-h) + 20px) 16px 100px
+    }
+
+    body.impersonating .main-content {
+        padding-top: calc(var(--topbar-h) + var(--imp-banner-h) + 20px)
+    }
+
+    .profile-hero-card {
+        padding: 18px 14px;
+        border-radius: var(--radius-lg);
+    }
+
+    .profile-hero-top {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 14px;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+    }
+
+    .profile-headline {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
+    .profile-name {
+        font-size: 1.35rem;
+    }
+
+    .profile-id-badge {
+        justify-content: center;
+        margin-bottom: 8px;
+    }
+
+    .profile-chips {
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .profile-edit-btn {
+        width: 100%;
+        max-width: 260px;
+        justify-content: center;
+    }
+
+    .profile-sections-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .profile-section-box {
+        padding: 14px;
+        border-radius: var(--radius-md);
+    }
+
+    .p-row {
+        padding: 8px 0;
+        font-size: 0.83rem;
+    }
+
+    .p-val {
+        font-size: 0.83rem;
+    }
+
+    .p-val-address {
+        font-size: 0.8rem;
+        padding: 8px 10px;
+    }
+
+    .profile-top {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .profile-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .advisee-card {
+        flex-direction: column;
+        text-align: center
+    }
+
+    .advisee-actions {
+        justify-content: center
+    }
+
+    .imp-banner-content {
+        font-size: 0.78rem
+    }
+
+    .stat-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    .audit-table th.subject-col,
+    .audit-course-row td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .audit-table th.subject-col {
+        z-index: 3;
+        background: #f8fafc;
+    }
+
+    .audit-course-row td:first-child {
+        background: #fff;
+    }
+
+    .audit-course-row:hover td:first-child {
+        background: #f8fafc;
+    }
+
+    .audit-scroll-hint {
+        display: block;
+    }
+
+    /* ── Data Table Responsive Scroll ── */
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--g-200);
+        margin-bottom: 16px;
+        width: 100%;
+    }
+
+    .data-table {
+        min-width: 600px;
+    }
+
+    /* ── Minimum Legible Font Size on Mobile (min 12px) ── */
+    .audit-badge,
+    .audit-cr-pill,
+    .audit-gpa-pill,
+    .badge,
+    .batch-tag,
+    .data-table th,
+    .data-table td,
+    .petition-type-badge,
+    .petition-pdf-badge,
+    .activity-meta,
+    .stat-label,
+    .filter-result-count,
+    .toolbar-search input,
+    .batch-select,
+    .filter-select {
+        font-size: max(0.75rem, 12px) !important;
+    }
+
+    /* ── Toolbar / Filter Bar Stack ── */
+    .toolbar,
+    .batch-filter-bar,
+    .petition-filter-bar,
+    .admin-dashboard-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .toolbar-search,
+    .batch-select,
+    .filter-select {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .toolbar-actions .btn {
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
+    }
+
+    /* ── Modal Responsive ── */
+    .modal-overlay {
+        padding: 10px;
+    }
+
+    .modal-card {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 90vh;
+        margin: 5vh auto;
+        overflow-y: auto;
+        border-radius: var(--radius-lg);
+    }
+
+    .modal-body {
+        padding: 16px;
+        max-height: calc(90vh - 130px);
+    }
+
+    .modal-footer {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+    }
+
+    .app-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .app-form-grid > * {
+        grid-column: 1 / -1 !important;
+    }
+}
+
+@media(max-width:480px) {
+    .topbar-user-name {
+        display: none;
+    }
+
+    .stat-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+
+    .stat-card {
+        min-width: unset;
+        padding: 12px 14px;
+    }
+
+    .finance-amount {
+        font-size: 1.7rem;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-search {
+        max-width: 100%;
+    }
+
+    .audit-view-btn {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+
+    /* ── Mobile Typography & Components Polish ── */
+    .data-table th,
+    .data-table td {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+
+    .data-table .hide-mobile,
+    .hide-mobile {
+        display: none !important;
+    }
+
+    .module-header h2 {
+        font-size: 1.15rem;
+    }
+
+    .card-title {
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    /* ── Login Screen Mobile Polish ── */
+    .login-card {
+        padding: 28px 18px 22px;
+        max-width: 95vw;
+        border-radius: var(--radius-lg);
+    }
+
+    .login-logo {
+        width: 110px;
+        height: 110px;
+        margin: 0 auto 14px;
+    }
+
+    .login-header h1 {
+        font-size: 1.35rem;
+    }
+
+    .login-card input,
+    .login-card select,
+    .form-control {
+        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    }
+}
+
+/* Desktop polish */
+@media(min-width:861px) {
+    body {
+        background-image: radial-gradient(circle at 20% 30%, rgba(31, 71, 133, 0.04) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(46, 107, 196, 0.04) 0%, transparent 50%)
+    }
+}
+

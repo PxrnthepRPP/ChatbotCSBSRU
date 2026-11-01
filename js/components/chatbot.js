@@ -414,35 +414,60 @@ export function initChatbot() {
     if (_chatbotInitialized) return;
     _chatbotInitialized = true;
 
-    const chatbotFab    = document.getElementById('chatbotFab');
+    const chatbotFab = document.getElementById('chatbotFab');
     const chatbotWindow = document.getElementById('chatbotWindow');
-    const cwCloseBtn    = document.getElementById('cwCloseBtn');
-    const cwExpandBtn   = document.getElementById('cwExpandBtn');
-    const cwClearBtn    = document.getElementById('cwClearBtn');
-    const cwHeader      = document.getElementById('cwHeader');
-    const cwMessages    = document.getElementById('cwMessages');
-    const cwInput       = document.getElementById('cwInput');
-    const cwSendBtn     = document.getElementById('cwSendBtn');
-    const fabBadge      = document.getElementById('fabBadge');
+    const cwCloseBtn = document.getElementById('cwCloseBtn');
+    const cwExpandBtn = document.getElementById('cwExpandBtn');
+    const cwClearBtn = document.getElementById('cwClearBtn');
+    const cwHeader = document.getElementById('cwHeader');
+    const cwMessages = document.getElementById('cwMessages');
+    const cwInput = document.getElementById('cwInput');
+    const cwSendBtn = document.getElementById('cwSendBtn');
+    const fabBadge = document.getElementById('fabBadge');
 
-    let chatbotOpen   = false;
-    let cwWaiting     = false;
-    let welcomeShown  = false;
+    let chatbotOpen = false;
+    let cwWaiting = false;
+    let welcomeShown = false;
     let historyLoaded = false;
 
     if (!chatbotFab) return;
 
+    const GUEST_SESSION_STORAGE_KEY = 'bsru_chat_guest_id';
+
+    function generateGuestId() {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+        // crypto.randomUUID ใช้ได้เฉพาะ HTTPS/localhost — เปิดผ่าน IP ในวง LAN (http) ใช้ getRandomValues แทน
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    /**
+     * ผู้ใช้ที่ login: คืน null — server ใช้ตัวตนจาก JWT เท่านั้น
+     * ผู้ใช้ทั่วไป: id สุ่มของแท็บนี้ (เก็บใน sessionStorage ประวัติจึงอยู่แค่ในแท็บนี้)
+     */
     function getSessionId() {
         const state = getAuthState();
-        return state.user?.username || 'student_guest';
+        if (state.user) return null;
+        let guestId = null;
+        try { guestId = sessionStorage.getItem(GUEST_SESSION_STORAGE_KEY); } catch (e) { /* storage blocked */ }
+        if (!guestId || !/^[A-Za-z0-9-]{16,64}$/.test(guestId)) {
+            guestId = generateGuestId();
+            try { sessionStorage.setItem(GUEST_SESSION_STORAGE_KEY, guestId); } catch (e) { /* storage blocked */ }
+        }
+        return guestId;
+    }
+
+    function chatHistoryEndpoint() {
+        const sessionId = getSessionId();
+        return sessionId ? `/chat/history?sessionId=${encodeURIComponent(sessionId)}` : '/chat/history';
     }
 
     async function loadChatHistory() {
         if (historyLoaded) return;
-        const sessionId = getSessionId();
         try {
-            console.log(`📜 [Chatbot] Loading chat history for session: ${sessionId}...`);
-            const data = await fetchAPI(`/chat/history?sessionId=${encodeURIComponent(sessionId)}`, 'GET', null, 10000);
+            console.log('📜 [Chatbot] Loading chat history...');
+            const data = await fetchAPI(chatHistoryEndpoint(), 'GET', null, 10000);
             const list = Array.isArray(data) ? data : (data?.history || []);
             if (Array.isArray(list) && list.length > 0) {
                 historyLoaded = true;
@@ -462,7 +487,7 @@ export function initChatbot() {
                     const attachments = role === 'bot'
                         ? (Array.isArray(entry.attachments) && entry.attachments.length ? entry.attachments : inferAttachmentsFromBotText(text))
                         : [];
-                    addCwMsg(role, text, sources, attachments, false);
+                    addCwMsg(role, text, sources, attachments);
                 });
                 return;
             }
@@ -503,10 +528,9 @@ export function initChatbot() {
         cwClearBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (!confirm('คุณต้องการล้างประวัติการสนทนาทั้งหมดใช่หรือไม่?')) return;
-            const sessionId = getSessionId();
             cwClearBtn.disabled = true;
             try {
-                await fetchAPI(`/chat/history?sessionId=${encodeURIComponent(sessionId)}`, 'DELETE', null, 10000);
+                await fetchAPI(chatHistoryEndpoint(), 'DELETE', null, 10000);
                 cwMessages.innerHTML = '';
                 showWelcomeMessage();
                 welcomeShown = true;
@@ -726,15 +750,14 @@ export function initChatbot() {
         let reply = '';
         let sources = [];
         let attachments = [];
-        let usedOfflineFallback = false;
 
         try {
             console.log('🤖 [Chatbot] Sending user query to Spring Boot AI Backend (/api/chat)...');
 
-            const data = await fetchAPI('/chat', 'POST', {
-                message: text,
-                sessionId: getSessionId(),
-            }, 90000); // Gemini thinks before answering and may call several tools, so allow up to 90s
+            const sessionId = getSessionId();
+            const payload = { message: text };
+            if (sessionId) payload.sessionId = sessionId; // ผู้ใช้ที่ login ไม่ต้องส่ง (server ใช้ JWT)
+            const data = await fetchAPI('/chat', 'POST', payload, 90000); // Gemini thinks before answering and may call several tools, so allow up to 90s
 
             console.log('✨ [Chatbot] Received AI Response:', data);
             reply = data.reply || data.message || 'ขออภัยครับ ไม่พบข้อมูลตอบกลับจากระบบ';
@@ -754,7 +777,6 @@ export function initChatbot() {
             }
         } catch (err) {
             console.warn('⚠️ [Chatbot] Backend offline or unreachable, using domain assistant mode:', err.message);
-            usedOfflineFallback = true;
             const offlineForms = matchClientForms(text);
             reply = getSmartOfflineReply(text, offlineForms);
             sources = [];
@@ -764,26 +786,22 @@ export function initChatbot() {
         const t = document.getElementById('cwTyping');
         if (t) t.remove();
 
-        addCwMsg('bot', reply, sources, attachments, usedOfflineFallback);
+        addCwMsg('bot', reply, sources, attachments);
 
         cwWaiting = false;
         cwSendBtn.disabled = !cwInput.value.trim();
         cwInput.focus();
     }
 
-    function buildAttachmentUrls(att, preferStaticFiles) {
+    function buildAttachmentUrls(att) {
         const safeFile = encodeURIComponent(att.fileName || '');
-        if (preferStaticFiles) {
-            const staticUrl = `./uploads/forms/${safeFile}`;
-            return { previewUrl: staticUrl, downloadUrl: staticUrl };
-        }
         return {
             previewUrl: `${API_BASE_URL}/forms/${safeFile}`,
             downloadUrl: `${API_BASE_URL}/forms/${safeFile}?download=true`
         };
     }
 
-    function addCwMsg(role, text, sources = [], attachments = [], preferStaticFiles = false) {
+    function addCwMsg(role, text, sources = [], attachments = []) {
         const div = document.createElement('div');
         div.className = `cw-msg ${role}`;
 
@@ -820,7 +838,7 @@ export function initChatbot() {
                 attList.className = 'cw-attachments-list';
 
                 validAttachments.forEach(att => {
-                    const { previewUrl, downloadUrl } = buildAttachmentUrls(att, preferStaticFiles);
+                    const { previewUrl, downloadUrl } = buildAttachmentUrls(att);
                     const downloadName = att.downloadName || att.fileName;
                     const card = document.createElement('div');
                     card.className = 'cw-attachment-card';

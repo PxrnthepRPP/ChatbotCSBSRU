@@ -118,8 +118,16 @@ check('student.js preserves initStudentDashboard() export & explicit .js extensi
     }
 });
 
+// advisor.js is a thin entry point; its feature code lives in js/roles/advisor/*.js
+function readAdvisorSources() {
+    const dir = 'js/roles/advisor';
+    return [fs.readFileSync('js/roles/advisor.js', 'utf8')]
+        .concat(fs.readdirSync(dir).filter(f => f.endsWith('.js')).sort().map(f => fs.readFileSync(path.join(dir, f), 'utf8')))
+        .join('\n');
+}
+
 check('advisor.js removes bulk AI risk button and provides per-student AI risk analysis buttons', () => {
-    const advisorJs = fs.readFileSync('js/roles/advisor.js', 'utf8');
+    const advisorJs = readAdvisorSources();
     assert.ok(!advisorJs.includes('วิเคราะห์ความเสี่ยงทั้งหมด'), 'Bulk AI risk analysis button text must be removed');
     assert.ok(!advisorJs.includes('adv-ai-all-btn'), 'Bulk adv-ai-all-btn class must be removed');
     assert.ok(!advisorJs.includes('ASK_ALL'), 'Unused ASK_ALL prompt constant must be removed');
@@ -130,7 +138,7 @@ check('advisor.js removes bulk AI risk button and provides per-student AI risk a
 check('advisor petitions page (พิจารณาคำร้องนักศึกษา) is completely removed from advisor UI', () => {
     const html = fs.readFileSync('index.html', 'utf8');
     const mainJs = fs.readFileSync('js/main.js', 'utf8');
-    const advisorJs = fs.readFileSync('js/roles/advisor.js', 'utf8');
+    const advisorJs = readAdvisorSources();
 
     assert.ok(!html.includes('mod-advisor-petitions'), 'mod-advisor-petitions section must be removed from index.html');
     assert.ok(!html.includes('advisorPetitionsContent'), 'advisorPetitionsContent container must be removed from index.html');
@@ -140,7 +148,7 @@ check('advisor petitions page (พิจารณาคำร้องนัก�
 });
 
 check('advisor course section roster opens in full-screen modal instead of inline appended div', () => {
-    const advisorJs = fs.readFileSync('js/roles/advisor.js', 'utf8');
+    const advisorJs = readAdvisorSources();
     assert.ok(!advisorJs.includes('advSectionStudents'), 'Inline appended #advSectionStudents div must be removed');
     assert.ok(advisorJs.includes('openSectionStudentsModal'), 'Full-screen openSectionStudentsModal must exist');
     assert.ok(advisorJs.includes('advSectionRosterModal'), 'Full-screen #advSectionRosterModal overlay must exist');
@@ -165,14 +173,12 @@ check('BSRU_ACTIVITY_CRITERIA includes all 17 official BSRU activity categories 
 });
 
 const { CLIENT_FORMS_CATALOG, matchClientForms } = await import('../js/components/chatbot.js');
-check('All 16 official BSRU academic/registrar PDF forms exist in docs/forms and src/main/resources/forms and match chatbot queries', () => {
+check('All 16 official BSRU academic/registrar PDF forms exist in src/main/resources/forms and match chatbot queries', () => {
     assert.equal(CLIENT_FORMS_CATALOG.length, 16);
     for (const form of CLIENT_FORMS_CATALOG) {
-        const staticPath = path.join('docs', 'forms', form.fileName);
         const resourcePath = path.join('src', 'main', 'resources', 'forms', form.fileName);
-        assert.ok(fs.existsSync(staticPath), `Missing static PDF form: ${staticPath}`);
         assert.ok(fs.existsSync(resourcePath), `Missing Spring resource PDF form: ${resourcePath}`);
-        assert.ok(fs.statSync(staticPath).size > 1000, `PDF form appears empty: ${staticPath}`);
+        assert.ok(fs.statSync(resourcePath).size > 1000, `PDF form appears empty: ${resourcePath}`);
     }
     assert.equal(matchClientForms('ขอใบรายงานผลการศึกษา ทบ.4')[0]?.fileName, 'R4.pdf');
     assert.equal(matchClientForms('ขอใบลาป่วยหน่อยครับ')[0]?.fileName, 'leave-form.pdf');

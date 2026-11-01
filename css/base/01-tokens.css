@@ -1,0 +1,80 @@
+/* main.css part — design tokens (:root variables). Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* โ”€โ”€ Design Tokens โ”€โ”€ */
+:root {
+    /* CS Department Brand Colors โ€” Extracted from CS BSRU Logo */
+    --brand-50: #e8eef7;
+    --brand-100: #c5d5ec;
+    --brand-200: #8baad4;
+    --brand-300: #5683be;
+    --brand-400: #2a5ea8;
+    --brand-500: #1e3d72;
+    --brand-600: #1b3a6b;
+    --brand-700: #162f57;
+    --brand-800: #102342;
+    --brand-900: #0b1729;
+
+    /* Accent Circuit Colors โ€” Light blue traces from logo */
+    --accent-300: #a8d0f0;
+    --accent-400: #6baed4;
+    --accent-500: #4a9ac8;
+    --accent-600: #2a7ab0;
+
+    /* Status Colors */
+    --green-50: #f0fdf4;
+    --green-100: #dcfce7;
+    --green-500: #22c55e;
+    --green-600: #16a34a;
+    --amber-100: #fef3c7;
+    --amber-500: #f59e0b;
+    --amber-600: #d97706;
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+    --blue-50: #eff6ff;
+    --blue-100: #dbeafe;
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --orange-500: #f97316;
+    --orange-600: #ea580c;
+
+    /* Grays */
+    --g-50: #f9fafb;
+    --g-100: #f3f4f6;
+    --g-200: #e5e7eb;
+    --g-300: #d1d5db;
+    --g-400: #9ca3af;
+    --g-500: #6b7280;
+    --g-600: #4b5563;
+    --g-700: #374151;
+    --g-800: #1f2937;
+    --g-900: #111827;
+
+    /* Theme Assignments (Light default) */
+    --bg-body: #eef2f7;
+    --bg-sidebar: #102342;
+    --bg-card: #ffffff;
+    --text-main: #1f2037;
+    --text-muted: #6b7280;
+
+    /* Layout & Sizing */
+    --sidebar-w: 260px;
+    --topbar-h: 64px;
+    --imp-banner-h: 52px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --sh-md: 0 4px 14px rgba(0, 0, 0, 0.07);
+    --sh-lg: 0 8px 30px rgba(0, 0, 0, 0.10);
+    --sh-brand: 0 4px 20px rgba(31, 71, 133, 0.25);
+
+    /* Transitions */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --t-fast: 0.15s var(--ease);
+    --t-base: 0.25s var(--ease);
+    --t-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+

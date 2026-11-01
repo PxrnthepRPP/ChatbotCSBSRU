@@ -5,7 +5,8 @@ services:
     restart: always
     environment:
       POSTGRES_USER: bsru_admin
-      POSTGRES_PASSWORD: bsru_password
+      # ใช้รหัสผ่านเดียวกับ backend (จาก .env) — ค่า bsru_password ใช้เฉพาะตอนพัฒนาในเครื่องที่ยังไม่มี .env
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-bsru_password}
       POSTGRES_DB: bsru_student_portal
     ports:
       - "5432:5432"
@@ -22,13 +23,16 @@ services:
     build: .
     container_name: bsru_backend
     restart: unless-stopped
-    # อ่าน GEMINI_API_KEY, JWT_SECRET ฯลฯ จากไฟล์ .env (ไม่ถูก commit ขึ้น Git)
-    # ไม่บังคับ: clone แล้วรันได้เลยโดยไม่มี .env (แชทบอทจะตอบแบบสำรองจนกว่าจะใส่ GEMINI_API_KEY)
+    # อ่าน GEMINI_API_KEY, JWT_SECRET, SPRING_DATASOURCE_PASSWORD, APP_CORS_ORIGINS ฯลฯ จากไฟล์ .env (ไม่ถูก commit ขึ้น Git)
+    # ต้องมี .env ที่ตั้ง JWT_SECRET (openssl rand -base64 64) และ SPRING_DATASOURCE_PASSWORD
+    # ไม่เช่นนั้น backend จะไม่ยอม start (ไม่มีค่าลับ default ในโค้ดแล้ว)
+    # GEMINI_API_KEY ไม่บังคับ (แชทบอทจะตอบแบบสำรองจนกว่าจะใส่)
     env_file:
       - path: .env
         required: false
     # ค่าด้านล่างทับค่าใน .env เพราะใน Docker ต้องเรียกฐานข้อมูลผ่านชื่อ service ไม่ใช่ localhost
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/bsru_student_portal
       PGVECTOR_HOST: database
       PGVECTOR_PORT: "5432"
@@ -55,8 +59,6 @@ services:
       - ./css:/usr/share/nginx/html/css:ro
       - ./js:/usr/share/nginx/html/js:ro
       - ./assets:/usr/share/nginx/html/assets:ro
-      - ./uploads/forms:/usr/share/nginx/html/uploads/forms:ro
-      - ./docs/forms:/usr/share/nginx/html/docs/forms:ro
     depends_on:
       - backend
 

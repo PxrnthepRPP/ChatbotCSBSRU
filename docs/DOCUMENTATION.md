@@ -59,7 +59,7 @@ ChatbotCSBSRU/
 ├── README.md                              # เอกสารแนะนำโปรเจกต์และเริ่มต้นใช้งานด่วน (Quick Start)
 ├── start-backend.bat                      # ดับเบิลคลิกเพื่อสตาร์ท Backend (เรียก start-backend.ps1)
 ├── start-backend.ps1                      # สคริปต์สตาร์ท Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
-├── mvnw.cmd                               # ตัวเรียก Maven สำหรับ Windows
+├── mvnw / mvnw.cmd                        # Maven Wrapper ทางการ (ดาวน์โหลด Maven 3.9.9 อัตโนมัติ ตาม .mvn/wrapper/)
 ├── pom.xml                                # Maven Dependencies (Spring Boot, Security, JJWT, LangChain4j, Postgres)
 ├── Dockerfile                             # Multi-stage Build ของ Spring Boot Backend
 ├── docker-compose.yml                     # Docker: PostgreSQL 16 + pgvector, Backend และ Frontend (nginx)

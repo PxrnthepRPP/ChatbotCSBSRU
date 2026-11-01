@@ -72,10 +72,11 @@ tests/chatbot-test-report.md
 
 # Runtime Uploads & Multi-Agent Workspace State
 uploads/*
-!uploads/forms/
-!uploads/forms/*.pdf
 .agents/
 PROJECT.md
 TEST_INFRA.md
 TEST_READY.md
 docs/IMPLEMENTATION_PLAN.md
+
+# Claude Code agent worktrees
+.claude/worktrees/

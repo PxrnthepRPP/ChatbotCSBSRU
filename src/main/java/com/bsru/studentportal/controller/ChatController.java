@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,16 +102,15 @@ public class ChatController {
         }
 
         String userMessage = request.getMessage().trim();
-        String resolvedSessionId = resolveSessionId(request, authentication);
-        String rawSessionId = (request.getSessionId() != null && !request.getSessionId().isBlank())
-                ? request.getSessionId().trim()
-                : null;
-        String entrySessionId = rawSessionId != null ? rawSessionId : resolvedSessionId;
+        // ผู้ใช้ที่ login: key มาจาก JWT เท่านั้น / ผู้ใช้ทั่วไป: id สุ่มจาก browser (ถ้าไม่มีหรือรูปแบบผิด จะสร้างใหม่ให้)
+        ChatIdentity identity = resolveChatIdentity(request.getSessionId(), authentication, true);
+        String chatKey = identity.key();
 
-        log.info("Incoming chat request from sessionId: {} (entrySessionId: {}), message: {}", resolvedSessionId, entrySessionId, userMessage);
+        // ไม่ log ข้อความของผู้ใช้ (อาจมีข้อมูลส่วนตัว) — เก็บแค่ key และความยาวข้อความ
+        log.info("Incoming chat request from key: {}, message length: {}", chatKey, userMessage.length());
 
         // 1. Persist user message to PostgreSQL
-        saveChatHistoryEntry(entrySessionId, resolvedSessionId, "USER", userMessage, null);
+        saveChatHistoryEntry(chatKey, "USER", userMessage, null);
 
         RagRetrieval rag = retrieveRelevantKnowledge(userMessage);
         List<AcademicFormInfo> matchedForms = formCatalog().findMatchingForms(userMessage);
@@ -122,72 +122,72 @@ public class ChatController {
         if (geminiApiKey == null || geminiApiKey.isBlank() || geminiApiKey.equals("demo-api-key")
                 || geminiApiKey.startsWith("your-") || geminiApiKey.length() < 25) {
             log.info("Gemini API key not configured with a valid key. Returning instant assistant fallback.");
-            String fallbackReply = generateFallbackResponse(resolvedSessionId, userMessage, rag, matchedForms);
+            String fallbackReply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
 
             // Persist fallback reply and update memory
-            saveChatHistoryEntry(entrySessionId, resolvedSessionId, "BOT", fallbackReply, rag.sources());
-            updateMemoryStore(entrySessionId, resolvedSessionId, userMessage, fallbackReply);
+            saveChatHistoryEntry(chatKey, "BOT", fallbackReply, rag.sources());
+            updateMemoryStore(chatKey, userMessage, fallbackReply);
 
             return ResponseEntity.ok(ChatResponse.builder()
                     .reply(fallbackReply)
-                    .sessionId(resolvedSessionId)
+                    .sessionId(identity.clientSessionId())
                     .sources(rag.sources())
                     .attachments(attachments)
                     .build());
         }
 
         try {
-            String aiReply = askAiWithContext(entrySessionId, resolvedSessionId, userMessage, rag, matchedForms);
+            String aiReply = askAiWithContext(chatKey, userMessage, rag, matchedForms);
 
             // Persist AI reply and update memory
-            saveChatHistoryEntry(entrySessionId, resolvedSessionId, "BOT", aiReply, rag.sources());
-            updateMemoryStore(entrySessionId, resolvedSessionId, userMessage, aiReply);
+            saveChatHistoryEntry(chatKey, "BOT", aiReply, rag.sources());
+            updateMemoryStore(chatKey, userMessage, aiReply);
 
             return ResponseEntity.ok(ChatResponse.builder()
                     .reply(aiReply)
-                    .sessionId(resolvedSessionId)
+                    .sessionId(identity.clientSessionId())
                     .sources(rag.sources())
                     .attachments(attachments)
                     .build());
         } catch (Exception e) {
             log.error("Gemini API call encountered an issue: ", e);
 
-            String fallbackReply = generateFallbackResponse(resolvedSessionId, userMessage, rag, matchedForms);
+            String fallbackReply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
 
             // Persist fallback reply and update memory
-            saveChatHistoryEntry(entrySessionId, resolvedSessionId, "BOT", fallbackReply, rag.sources());
-            updateMemoryStore(entrySessionId, resolvedSessionId, userMessage, fallbackReply);
+            saveChatHistoryEntry(chatKey, "BOT", fallbackReply, rag.sources());
+            updateMemoryStore(chatKey, userMessage, fallbackReply);
 
             return ResponseEntity.ok(ChatResponse.builder()
                     .reply(fallbackReply)
-                    .sessionId(resolvedSessionId)
+                    .sessionId(identity.clientSessionId())
                     .sources(rag.sources())
                     .attachments(attachments)
                     .build());
         }
     }
 
+    /**
+     * ประวัติแชทของผู้เรียกเท่านั้น: ผู้ใช้ที่ login ใช้ key จาก JWT (ไม่สนใจ sessionId/userKey ที่ส่งมา),
+     * ผู้ใช้ทั่วไปต้องส่ง id สุ่มของแท็บตัวเอง (sessionId หรือ userKey) ที่ผ่านการตรวจรูปแบบ
+     */
     @GetMapping("/chat/history")
     public ResponseEntity<?> getChatHistory(
             @RequestParam(required = false) String sessionId,
             @RequestParam(required = false) String userKey,
             Authentication authentication
     ) {
-        String target = (sessionId != null && !sessionId.isBlank())
-                ? sessionId.trim()
-                : ((userKey != null && !userKey.isBlank()) ? userKey.trim() : resolveSessionId(null, authentication));
+        String requestedGuestId = firstNonBlank(sessionId, userKey);
+        if (!CurrentUser.isLoggedIn(authentication) && requestedGuestId != null && !isValidGuestId(requestedGuestId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", INVALID_GUEST_ID_MESSAGE));
+        }
 
-        if (chatHistoryRepository == null) {
+        ChatIdentity identity = resolveChatIdentity(requestedGuestId, authentication, false);
+        if (identity == null || chatHistoryRepository == null) {
             return ResponseEntity.ok(List.of());
         }
 
-        List<ChatHistoryEntry> history = chatHistoryRepository.findBySessionIdOrUserKeyOrderByTimestampAsc(target);
-        if (history.isEmpty() && CurrentUser.isLoggedIn(authentication)) {
-            String authKey = resolveSessionId(null, authentication);
-            history = chatHistoryRepository.findBySessionIdOrUserKeyOrderByTimestampAsc(authKey);
-        }
-
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(chatHistoryRepository.findByUserKeyOrderByTimestampAsc(identity.key()));
     }
 
     @DeleteMapping("/chat/history")
@@ -196,32 +196,20 @@ public class ChatController {
             @RequestParam(required = false) String userKey,
             Authentication authentication
     ) {
-        String targetSession = (sessionId != null && !sessionId.isBlank()) ? sessionId.trim() : null;
-        String targetUserKey = (userKey != null && !userKey.isBlank()) ? userKey.trim() : null;
-        String authSessionId = resolveSessionId(null, authentication);
-
-        int deletedRows = 0;
-        if (chatHistoryRepository != null) {
-            if (targetSession != null) {
-                deletedRows += chatHistoryRepository.deleteBySessionIdOrUserKey(targetSession);
-            }
-            if (targetUserKey != null) {
-                deletedRows += chatHistoryRepository.deleteBySessionIdOrUserKey(targetUserKey);
-            }
-            if (targetSession == null && targetUserKey == null) {
-                deletedRows += chatHistoryRepository.deleteBySessionIdOrUserKey(authSessionId);
-            }
+        String requestedGuestId = firstNonBlank(sessionId, userKey);
+        if (!CurrentUser.isLoggedIn(authentication) && requestedGuestId != null && !isValidGuestId(requestedGuestId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", INVALID_GUEST_ID_MESSAGE));
         }
 
-        if (chatMemoryStore != null) {
-            if (targetSession != null) {
-                try { chatMemoryStore.deleteMessages(targetSession); } catch (Exception ignored) {}
+        ChatIdentity identity = resolveChatIdentity(requestedGuestId, authentication, false);
+
+        int deletedRows = 0;
+        if (identity != null) {
+            if (chatHistoryRepository != null) {
+                deletedRows = chatHistoryRepository.deleteByUserKey(identity.key());
             }
-            if (targetUserKey != null) {
-                try { chatMemoryStore.deleteMessages(targetUserKey); } catch (Exception ignored) {}
-            }
-            if (targetSession == null && targetUserKey == null) {
-                try { chatMemoryStore.deleteMessages(authSessionId); } catch (Exception ignored) {}
+            if (chatMemoryStore != null) {
+                try { chatMemoryStore.deleteMessages(identity.key()); } catch (Exception ignored) {}
             }
         }
 
@@ -232,38 +220,31 @@ public class ChatController {
         ));
     }
 
-    private void saveChatHistoryEntry(String sessionId, String userKey, String sender, String message, List<String> sources) {
+    /** sessionId และ userKey ของแถวใหม่เป็นค่าเดียวกันเสมอ (key ที่มี prefix student:/advisor:/staff:/guest:) */
+    private void saveChatHistoryEntry(String chatKey, String sender, String message, List<String> sources) {
         if (chatHistoryRepository == null) return;
         try {
             chatHistoryRepository.save(ChatHistoryEntry.builder()
-                    .sessionId(sessionId)
-                    .userKey(userKey)
+                    .sessionId(chatKey)
+                    .userKey(chatKey)
                     .sender(sender)
                     .message(message)
                     .sources(serializeSources(sources))
                     .timestamp(LocalDateTime.now())
                     .build());
         } catch (Exception e) {
-            log.warn("Failed to persist chat history entry ({}: {}): {}", sender, sessionId, e.getMessage());
+            log.warn("Failed to persist chat history entry ({}: {}): {}", sender, chatKey, e.getMessage());
         }
     }
 
-    private void updateMemoryStore(String sessionId, String userKey, String userMessage, String botReply) {
+    private void updateMemoryStore(String chatKey, String userMessage, String botReply) {
         if (chatMemoryStore == null) return;
         try {
-            List<ChatMessage> currentHistory = chatMemoryStore.getMessages(sessionId);
+            List<ChatMessage> currentHistory = chatMemoryStore.getMessages(chatKey);
             List<ChatMessage> updated = new ArrayList<>(currentHistory != null ? currentHistory : List.of());
             updated.add(UserMessage.from(userMessage));
             updated.add(AiMessage.from(botReply));
-            chatMemoryStore.updateMessages(sessionId, updated);
-
-            if (userKey != null && !userKey.equals(sessionId) && !"guest".equals(userKey)) {
-                List<ChatMessage> userHistory = chatMemoryStore.getMessages(userKey);
-                List<ChatMessage> userUpdated = new ArrayList<>(userHistory != null ? userHistory : List.of());
-                userUpdated.add(UserMessage.from(userMessage));
-                userUpdated.add(AiMessage.from(botReply));
-                chatMemoryStore.updateMessages(userKey, userUpdated);
-            }
+            chatMemoryStore.updateMessages(chatKey, updated);
         } catch (Exception e) {
             log.warn("Failed to update chat memory store: {}", e.getMessage());
         }
@@ -320,17 +301,14 @@ public class ChatController {
     /**
      * ดึงข้อมูลจริงจาก PostgreSQL ตามสิทธิ์ของผู้ใช้ แล้วส่งให้ Gemini ประมวลผลและวิเคราะห์คำตอบ
      */
-    private String askAiWithContext(String entrySessionId, String resolvedSessionId, String userMessage,
+    private String askAiWithContext(String chatKey, String userMessage,
                                     RagRetrieval rag, List<AcademicFormInfo> matchedForms) throws Exception {
-        String systemPrompt = buildSystemPromptWithDatabaseContext(resolvedSessionId, userMessage, rag, matchedForms);
+        String systemPrompt = buildSystemPromptWithDatabaseContext(chatKey, userMessage, rag, matchedForms);
 
         StringBuilder conversationContext = new StringBuilder();
         try {
             if (chatMemoryStore != null) {
-                List<ChatMessage> history = chatMemoryStore.getMessages(entrySessionId);
-                if ((history == null || history.isEmpty()) && !entrySessionId.equals(resolvedSessionId)) {
-                    history = chatMemoryStore.getMessages(resolvedSessionId);
-                }
+                List<ChatMessage> history = chatMemoryStore.getMessages(chatKey);
                 if (history != null && !history.isEmpty()) {
                     int start = Math.max(0, history.size() - 6);
                     for (int i = start; i < history.size(); i++) {
@@ -472,17 +450,51 @@ public class ChatController {
         return sb.toString();
     }
 
-    private String resolveSessionId(ChatRequest request, Authentication authentication) {
-        if (!CurrentUser.isLoggedIn(authentication)) {
-            String guestId = (request != null && request.getSessionId() != null && !request.getSessionId().isBlank())
-                    ? request.getSessionId().trim()
-                    : "guest-session";
-            return "guest:" + guestId;
+    /**
+     * ตัวตนของห้องแชท
+     * @param key             key ของประวัติแชทและหน่วยความจำ ขึ้นต้นด้วย student:/advisor:/staff:/guest: เสมอ
+     * @param clientSessionId ค่าที่ส่งกลับใน ChatResponse.sessionId (ผู้ใช้ทั่วไป = id ที่ browser ต้องส่งกลับมา)
+     */
+    record ChatIdentity(String key, String clientSessionId) {}
+
+    static final String GUEST_MEMORY_PREFIX = "guest:";
+    static final String STAFF_MEMORY_PREFIX = "staff:";
+
+    /** id ของผู้ใช้ทั่วไปต้องเป็นค่าสุ่ม เช่น UUID จาก crypto.randomUUID() — ห้ามมี ':' จึงอ้างถึง key ของผู้ใช้ที่ login ไม่ได้ */
+    private static final Pattern GUEST_ID_PATTERN = Pattern.compile("^[A-Za-z0-9-]{16,64}$");
+    private static final String INVALID_GUEST_ID_MESSAGE =
+            "รูปแบบ sessionId ไม่ถูกต้อง (ต้องเป็นตัวอักษร/ตัวเลข/ขีด 16-64 ตัว เช่น UUID)";
+
+    static boolean isValidGuestId(String guestId) {
+        return guestId != null && GUEST_ID_PATTERN.matcher(guestId).matches();
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        if (a != null && !a.isBlank()) return a.trim();
+        if (b != null && !b.isBlank()) return b.trim();
+        return null;
+    }
+
+    /**
+     * ผู้ใช้ที่ login: key มาจาก JWT เท่านั้น ค่าที่ client ส่งมาจะถูกละเลย
+     * ผู้ใช้ทั่วไป: ใช้ id สุ่มของ browser ภายใต้ namespace guest: — ถ้าไม่มีหรือรูปแบบผิด
+     * จะสร้าง UUID ใหม่ (generateIfMissing = true) หรือคืน null (สำหรับอ่าน/ลบประวัติ)
+     */
+    private ChatIdentity resolveChatIdentity(String requestedGuestId, Authentication authentication, boolean generateIfMissing) {
+        if (CurrentUser.isLoggedIn(authentication)) {
+            String key = CurrentUser.studentId(authentication)
+                    .map(id -> StudentRecordTools.STUDENT_MEMORY_PREFIX + id)
+                    .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id))
+                    .orElse(STAFF_MEMORY_PREFIX + authentication.getName());
+            return new ChatIdentity(key, key);
         }
-        return CurrentUser.studentId(authentication)
-                .map(id -> StudentRecordTools.STUDENT_MEMORY_PREFIX + id)
-                .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id))
-                .orElse("staff:" + authentication.getName());
+
+        String guestId = requestedGuestId != null ? requestedGuestId.trim() : null;
+        if (!isValidGuestId(guestId)) {
+            if (!generateIfMissing) return null;
+            guestId = UUID.randomUUID().toString();
+        }
+        return new ChatIdentity(GUEST_MEMORY_PREFIX + guestId, guestId);
     }
 
     private String generateFallbackResponse(String contextSessionId, String query,

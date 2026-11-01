@@ -13,7 +13,7 @@
 ก่อนเริ่มใช้งานระบบ กรุณาตรวจสอบว่าเครื่องของท่านติดตั้งซอฟต์แวร์ดังต่อไปนี้แล้ว:
 1. **Docker Desktop** (สำหรับรัน PostgreSQL 16 + pgvector บน Port 5432)
 2. **Java 21 LTS** (เช่น Microsoft JDK 21 หรือ OpenJDK 21)
-3. **Apache Maven 3.9+** (หรือใช้ Maven Wrapper `mvnw.cmd` ในโฟลเดอร์โปรเจกต์)
+3. **Apache Maven 3.9+** (ไม่บังคับ — ใช้ Maven Wrapper `mvnw.cmd` / `./mvnw` ในโฟลเดอร์โปรเจกต์ได้เลย ระบบจะดาวน์โหลด Maven 3.9.9 ให้อัตโนมัติ)
 4. **XAMPP / Apache Web Server** (สำหรับโฮสต์หน้าเว็บ Frontend บน Port 80)
 5. **Google Gemini API Key** (รับฟรีได้ที่ [Google AI Studio](https://aistudio.google.com/apikey))
 6. **Web Browser รุ่นล่าสุด** (Google Chrome, Microsoft Edge, Firefox, Safari)
