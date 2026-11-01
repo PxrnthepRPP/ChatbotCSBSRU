@@ -1,0 +1,361 @@
+/* main.css part — graduation audit tables, view switcher, mobile cards. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   GRADUATION AUDIT (เธ•เธฃเธงเธเธชเธญเธเธเธ) DESIGN SYSTEM
+   ============================================================ */
+.audit-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--g-200);
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.audit-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    min-width: 980px;
+}
+
+.audit-table th,
+.audit-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    vertical-align: middle;
+}
+
+.audit-table th {
+    background: #f8fafc;
+    color: var(--g-800);
+    font-weight: 700;
+    font-size: 0.79rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+.audit-table th.subject-col {
+    text-align: left;
+    padding-left: 18px;
+    width: 37%;
+}
+
+.audit-table th.cr-col,
+.audit-table td.cr-col {
+    text-align: center;
+    width: 78px;
+    font-size: 0.78rem;
+}
+
+.audit-table th.num-col,
+.audit-table td.num-col {
+    text-align: center;
+    width: 44px;
+    font-size: 0.78rem;
+}
+
+.audit-table th.term-col,
+.audit-table td.term-col {
+    text-align: center;
+    width: 50px;
+    min-width: 48px;
+    font-size: 0.78rem;
+}
+
+/* Section Header Rows */
+.audit-sec-hdr {
+    background: #f1f5f9 !important;
+    color: var(--brand-900);
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--t-fast);
+    border-left: 4px solid var(--brand-600) !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.audit-sec-hdr:hover {
+    background: #e2e8f0 !important;
+}
+
+.audit-subsec-hdr {
+    background: #fafafa !important;
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 0.83rem;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.audit-group-hdr {
+    background: #ffffff !important;
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.81rem;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Badges with Green PASS & Clean Soft Aesthetics */
+.audit-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    line-height: 1.2;
+}
+
+.audit-badge.pass {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+    box-shadow: 0 1px 3px rgba(21, 128, 61, 0.08);
+}
+
+.audit-badge.fail {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    box-shadow: 0 1px 3px rgba(185, 28, 28, 0.08);
+}
+
+.audit-cr-pill {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 5px;
+}
+
+.audit-gpa-pill {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--brand-700);
+    margin-left: 6px;
+}
+
+.audit-course-row {
+    background: #fff;
+    transition: background var(--t-fast);
+}
+
+.audit-course-row:hover {
+    background: #f8fafc;
+}
+
+.audit-course-code {
+    font-weight: 700;
+    color: var(--brand-700);
+    margin-right: 6px;
+}
+
+.audit-course-name {
+    color: #334155;
+}
+
+.audit-grade-pass {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1e40af;
+    font-weight: 700;
+    font-size: 0.73rem;
+    padding: 2.5px 7px;
+    border-radius: 5px;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 1px 2px rgba(30, 64, 175, 0.05);
+    white-space: nowrap;
+}
+
+.audit-grade-wait {
+    display: inline-block;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.73rem;
+    padding: 2.5px 7px;
+    border-radius: 5px;
+    border: 1px solid #cbd5e1;
+    white-space: nowrap;
+}
+
+.audit-legend-box {
+    margin-top: 16px;
+    padding: 12px 18px;
+    background: #f8fafc;
+    border: 1px solid var(--g-200);
+    border-radius: var(--radius-md);
+    font-size: 0.76rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* โ”€โ”€ View Switcher Toolbar โ”€โ”€ */
+.audit-view-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.audit-view-btn-group {
+    display: inline-flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--g-200);
+}
+
+.audit-view-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--g-600);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--t-fast);
+}
+
+.audit-view-btn.active {
+    background: #fff;
+    color: var(--brand-700);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    font-weight: 700;
+}
+
+.audit-scroll-hint {
+    display: none;
+    padding: 7px 14px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid #bfdbfe;
+}
+
+/* โ”€โ”€ Mobile Cards View Design โ”€โ”€ */
+.audit-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.audit-card-section {
+    background: #fff;
+    border: 1px solid var(--g-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.audit-card-sec-hdr {
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--g-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-left: 4px solid var(--brand-600);
+    user-select: none;
+}
+
+.audit-card-sec-hdr:hover {
+    background: #f1f5f9;
+}
+
+.audit-card-subsec-hdr {
+    padding: 10px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.83rem;
+    font-weight: 700;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.audit-card-group-hdr {
+    padding: 8px 16px;
+    background: #fff;
+    font-size: 0.80rem;
+    color: var(--brand-700);
+    font-weight: 700;
+    border-bottom: 1px solid #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.audit-course-card {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fff;
+    transition: background var(--t-fast);
+}
+
+.audit-course-card:last-child {
+    border-bottom: none;
+}
+
+.audit-course-card:hover {
+    background: #f8fafc;
+}
+
+.audit-course-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.audit-course-card-title {
+    font-weight: 700;
+    font-size: 0.84rem;
+    color: var(--g-900);
+    line-height: 1.4;
+}
+
+.audit-course-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    font-size: 0.74rem;
+    color: var(--g-600);
+}
+
+.audit-course-card-meta-pill {
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
