@@ -1,0 +1,102 @@
+/* main.css part — login screen (part 2): inputs, role hints, login button. Loaded via @import from css/main.css; the import order there is the cascade order. */
+.input-icon-wrap input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    border: 2px solid var(--g-200);
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
+    color: var(--text-main);
+    background: var(--g-50);
+    outline: none;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.input-icon-wrap input:focus {
+    border-color: var(--brand-400);
+    box-shadow: 0 0 0 4px rgba(31, 71, 133, 0.08);
+    background: #fff
+}
+
+.input-icon-wrap input::placeholder {
+    color: var(--g-400)
+}
+
+/* Role hint cards */
+.role-hints {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.role-hint {
+    font-size: 0.72rem;
+    color: var(--g-500);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--g-50);
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--g-200);
+}
+
+.role-hint code {
+    font-family: 'Inter', monospace;
+    font-weight: 700;
+    color: var(--brand-600);
+    background: var(--brand-50);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+}
+
+.rh-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    color: #fff;
+    letter-spacing: 0.04em;
+}
+
+.rh-admin {
+    background: var(--red-500)
+}
+
+.rh-advisor {
+    background: var(--blue-500)
+}
+
+.rh-student {
+    background: var(--green-500)
+}
+
+.login-btn {
+    width: 100%;
+    padding: 13px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform var(--t-fast), box-shadow var(--t-fast);
+    box-shadow: var(--sh-brand);
+}
+
+.login-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(31, 71, 133, 0.35)
+}
+
+.login-btn:active {
+    transform: translateY(0) scale(0.98)
+}
+
+

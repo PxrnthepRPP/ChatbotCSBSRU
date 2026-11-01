@@ -46,14 +46,16 @@ console.log('================================================================\n'
 // ------------------------------------------------------------------
 console.log('--- 1. Static Analysis & Syntax Verification ---');
 
+// admin.js is a thin entry point; the student CSV import/export lives in js/roles/admin/students.js
 const adminJsPath = resolve(process.cwd(), 'js/roles/admin.js');
-const adminJsSource = readFileSync(adminJsPath, 'utf-8');
+const adminStudentsJsPath = resolve(process.cwd(), 'js/roles/admin/students.js');
+const adminJsSource = readFileSync(adminJsPath, 'utf-8') + '\n' + readFileSync(adminStudentsJsPath, 'utf-8');
 
 assert(adminJsSource.length > 1000, 'admin.js exists and has readable content');
 
 // Check that API_BASE_URL is imported
 assert(
-    /import\s+.*\bAPI_BASE_URL\b.*from\s+['"]\.\.\/api\.js['"]/.test(adminJsSource),
+    /import\s+.*\bAPI_BASE_URL\b.*from\s+['"](?:\.\.\/)+api\.js['"]/.test(adminJsSource),
     'API_BASE_URL is imported from ../api.js'
 );
 

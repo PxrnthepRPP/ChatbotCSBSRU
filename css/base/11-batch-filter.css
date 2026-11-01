@@ -1,0 +1,331 @@
+/* main.css part — batch filter, multi-cohort chips, batch tags. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* Batch filter */
+.batch-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--g-100);
+    box-shadow: var(--sh-sm);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.batch-filter-bar label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--g-700);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.batch-filter-bar label svg {
+    width: 18px;
+    height: 18px;
+    color: var(--brand-500)
+}
+
+.batch-select {
+    padding: 9px 38px 9px 14px;
+    border: 2px solid var(--g-200);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;
+    background-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    min-width: 200px;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.batch-select:focus {
+    border-color: var(--brand-400);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(31, 71, 133, 0.08);
+}
+
+.batch-select:hover {
+    border-color: var(--brand-300)
+}
+
+.filter-result-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-result-count strong {
+    color: var(--brand-600);
+    font-weight: 700
+}
+
+/* ── Multi-Cohort Select Panel & Chips ── */
+.batch-multi-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--g-200);
+    border-left: 4px solid var(--brand-500);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-top: -10px;
+    margin-bottom: 22px;
+    box-shadow: var(--sh-sm);
+}
+
+.batch-multi-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--g-100);
+}
+
+.batch-multi-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.batch-multi-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.batch-multi-text {
+    letter-spacing: 0.01em;
+}
+
+.batch-multi-count-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: var(--radius-full);
+    background: var(--brand-50);
+    color: var(--brand-600);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid var(--brand-100);
+    margin-left: 4px;
+}
+
+.batch-multi-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.batch-quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4.5px 11px;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--g-300);
+    background: var(--g-50);
+    color: var(--g-700);
+    transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1.3;
+}
+
+.batch-quick-btn:hover {
+    background: var(--brand-50);
+    border-color: var(--brand-400);
+    color: var(--brand-600);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(30, 61, 114, 0.1);
+}
+
+.batch-quick-btn-clear:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+.batch-preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.batch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--g-300);
+    background: var(--bg-card);
+    color: var(--text-main);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    white-space: nowrap;
+}
+
+.batch-chip .chip-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 1;
+    background: var(--g-200);
+    color: var(--g-600);
+    transition: all 0.15s ease;
+}
+
+.batch-chip .chip-label {
+    letter-spacing: 0.01em;
+}
+
+.batch-chip .chip-count {
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 1.5px 7px;
+    border-radius: 12px;
+    background: var(--g-100);
+    color: var(--g-600);
+    transition: all 0.15s ease;
+}
+
+.batch-chip:hover {
+    border-color: var(--brand-400);
+    color: var(--brand-600);
+    background: var(--brand-50);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(30, 61, 114, 0.12);
+}
+
+.batch-chip:hover .chip-indicator {
+    background: var(--brand-200);
+    color: var(--brand-700);
+}
+
+.batch-chip.active {
+    background: linear-gradient(135deg, #1e3d72 0%, #2563eb 100%) !important;
+    border-color: #1e3d72 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(30, 61, 114, 0.28) !important;
+    transform: translateY(-1px);
+}
+
+.batch-chip.active .chip-indicator {
+    background: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+}
+
+.batch-chip.active .chip-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.batch-chip:focus-visible {
+    outline: 2px solid var(--blue-500);
+    outline-offset: 2px;
+}
+
+/* ── Cohort Batch Tags (WCAG AAA High-Contrast Semantic Chroma-Coding) ── */
+.batch-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4.5px;
+    padding: 2.5px 8.5px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.015em;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    vertical-align: middle;
+    transition: all 0.15s ease;
+    /* Default Neutral Slate Fallback */
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.batch-tag::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+/* รุ่น 66 (ปี 1 / Freshmen) — Fresh Emerald (ความกระตือรือร้น, ปี 1) */
+.batch-tag.batch-66 {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+/* รุ่น 65 (ปี 2 / Sophomores) — Ocean Sky Blue (ปี 2 สดใส มั่นคง) */
+.batch-tag.batch-65 {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+/* รุ่น 64 (ปี 3 / Juniors) — Royal Indigo (ปี 3 เชี่ยวชาญ ลึกซึ้ง) */
+.batch-tag.batch-64 {
+    background: #eef2ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
+/* รุ่น 63 (ปี 4 / Seniors) — Warm Amber (ปี 4 ว่าที่บัณฑิต เกียรติภูมิ) */
+.batch-tag.batch-63 {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+/* รุ่น 62 (ปี 5 / Super Seniors) — Rose Velvet (ปี 5 หรือเกินหลักสูตร) */
+.batch-tag.batch-62 {
+    background: #fdf2f8;
+    color: #9d174d;
+    border-color: #fbcfe8;
+}
+
+/* รุ่น 61, 60... (Alumni / ศิษย์เก่า) — Slate Neutral */
+.batch-tag.batch-61,
+.batch-tag.batch-60,
+.batch-tag.batch-59 {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+

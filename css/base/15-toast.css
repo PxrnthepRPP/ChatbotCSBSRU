@@ -1,0 +1,111 @@
+/* main.css part — global toast notification. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   GLOBAL TOAST NOTIFICATION
+   ============================================================
+   Moved here from petitions.css because showPetitionToast() is
+   called from every module (bibliography, timetable, etc.).
+   Without these styles the SVG icons render at unconstrained
+   intrinsic size when petitions.css hasn't been lazy-loaded yet.
+   ============================================================ */
+.petition-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid var(--g-400);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    max-width: 440px;
+}
+
+.petition-toast.visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.petition-toast-success {
+    border-left-color: var(--green-500);
+}
+
+.petition-toast-error {
+    border-left-color: var(--red-500);
+}
+
+.petition-toast-info {
+    border-left-color: var(--brand-500);
+}
+
+.petition-toast-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.petition-toast-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.petition-toast-success .petition-toast-icon svg {
+    color: var(--green-500);
+}
+
+.petition-toast-error .petition-toast-icon svg {
+    color: var(--red-500);
+}
+
+.petition-toast-info .petition-toast-icon svg {
+    color: var(--brand-500);
+}
+
+.petition-toast-msg {
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--g-800);
+    flex: 1;
+}
+
+.petition-toast-close {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--t-fast);
+    cursor: pointer;
+}
+
+.petition-toast-close svg {
+    width: 16px;
+    height: 16px;
+    color: var(--g-400);
+}
+
+.petition-toast-close:hover {
+    background: var(--g-100);
+}
+
+.petition-toast-close:hover svg {
+    color: var(--g-600);
+}
+
+@media (max-width: 640px) {
+    .petition-toast {
+        left: 16px;
+        right: 16px;
+        bottom: 80px;
+        max-width: none;
+    }
+}
+
+
