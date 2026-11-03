@@ -3,6 +3,7 @@
    live advisee loading, filter/search, simulated students
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, statusBadge, getBatch, debounce, fetchAPI } from '../../utils.js';
 import { apiErrorText } from '../admin.js';
 import { impersonateStudent } from '../../auth.js';
@@ -99,7 +100,7 @@ export function renderMyAdvisees() {
     bindAdviseeButtons(document.getElementById('myAdviseesContent'));
     document.getElementById('advAddSimBtn')?.addEventListener('click', openAddSimulatedModal);
     document.querySelectorAll('.adv-del-sim-btn').forEach(b => b.addEventListener('click', async () => {
-        if (!confirm(`ลบข้อมูลจำลอง ${b.dataset.sname} (${b.dataset.sid})?`)) return;
+        if (!await confirmDialog(`ลบข้อมูลจำลอง ${b.dataset.sname} (${b.dataset.sid})?`)) return;
         try {
             await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(b.dataset.sid)}`, 'DELETE', null, 10000);
             showAdvisorToast('success', esc(`ลบ ${b.dataset.sname} แล้ว`));

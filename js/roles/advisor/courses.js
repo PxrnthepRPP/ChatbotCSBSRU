@@ -3,6 +3,7 @@
    & Exam Announcements
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, fetchAPI } from '../../utils.js';
 import { apiErrorText, sectionStatusBadge } from '../admin.js';
 import { getAuthState } from '../../auth.js';
@@ -483,7 +484,7 @@ function bindSectionsCard(sections) {
         row.querySelector('.adv-sec-delete').addEventListener('click', async () => {
             const warning = section.enrolledCount > 0
                 ? `\nนักศึกษา ${section.enrolledCount} คนที่ลงกลุ่มนี้จะถูกถอนออกจากตารางเรียนด้วย` : '';
-            if (!confirm(`ลบ ${section.courseCode} กลุ่ม ${section.sectionNo} (${section.term}/${section.academicYear})?${warning}`)) return;
+            if (!await confirmDialog(`ลบ ${section.courseCode} กลุ่ม ${section.sectionNo} (${section.term}/${section.academicYear})?${warning}`)) return;
             try {
                 await fetchAPI(`/sections/${section.sectionId}`, 'DELETE', null, 8000);
                 showAdvisorToast('info', esc(`ลบ ${section.courseCode} กลุ่ม ${section.sectionNo} แล้ว`));

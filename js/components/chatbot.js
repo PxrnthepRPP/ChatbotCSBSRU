@@ -13,6 +13,7 @@
    - Mobile: swipe-to-dismiss via header drag
    ================================================================ */
 
+import { confirmDialog } from './confirmDialog.js';
 import { getAuthState } from '../auth.js';
 import { fetchAPI, API_BASE_URL } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
@@ -529,7 +530,7 @@ export function initChatbot() {
     if (cwClearBtn) {
         cwClearBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (!confirm('คุณต้องการล้างประวัติการสนทนาทั้งหมดใช่หรือไม่?')) return;
+            if (!await confirmDialog('คุณต้องการล้างประวัติการสนทนาทั้งหมดใช่หรือไม่?')) return;
             cwClearBtn.disabled = true;
             try {
                 await fetchAPI(chatHistoryEndpoint(), 'DELETE', null, 10000);

@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { apiErrorText } from './shared.js';
@@ -137,7 +138,7 @@ export async function renderAdminSectionsCard() {
         row.querySelector('.sec-delete').addEventListener('click', async () => {
             const warning = section.enrolledCount > 0
                 ? `\nนักศึกษา ${section.enrolledCount} คนที่ลงกลุ่มนี้จะถูกถอนออกจากตารางเรียนด้วย` : '';
-            if (!confirm(`ลบ ${label}?${warning}`)) return;
+            if (!await confirmDialog(`ลบ ${label}?${warning}`)) return;
             try {
                 await fetchAPI(`/sections/${section.sectionId}`, 'DELETE', null, 8000);
                 showToast('info', esc(`ลบ ${label} แล้ว`));

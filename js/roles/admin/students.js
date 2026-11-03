@@ -4,6 +4,7 @@
    Sec change, password reset, impersonation
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, statusBadge, getBatch, debounce, showToast } from '../../utils.js';
 import { impersonateStudent } from '../../auth.js';
 import { fetchAPI, API_BASE_URL } from '../../api.js';
@@ -307,7 +308,7 @@ export function renderManageStudents() {
         const warning = studentsFromDb && st.simulated ? '\n(ข้อมูลจำลอง)'
             : studentsFromDb
             ? `\nข้อมูลจะถูกลบออกจากฐานข้อมูลจริง รวมถึงเกรด การลงทะเบียน คำร้อง และใบตรวจสอบจบของนักศึกษาคนนี้ (ย้อนกลับไม่ได้)` : '';
-        if (!confirm(`ต้องการลบ "${st.nameTh}" (${st.studentId}) หรือไม่?${warning}`)) return;
+        if (!await confirmDialog(`ต้องการลบ "${st.nameTh}" (${st.studentId}) หรือไม่?${warning}`)) return;
         if (studentsFromDb) {
             try {
                 await fetchAPI(`/students/${encodeURIComponent(st.studentId)}`, 'DELETE', null, 10000);
@@ -335,7 +336,7 @@ export function renderManageStudents() {
     bindGraduationAuditButtons();
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;
-        if (!confirm(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
+        if (!await confirmDialog(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
 รหัสผ่านใหม่จะเป็นรหัสนักศึกษา และนักศึกษาต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ`)) return;
         try {
             const res = await fetchAPI(`/students/${encodeURIComponent(sid)}/reset-password`, 'POST', {}, 10000);

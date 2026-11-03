@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 
@@ -324,7 +325,7 @@ async function handleKnowledgeIngest() {
 }
 
 async function handleKnowledgeDelete(docId, docSource, btnElement) {
-    if (!confirm(`คุณต้องการลบเอกสาร "${docSource}" และเวกเตอร์ชิ้นส่วนทั้งหมดออกจากคลังความรู้ใช่หรือไม่?`)) {
+    if (!await confirmDialog(`คุณต้องการลบเอกสาร "${docSource}" และเวกเตอร์ชิ้นส่วนทั้งหมดออกจากคลังความรู้ใช่หรือไม่?`)) {
         return;
     }
 

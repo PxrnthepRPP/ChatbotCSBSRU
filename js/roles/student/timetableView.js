@@ -2,6 +2,7 @@
    BSRU Student Portal — Student Timetable & Registration Cart
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from '../advisor.js';
@@ -586,7 +587,7 @@ export function renderTimetable(studentId) {
                 e.stopPropagation();
                 const entry = sem.schedule[parseInt(btn.dataset.courseIdx, 10)];
                 const pending = entry.status === 'PENDING';
-                if (!confirm(pending
+                if (!await confirmDialog(pending
                     ? `ยกเลิกคำขอลงทะเบียน ${entry.subjectCode} ${entry.subjectName}?`
                     : `ถอนวิชา ${entry.subjectCode} ${entry.subjectName} ออกจากตารางเรียน?`)) return;
                 try {

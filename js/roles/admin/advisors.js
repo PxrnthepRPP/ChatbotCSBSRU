@@ -2,6 +2,7 @@
    BSRU Student Portal — Admin: Manage Advisors (จัดการอาจารย์ที่ปรึกษา)
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc } from '../../utils.js';
 import { MOCK_ADVISORS } from './mockData.js';
 import { renderAdminDashboard } from './dashboard.js';
@@ -39,9 +40,9 @@ export function renderManageAdvisors() {
 
     document.getElementById('addAdvisorBtn').addEventListener('click', () => openAdvisorModal('add'));
     document.querySelectorAll('.edit-advisor-btn').forEach(b => b.addEventListener('click', () => openAdvisorModal('edit', parseInt(b.dataset.idx))));
-    document.querySelectorAll('.del-advisor-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.del-advisor-btn').forEach(b => b.addEventListener('click', async () => {
         const idx = parseInt(b.dataset.idx);
-        if (confirm(`ต้องการลบ "${MOCK_ADVISORS[idx].nameTh}" หรือไม่?`)) {
+        if (await confirmDialog(`ต้องการลบ "${MOCK_ADVISORS[idx].nameTh}" หรือไม่?`)) {
             MOCK_ADVISORS.splice(idx, 1);
             renderManageAdvisors();
             renderAdminDashboard();

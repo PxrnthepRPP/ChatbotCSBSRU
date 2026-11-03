@@ -3,6 +3,7 @@
    advising notes, and the shared advisee button binder
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, statusBadge, fetchAPI, petitionStatus } from '../../utils.js';
 import { apiErrorText } from '../admin.js';
 import { impersonateStudent } from '../../auth.js';
@@ -215,7 +216,7 @@ async function openAdviseeHistory(studentId) {
             btn.addEventListener('click', async () => {
                 const nid = btn.dataset.nid;
                 const sid = btn.dataset.sid;
-                if (!confirm('ยืนยันลบบันทึกการให้คำปรึกษานี้หรือไม่?')) return;
+                if (!await confirmDialog('ยืนยันลบบันทึกการให้คำปรึกษานี้หรือไม่?')) return;
                 try {
                     await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(sid)}/notes/${encodeURIComponent(nid)}`, 'DELETE', null, 8000);
                     showAdvisorToast('success', 'ลบบันทึกการให้คำปรึกษาสำเร็จ');
