@@ -42,6 +42,7 @@ export function toPoolStudent(s) {
     };
 }
 let adminSearchQuery = '';
+let highlightStudentId = null;   // row to show and flash on the next render (after add/edit)
 let adminStudentsPage = 1;
 let adminStudentsPageSize = 15;
 
@@ -69,6 +70,20 @@ export function renderManageStudents() {
         filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
     }
 
+    // Just added / edited: jump to the page with that row (clearing filters that hide it)
+    const highlight = highlightStudentId;
+    highlightStudentId = null;
+    if (highlight) {
+        if (!filtered.some(s => s.studentId === highlight) && MOCK_STUDENTS_POOL.some(s => s.studentId === highlight)) {
+            adminLastSelectedBatch = 'all';
+            adminSearchQuery = '';
+            highlightStudentId = highlight;
+            return renderManageStudents();
+        }
+        const pos = filtered.findIndex(s => s.studentId === highlight);
+        if (pos >= 0) adminStudentsPage = Math.floor(pos / adminStudentsPageSize) + 1;
+    }
+
     // Pagination calculations
     const totalStudents = filtered.length;
     const totalPages = Math.max(1, Math.ceil(totalStudents / adminStudentsPageSize));
@@ -83,7 +98,7 @@ export function renderManageStudents() {
         const realIdx = MOCK_STUDENTS_POOL.indexOf(s);
         const batch = getBatch(s.studentId);
         return `
-        <tr>
+        <tr data-sid="${esc(s.studentId)}">
             <td><strong>${esc(s.studentId)}</strong></td>
             <td>${esc(s.nameTh)} <span class="batch-tag batch-${batch}">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
@@ -354,6 +369,15 @@ export function renderManageStudents() {
     document.querySelectorAll('.admin-imp-btn').forEach(b => {
         b.addEventListener('click', () => impersonateStudent(b.dataset.sid, b.dataset.sname));
     });
+
+    if (highlight) {
+        const row = document.querySelector(`#manageStudentsContent tr[data-sid="${CSS.escape(highlight)}"]`);
+        if (row) {
+            row.scrollIntoView({ block: 'center' });
+            row.classList.add('row-highlight');
+            setTimeout(() => row.classList.remove('row-highlight'), 2500);
+        }
+    }
 }
 
 /* ── Student form validation: one inline message per field, same limits as StudentAdminService ── */
@@ -547,6 +571,7 @@ function openStudentModal(mode, idx) {
         }
 
         crudModal.classList.remove('open');
+        highlightStudentId = data.studentId;   // open the page that has this row and flash it
         renderManageStudents();
         renderAdminDashboard();
         showToast('success', !studentsFromDb ? 'บันทึกข้อมูลนักศึกษาเรียบร้อย (โหมดออฟไลน์ ไม่ได้บันทึกลงฐานข้อมูล)'
