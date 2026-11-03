@@ -55,9 +55,13 @@ export async function renderAdminSectionsCard() {
             <td>${s.enrolledCount}${s.capacity ? ' / ' + s.capacity : ''}</td>
             <td>${sectionStatusBadge(s)}${s.reviewNote ? `<div style="font-size:0.75rem;color:var(--text-muted)">${esc(s.reviewNote)}</div>` : ''}</td>
             <td style="white-space:nowrap">
-                ${s.approvalStatus !== 'APPROVED' ? '<button class="btn btn-sm btn-orange sec-approve">อนุมัติ</button>' : ''}
-                ${s.approvalStatus !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost sec-reject">ไม่อนุมัติ</button>' : ''}
-                <button class="btn btn-sm btn-ghost sec-delete" title="ลบกลุ่มเรียน">🗑️</button>
+                <div class="action-btns" style="display:inline-flex;align-items:center;gap:6px">
+                    ${s.approvalStatus !== 'APPROVED' ? '<button class="btn btn-sm btn-orange sec-approve">อนุมัติ</button>' : ''}
+                    ${s.approvalStatus !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost sec-reject">ไม่อนุมัติ</button>' : ''}
+                    <button type="button" class="btn btn-sm btn-ghost btn-icon sec-delete" title="ลบกลุ่มเรียน">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
             </td>
         </tr>`).join('');
 

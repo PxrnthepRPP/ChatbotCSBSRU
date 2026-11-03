@@ -334,3 +334,74 @@
     background: rgba(255, 255, 255, 0.25);
     color: #ffffff;
 }
+
+
+/* ── Section Roster Modal (Dark Theme) ── */
+[data-theme="dark"] .roster-hero {
+    background: linear-gradient(135deg, #091224 0%, #122444 55%, #193768 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .roster-kpi-card,
+[data-theme="dark"] .roster-toolbar,
+[data-theme="dark"] .roster-table-card {
+    background: var(--bg-card);
+    border-color: var(--g-200);
+}
+
+[data-theme="dark"] .roster-seg-btn.active {
+    background: var(--g-200);
+    color: #93c5fd;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .roster-seg-btn.active .roster-seg-count {
+    background: rgba(59, 130, 246, 0.22);
+    color: #bfdbfe;
+}
+
+[data-theme="dark"] .roster-table thead th {
+    background: var(--g-50);
+    color: var(--g-700);
+    border-bottom-color: var(--g-200);
+}
+
+[data-theme="dark"] .roster-table tbody tr:hover {
+    background: var(--g-50);
+}
+
+[data-theme="dark"] .roster-sid-code {
+    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .roster-status-pill.enrolled {
+    background: var(--green-100);
+    color: var(--green-600);
+    border-color: rgba(74, 222, 128, 0.28);
+}
+
+[data-theme="dark"] .roster-status-pill.pending {
+    background: var(--amber-100);
+    color: var(--amber-600);
+    border-color: rgba(251, 191, 36, 0.28);
+}
+
+
+[data-theme="dark"] .adv-sec-students:hover {
+    color: #93c5fd !important;
+    background: rgba(59, 130, 246, 0.16) !important;
+}
+
+[data-theme="dark"] .adv-sec-edit:hover {
+    color: #93c5fd !important;
+    background: rgba(59, 130, 246, 0.16) !important;
+}
+
+[data-theme="dark"] .adv-sec-delete:hover,
+[data-theme="dark"] .sec-delete:hover,
+[data-theme="dark"] .adv-del-exam:hover {
+    color: #f87171 !important;
+    background: rgba(239, 68, 68, 0.16) !important;
+}
