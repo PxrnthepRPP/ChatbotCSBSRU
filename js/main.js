@@ -11,6 +11,7 @@ import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot } from './components/chatbot.js';
 import { initThemeToggle } from './theme.js';
+import { initModalA11y } from './components/modalA11y.js';
 import { openChangePasswordModal } from './components/password.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
@@ -65,6 +66,7 @@ const MODULE_TITLES = {
 // ================================================================
 function initApp() {
     initThemeToggle();
+    initModalA11y();
     const loginOverlay = document.getElementById('loginOverlay');
     const loginForm = document.getElementById('loginForm');
     const loginUsername = document.getElementById('loginUsername');

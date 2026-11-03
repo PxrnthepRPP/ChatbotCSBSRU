@@ -72,6 +72,7 @@ export function openSectionStudentsModal(section, students) {
         overlay = document.createElement('div');
         overlay.id = 'advSectionRosterModal';
         overlay.className = 'modal-overlay roster-overlay';
+        overlay.setAttribute('data-own-escape', '');
         document.body.appendChild(overlay);
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && overlay.classList.contains('open')) {
