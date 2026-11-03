@@ -75,13 +75,26 @@ public class DataSeeder implements CommandLineRunner {
             Student s4 = createStudent("6621100003", "นางสาวกานต์รวี เจริญผล", "Miss Kanrawee Charoenphol", 1, 3.60, "กำลังศึกษา", "AI & ML Specialist", "งานตรงสาย (IT & CS)", "LINE MAN Wongnai", "45,000 - 60,000 บาท", adv3);
             List.of(s1, s2, s3, s4).forEach(studentRepository::save);
 
-            AcademicPetition p1 = new AcademicPetition("PET-2567-001", "คำร้องขอเทียบโอน", "ขอเทียบโอนรายวิชา SC17351", "ขอเทียบโอนรายวิชาจากมหาวิทยาลัยเดิมเนื่องจากมีเนื้อหาครอบคลุม", "transcript_verified.pdf", LocalDateTime.now().minusDays(2), "APPROVED", "เอกสารครบถ้วน อนุมัติการเทียบโอน", s1);
-            AcademicPetition p2 = new AcademicPetition("PET-2567-002", "คำร้องขอเพิ่ม/ถอน", "ขอเพิ่มวิชา CS3103 ล่าช้า", "ขอเพิ่มวิชา CS3103 เนื่องจากระบบโควต้าเต็มในรอบปกติ", "course_add_request.pdf", LocalDateTime.now().minusHours(5), "PENDING", null, s1);
-            AcademicPetition p3 = new AcademicPetition("PET-2567-003", "คำร้องทั่วไป", "ขอเปิดวิชา CS3301 กรณีพิเศษ", "ขอเปิดวิชา CS3301 Advance Computer Networks ภาคเรียนฤดูร้อน", "student_signatures.pdf", LocalDateTime.now().minusDays(5), "IN_REVIEW", "กำลังเสนอหัวหน้าสาขาพิจารณา", s2);
+            AcademicPetition p1 = new AcademicPetition("PET-2567-001", "คำร้องขอเทียบโอน", "ขอเทียบโอนรายวิชา SC17351", "ขอเทียบโอนรายวิชาจากมหาวิทยาลัยเดิมเนื่องจากมีเนื้อหาครอบคลุม", "transcript_verified.pdf", LocalDateTime.now().minusDays(2), "อนุมัติ", "เอกสารครบถ้วน อนุมัติการเทียบโอน", s1);
+            AcademicPetition p2 = new AcademicPetition("PET-2567-002", "คำร้องขอเพิ่ม/ถอน", "ขอเพิ่มวิชา CS3103 ล่าช้า", "ขอเพิ่มวิชา CS3103 เนื่องจากระบบโควต้าเต็มในรอบปกติ", "course_add_request.pdf", LocalDateTime.now().minusHours(5), "รออาจารย์ที่ปรึกษาพิจารณา", null, s1);
+            AcademicPetition p3 = new AcademicPetition("PET-2567-003", "คำร้องทั่วไป", "ขอเปิดวิชา CS3301 กรณีพิเศษ", "ขอเปิดวิชา CS3301 Advance Computer Networks ภาคเรียนฤดูร้อน", "student_signatures.pdf", LocalDateTime.now().minusDays(5), "รอผู้ดูแลระบบอนุมัติ", "กำลังเสนอหัวหน้าสาขาพิจารณา", s2);
             List.of(p1, p2, p3).forEach(petitionRepository::save);
 
             log.info("Database seeding completed successfully.");
         }
+
+        // Petition status is stored as the Thai label the API writes; early seed rows used English codes
+        Map<String, String> legacyPetitionStatus = Map.of(
+                "APPROVED", "อนุมัติ",
+                "PENDING", "รออาจารย์ที่ปรึกษาพิจารณา",
+                "IN_REVIEW", "รอผู้ดูแลระบบอนุมัติ",
+                "REJECTED", "ไม่อนุมัติ");
+        petitionRepository.findAll().stream()
+                .filter(p -> p.getStatus() != null && legacyPetitionStatus.containsKey(p.getStatus()))
+                .forEach(p -> {
+                    p.setStatus(legacyPetitionStatus.get(p.getStatus()));
+                    petitionRepository.save(p);
+                });
 
         // Sections are named after the student group (Sec D1/D2) since registration became per-group
         classSectionRepository.findAll().stream().filter(sec -> sec.getSectionNo().matches("\\d+")).forEach(sec -> {

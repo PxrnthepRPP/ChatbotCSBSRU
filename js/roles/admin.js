@@ -16,6 +16,7 @@
    ============================================================ */
 
 import { fetchAPI } from '../api.js';
+import { petitionStatus } from '../utils.js';
 import { MOCK_ADVISORS, MOCK_STUDENTS_POOL, MOCK_PETITIONS_LOG } from './admin/mockData.js';
 import { renderAdminDashboard } from './admin/dashboard.js';
 import { renderManageAdvisors } from './admin/advisors.js';
@@ -75,7 +76,7 @@ export async function initAdminDashboard() {
                     attachment: p.attachment || (p.attachmentPath ? p.attachmentPath.split(/[/\\]/).pop() : null),
                     attachmentPath: p.attachmentPath,
                     submittedAt: dateStr,
-                    status: p.status || 'รอดำเนินการ',
+                    status: petitionStatus(p.status || 'รอดำเนินการ'),
                     advisorComment: p.advisorComment || '',
                     advisorReviewedAt: p.advisorReviewedAt || '',
                     adminComment: p.adminComment || '',

@@ -3,7 +3,7 @@
    advising notes, and the shared advisee button binder
    ============================================================ */
 
-import { esc, statusBadge, fetchAPI } from '../../utils.js';
+import { esc, statusBadge, fetchAPI, petitionStatus } from '../../utils.js';
 import { apiErrorText } from '../admin.js';
 import { impersonateStudent } from '../../auth.js';
 import { askChatbot } from '../../components/chatbot.js';
@@ -110,7 +110,7 @@ async function openAdviseeHistory(studentId) {
         : '<div style="color:var(--text-muted)">ยังไม่มีตารางเรียน</div>';
 
     const petitions = d.petitions.length
-        ? d.petitions.map(pt => `<div style="font-size:0.85rem">• ${esc(pt.title)} <span class="badge badge-blue" style="font-size:0.7rem">${esc(pt.status)}</span></div>`).join('')
+        ? d.petitions.map(pt => `<div style="font-size:0.85rem">• ${esc(pt.title)} <span class="badge ${statusBadge(petitionStatus(pt.status))}" style="font-size:0.7rem">${esc(petitionStatus(pt.status))}</span></div>`).join('')
         : '<div style="color:var(--text-muted);font-size:0.85rem">ไม่มีคำร้อง</div>';
 
     let notes = [];

@@ -33,7 +33,24 @@ export function statusBadge(s) {
     return 'badge-purple';
 }
 
-export function getBatch(studentId) { 
+/**
+ * Petition status as shown to users. The backend stores Thai labels; old seed rows used
+ * English codes (APPROVED, PENDING, IN_REVIEW, REJECTED). Map those, and show anything
+ * unreadable (e.g. "??????" from a client that sent non-UTF-8) as an explicit unknown.
+ */
+const LEGACY_PETITION_STATUS = {
+    APPROVED: 'อนุมัติ',
+    PENDING: 'รออาจารย์ที่ปรึกษาพิจารณา',
+    IN_REVIEW: 'รอผู้ดูแลระบบอนุมัติ',
+    REJECTED: 'ไม่อนุมัติ',
+};
+export function petitionStatus(s) {
+    const v = (s ?? '').toString().trim();
+    if (!v || /^\?+$/.test(v)) return 'ไม่ทราบสถานะ';
+    return LEGACY_PETITION_STATUS[v.toUpperCase()] || v;
+}
+
+export function getBatch(studentId) {
     return studentId ? studentId.substring(0, 2) : ''; 
 }
 
