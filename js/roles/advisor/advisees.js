@@ -65,11 +65,11 @@ export function renderMyAdvisees() {
     document.getElementById('myAdviseesContent').innerHTML = `
         <div class="batch-filter-bar">
             <label>กรองตามรุ่น</label>
-            <select class="batch-select" id="advBatchFilter">${filterOpts}</select>
+            <select class="batch-select" id="advBatchFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸£à¸¸à¹à¸">${filterOpts}</select>
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${myStudents.length} คน</div>
             <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="advStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
+                <input type="text" id="advStudentSearch" aria-label="à¸à¹à¸à¸«à¸²à¸à¸±à¸à¸¨à¸¶à¸à¸©à¸²" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
             </div>
             ${liveAdvisees ? '<button class="btn btn-sm btn-orange" id="advAddSimBtn">➕ เพิ่มนักศึกษาจำลอง</button>' : ''}
         </div>

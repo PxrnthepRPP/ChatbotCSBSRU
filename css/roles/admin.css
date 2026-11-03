@@ -474,3 +474,13 @@
         justify-content: center;
     }
 }
+
+/* Labelled fields in the "create registration period" bar */
+.batch-filter-bar .reg-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}

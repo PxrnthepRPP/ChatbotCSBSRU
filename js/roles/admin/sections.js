@@ -79,14 +79,14 @@ export async function renderAdminSectionsCard() {
             </p>
             <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
                 <label>สถานะ</label>
-                <select class="batch-select" id="secStatusFilter">
+                <select class="batch-select" id="secStatusFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸ªà¸à¸²à¸à¸°à¸à¸¥à¸¸à¹à¸¡à¹à¸£à¸µà¸¢à¸">
                     ${option('all', 'ทั้งหมด', adminSectionStatusFilter)}
                     ${option('PENDING', 'รออนุมัติ', adminSectionStatusFilter)}
                     ${option('APPROVED', 'อนุมัติแล้ว', adminSectionStatusFilter)}
                     ${option('REJECTED', 'ไม่อนุมัติ', adminSectionStatusFilter)}
                 </select>
                 <label>ภาคเรียน</label>
-                <select class="batch-select" id="secTermFilter">
+                <select class="batch-select" id="secTermFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸ à¸²à¸à¹à¸£à¸µà¸¢à¸">
                     ${option('all', 'ทุกภาคเรียน', adminSectionTermFilter)}
                     ${terms.map(t => option(t, t, adminSectionTermFilter)).join('')}
                 </select>
