@@ -484,3 +484,17 @@
     font-size: 0.78rem;
     font-weight: 600;
 }
+
+/* Wide admin tables scroll sideways: keep the action column (last) pinned so its buttons are never cut off */
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) th:last-child,
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) td:last-child,
+#mod-manage-petitions .table-wrap .data-table th:last-child,
+#mod-manage-petitions .table-wrap .data-table td:last-child,
+#mod-manage-students .table-wrap .data-table th:last-child,
+#mod-manage-students .table-wrap .data-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--bg-card, #fff);
+    box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.25);
+}
