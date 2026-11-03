@@ -67,14 +67,24 @@ export function buildGradesBody(grades, idx) {
     const rows = sem.courses.map(c =>
         `<tr><td><strong>${esc(c.code)}</strong></td><td>${esc(c.name)}</td><td style="text-align:center">${c.credits}</td><td style="text-align:center"><span class="grade ${gradeClass(c.grade)}">${c.grade}</span></td><td style="text-align:center" class="hide-mobile">${c.point !== null ? c.point.toFixed(1) : '-'}</td></tr>`
     ).join('');
+    // Narrow screens: one card per course so credits and grade are visible without scrolling sideways
+    const cards = sem.courses.map(c => `
+        <div class="grade-card" role="listitem">
+            <div class="grade-card-main">
+                <div class="grade-card-code">${esc(c.code)} · ${c.credits} หน่วยกิต</div>
+                <div class="grade-card-name">${esc(c.name)}</div>
+            </div>
+            <span class="grade ${gradeClass(c.grade)}">${c.grade}</span>
+        </div>`).join('');
 
     return `
-        <div class="table-wrap">
+        <div class="table-wrap grades-table-wrap">
             <table class="data-table">
                 <thead><tr><th>รหัส</th><th>ชื่อวิชา</th><th style="text-align:center">หน่วยกิต</th><th style="text-align:center">เกรด</th><th style="text-align:center" class="hide-mobile">คะแนน</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
+        <div class="grades-cards" role="list">${cards}</div>
         <div style="display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:0.85rem">
             <span>หน่วยกิตลงทะเบียน: <strong>${sem.courses.reduce((a, c) => a + c.credits, 0)}</strong></span>
             <span>GPA: <strong style="color:var(--brand-600)">${semGpa}</strong></span>
