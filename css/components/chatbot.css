@@ -606,6 +606,11 @@
         bottom: 16px;
     }
 
+    /* The bottom sheet has its own close button; the FAB would sit on top of the send button */
+    .chatbot-fab.open {
+        display: none;
+    }
+
     /* Header drag indicator for bottom sheet */
     .cw-header {
         position: relative;

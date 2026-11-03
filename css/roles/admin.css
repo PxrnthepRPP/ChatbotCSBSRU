@@ -127,7 +127,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    /* right padding keeps "ถัดไป" clear of the floating chat button (56px at right:24px) */
+    padding: 12px 64px 12px 20px;
     background: #ffffff;
     border-top: 1px solid var(--border-color, #e5e7eb);
     border-radius: 0 0 12px 12px;

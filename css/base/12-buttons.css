@@ -127,7 +127,9 @@
     border: 1.5px solid var(--g-200);
     border-radius: var(--radius-md);
     padding: 6px 14px;
-    flex: 1;
+    /* never shrink below a usable width; the toolbar wraps instead */
+    flex: 1 1 240px;
+    min-width: 240px;
     max-width: 320px;
 }
 
