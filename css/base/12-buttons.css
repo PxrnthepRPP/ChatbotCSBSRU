@@ -5,6 +5,8 @@
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    vertical-align: middle;
     gap: 6px;
     padding: 8px 16px;
     border-radius: var(--radius-md);
@@ -125,7 +127,9 @@
     border: 1.5px solid var(--g-200);
     border-radius: var(--radius-md);
     padding: 6px 14px;
-    flex: 1;
+    /* never shrink below a usable width; the toolbar wraps instead */
+    flex: 1 1 240px;
+    min-width: 240px;
     max-width: 320px;
 }
 
@@ -209,3 +213,48 @@
 }
 
 
+
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.btn-icon svg {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+}
+
+/* Table Action Buttons Hover Colors */
+.adv-sec-students:hover {
+    color: var(--brand-600) !important;
+    background: var(--brand-50) !important;
+}
+
+.adv-sec-edit:hover {
+    color: var(--blue-600) !important;
+    background: var(--blue-50) !important;
+}
+
+.adv-sec-delete:hover,
+.sec-delete:hover,
+.adv-del-exam:hover {
+    color: var(--red-600) !important;
+    background: var(--red-50) !important;
+}
+
+/* Touch screens: icon buttons get the recommended 44px target */
+@media (pointer: coarse) {
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+}

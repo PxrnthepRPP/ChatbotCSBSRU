@@ -71,7 +71,7 @@ async function runE2ESuite() {
   let adminToken = null;
   let advisorToken = null;
   let studentToken = null;
-  let studentUserId = '6421100042';
+  let studentUserId = '6621100042';
   let targetStudentCode = null;
   let createdPetitionId = null;
   let secondStudentToken = null;
@@ -108,7 +108,7 @@ async function runE2ESuite() {
     const pass = res.status === 200 && res.data?.role === 'ROLE_STUDENT' && !!res.data?.token;
     if (pass) {
       studentToken = res.data.token;
-      studentUserId = res.data.userId || '6421100042';
+      studentUserId = res.data.userId || '6621100042';
     }
     recordResult(
       'Tier 1',
@@ -711,8 +711,8 @@ async function runE2ESuite() {
   {
     const csvContent =
       'studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId\n' +
-      '6421109901,สมชาย เรียนดี,Somchai Reandee,somchai9901@bsru.ac.th,0812345671,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n' +
-      '6421109902,สมหญิง มุ่งมั่น,Somying Mungmun,somying9902@bsru.ac.th,0812345672,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01';
+      '6621109901,สมชาย เรียนดี,Somchai Reandee,somchai9901@bsru.ac.th,0812345671,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n' +
+      '6621109902,สมหญิง มุ่งมั่น,Somying Mungmun,somying9902@bsru.ac.th,0812345672,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01';
 
     let res = await safeFetch(`${BASE_URL}/students/import-csv`, {
       method: 'POST',
@@ -818,7 +818,7 @@ async function runE2ESuite() {
 
   // T2.03: RBAC: Student Blocked from Viewing Other Student Profile (403 Forbidden)
   {
-    const foreignStudentId = targetStudentCode || '6421100099';
+    const foreignStudentId = targetStudentCode || '6621100099';
     const res = await safeFetch(`${BASE_URL}/students/${foreignStudentId}`, {
       headers: { Authorization: `Bearer ${studentToken}` },
     });
@@ -851,7 +851,7 @@ async function runE2ESuite() {
 
   // T2.05: RBAC: Student Blocked from Modifying Other Student Career Data (403 Forbidden)
   {
-    const foreignStudentId = targetStudentCode || '6421100099';
+    const foreignStudentId = targetStudentCode || '6621100099';
     const res = await safeFetch(`${BASE_URL}/students/${foreignStudentId}/career`, {
       method: 'PATCH',
       headers: {
@@ -1538,7 +1538,7 @@ async function runE2ESuite() {
     // 1. Bulk import new students
     const batchCsv =
       'studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId\n' +
-      '6421109911,บัณฑิต สมบูรณ์,Bundit Somboon,bundit9911@bsru.ac.th,0812345681,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,4,GRADUATED,ADV-01';
+      '6621109911,บัณฑิต สมบูรณ์,Bundit Somboon,bundit9911@bsru.ac.th,0812345681,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,4,GRADUATED,ADV-01';
 
     const impRes = await safeFetch(`${BASE_URL}/students/import-csv`, {
       method: 'POST',

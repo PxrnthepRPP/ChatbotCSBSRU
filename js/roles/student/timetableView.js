@@ -2,6 +2,7 @@
    BSRU Student Portal — Student Timetable & Registration Cart
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from '../advisor.js';
@@ -12,7 +13,7 @@ import { showPetitionToast } from './petitionsView.js';
    ============================================================ */
 export let MOCK_TIMETABLE_SEMESTERS = [
     {
-        label: 'Term 2/2566',
+        label: 'Term 1/2569',
         schedule: [
             { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'SC17351', subjectName: 'Object-Oriented Programming', teacherName: 'Dr. Somchai', room: 'Room 423' },
             { day: 2, startTime: '12:00', endTime: '15:00', subjectCode: 'SC17411', subjectName: 'Web Development', teacherName: 'Dr. Suda', room: 'Room 6121' },
@@ -21,7 +22,7 @@ export let MOCK_TIMETABLE_SEMESTERS = [
         ],
     },
     {
-        label: 'Term 1/2566',
+        label: 'Term 2/2568',
         schedule: [
             { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2101', subjectName: 'Data Structures', teacherName: 'Dr. Wicha', room: 'CS-301' },
             { day: 0, startTime: '13:00', endTime: '16:00', subjectCode: 'CS2102', subjectName: 'Algorithms', teacherName: 'Prof. Anan', room: 'CS-205' },
@@ -31,7 +32,7 @@ export let MOCK_TIMETABLE_SEMESTERS = [
         ],
     },
     {
-        label: 'Term 2/2565',
+        label: 'Term 2/2569',
         schedule: [
             { day: 1, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2301', subjectName: 'Database Systems', teacherName: 'Dr. Manop', room: 'CS-Lab2' },
             { day: 2, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2302', subjectName: 'Web Programming', teacherName: 'Aj. Suda', room: 'CS-Lab3' },
@@ -435,7 +436,7 @@ export function renderTimetable(studentId) {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         Semester
                     </label>
-                    <select class="batch-select" id="timetableSemesterSelect">
+                    <select class="batch-select" id="timetableSemesterSelect" aria-label="à¹à¸¥à¸·à¸­à¸à¸ à¸²à¸à¹à¸£à¸µà¸¢à¸">
                         ${buildTimetableSemesterOptions(semesters, idx)}
                     </select>
                     <span class="filter-result-count">Showing: <strong>${esc(sem.label)}</strong> · ${sem.schedule.length} วิชา${credits ? ` · ${credits} หน่วยกิต` : ''}</span>
@@ -586,7 +587,7 @@ export function renderTimetable(studentId) {
                 e.stopPropagation();
                 const entry = sem.schedule[parseInt(btn.dataset.courseIdx, 10)];
                 const pending = entry.status === 'PENDING';
-                if (!confirm(pending
+                if (!await confirmDialog(pending
                     ? `ยกเลิกคำขอลงทะเบียน ${entry.subjectCode} ${entry.subjectName}?`
                     : `ถอนวิชา ${entry.subjectCode} ${entry.subjectName} ออกจากตารางเรียน?`)) return;
                 try {

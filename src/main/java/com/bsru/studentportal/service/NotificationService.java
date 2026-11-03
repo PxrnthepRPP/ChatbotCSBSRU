@@ -27,7 +27,7 @@ public class NotificationService {
 
     /**
      * Resolves all applicable username/ID aliases for the authenticated caller.
-     * Maps "student" <-> "6421100042", "advisor" <-> "ADV-01", and "admin".
+     * Maps "student" <-> "6621100042", "advisor" <-> "ADV-01", and "admin".
      */
     public Set<String> resolveRecipientKeys(Authentication auth) {
         Set<String> keys = new LinkedHashSet<>();

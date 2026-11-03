@@ -88,7 +88,7 @@
     min-width: 300px;
     min-height: 380px;
     max-width: calc(100vw - 48px);
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 92px - var(--topbar-h, 64px) - 12px);   /* stays below the topbar (bell, user menu) */
     background: #fff;
     border-radius: var(--radius-xl);
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
@@ -110,9 +110,9 @@
 /* Expanded (spacious desktop) mode */
 .chatbot-window.expanded {
     width: 660px;
-    height: calc(100vh - 110px);
+    height: calc(100vh - 92px - var(--topbar-h, 64px) - 12px);
     max-width: calc(100vw - 48px);
-    max-height: calc(100vh - 110px);
+    max-height: calc(100vh - 92px - var(--topbar-h, 64px) - 12px);
 }
 
 /* ── Header ── */
@@ -604,6 +604,11 @@
     .chatbot-fab {
         right: 16px;
         bottom: 16px;
+    }
+
+    /* The bottom sheet has its own close button; the FAB would sit on top of the send button */
+    .chatbot-fab.open {
+        display: none;
     }
 
     /* Header drag indicator for bottom sheet */

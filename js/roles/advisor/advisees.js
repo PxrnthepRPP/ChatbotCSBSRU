@@ -3,6 +3,7 @@
    live advisee loading, filter/search, simulated students
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, statusBadge, getBatch, debounce, fetchAPI } from '../../utils.js';
 import { apiErrorText } from '../admin.js';
 import { impersonateStudent } from '../../auth.js';
@@ -51,7 +52,7 @@ export function renderMyAdvisees() {
             </div>
             <span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span>
             <div class="advisee-actions">
-                <button class="btn btn-sm btn-orange adv-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
+                <button class="btn btn-sm btn-primary adv-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}" title="เข้าดูระบบในมุมมองของนักศึกษาคนนี้">👁 เข้าใช้แทน</button>
                 ${s.risk
                     ? `<button class="btn btn-sm btn-ghost adv-history-btn" data-sid="${esc(s.studentId)}">ดูประวัติ</button>
                        <button class="btn btn-sm btn-ghost adv-ai-one-btn" data-sid="${esc(s.studentId)}" title="ให้ AI วิเคราะห์ความเสี่ยงรายบุคคล">🤖 วิเคราะห์ความเสี่ยง</button>
@@ -64,11 +65,11 @@ export function renderMyAdvisees() {
     document.getElementById('myAdviseesContent').innerHTML = `
         <div class="batch-filter-bar">
             <label>กรองตามรุ่น</label>
-            <select class="batch-select" id="advBatchFilter">${filterOpts}</select>
+            <select class="batch-select" id="advBatchFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸£à¸¸à¹à¸">${filterOpts}</select>
             <div class="filter-result-count">แสดง <strong>${filtered.length}</strong> จาก ${myStudents.length} คน</div>
             <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="advStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
+                <input type="text" id="advStudentSearch" aria-label="à¸à¹à¸à¸«à¸²à¸à¸±à¸à¸¨à¸¶à¸à¸©à¸²" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
             </div>
             ${liveAdvisees ? '<button class="btn btn-sm btn-orange" id="advAddSimBtn">➕ เพิ่มนักศึกษาจำลอง</button>' : ''}
         </div>
@@ -99,7 +100,7 @@ export function renderMyAdvisees() {
     bindAdviseeButtons(document.getElementById('myAdviseesContent'));
     document.getElementById('advAddSimBtn')?.addEventListener('click', openAddSimulatedModal);
     document.querySelectorAll('.adv-del-sim-btn').forEach(b => b.addEventListener('click', async () => {
-        if (!confirm(`ลบข้อมูลจำลอง ${b.dataset.sname} (${b.dataset.sid})?`)) return;
+        if (!await confirmDialog(`ลบข้อมูลจำลอง ${b.dataset.sname} (${b.dataset.sid})?`)) return;
         try {
             await fetchAPI(`/advisors/me/advisees/${encodeURIComponent(b.dataset.sid)}`, 'DELETE', null, 10000);
             showAdvisorToast('success', esc(`ลบ ${b.dataset.sname} แล้ว`));
@@ -115,7 +116,7 @@ function openAddSimulatedModal() {
     const field = (label, input) => `<div class="modal-field"><label>${label}</label>${input}</div>`;
     const overlay = showAdvisorModal('เพิ่มนักศึกษาจำลอง', `
         <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">ข้อมูลจำลองใช้แสดงในแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน · จะอยู่ในความดูแลของคุณ</p>
-        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6721100001">')}
+        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6921100001">')}
         ${field('ชื่อ-สกุล (ไทย)', '<input id="simNameTh" placeholder="เช่น นายทดลอง ใจดี">')}
         ${field('ชื่อ-สกุล (English)', '<input id="simNameEn" placeholder="e.g. Mr. Tadlong Jaidee">')}
         ${field('ชั้นปี', '<input id="simYear" type="number" min="1" max="8" value="1">')}

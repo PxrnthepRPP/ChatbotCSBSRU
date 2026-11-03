@@ -13,6 +13,7 @@
    - Mobile: swipe-to-dismiss via header drag
    ================================================================ */
 
+import { confirmDialog } from './confirmDialog.js';
 import { getAuthState } from '../auth.js';
 import { fetchAPI, API_BASE_URL } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
@@ -180,8 +181,8 @@ export const CLIENT_FORMS_CATALOG = [
         fileName: 'leave-form.pdf',
         downloadName: 'ใบลาป่วย-ลากิจ-นักศึกษา-BSRU.pdf',
         summary: 'แบบฟอร์มขอลาป่วยหรือลากิจสำหรับยื่นต่ออาจารย์ผู้สอนประจำรายวิชา',
-        pattern: /(?:leave-form|ใบลาป่วย|ใบลากิจ)/i,
-        keywords: ['ใบลาป่วย', 'ใบลากิจ', 'ขอลาป่วย', 'ขอลากิจ', 'ลาป่วย', 'ลากิจ', 'ใบลาเรียน', 'ลาหยุดเรียน'],
+        pattern: /(?:leave-form|ใบลา|ลาป่วย|ลากิจ)/i,
+        keywords: ['ใบลา', 'ขอใบลา', 'ใบลาป่วย', 'ใบลากิจ', 'ขอลาป่วย', 'ขอลากิจ', 'ลาป่วย', 'ลากิจ', 'ใบลาเรียน', 'ลาหยุดเรียน', 'การลา', 'แบบฟอร์มใบลา'],
         explanation: '**ใบลาป่วย / ลากิจ ของนักศึกษา BSRU**\n- **เงื่อนไข**: ยื่นต่ออาจารย์ผู้สอนประจำรายวิชา · ต้องมีคำรับรองและลายมือชื่อผู้ปกครองพร้อมเบอร์โทรศัพท์ · **กรณีลาป่วยเกิน 3 วัน ต้องแนบใบรับรองแพทย์**'
     }
 ];
@@ -227,9 +228,11 @@ function inferAttachmentsFromBotText(text) {
     if (!text.includes('เปิดดู PDF') && !text.includes('ดาวน์โหลด') && !/(?:ทบ\.\d+|ใบลาป่วย|โครงการจิตอาสา)/.test(text)) {
         return [];
     }
+    // Ignore casual examples in sentences (e.g. เช่น ทบ.1, ทบ.4 ฯลฯ)
+    const cleanedText = text.replace(/(?:เช่น|ตัวอย่างเช่น|อาทิเช่น)[^\n.]+/g, '');
     const matched = [];
     for (const item of CLIENT_FORMS_CATALOG) {
-        if (item.pattern.test(text)) {
+        if (item.pattern.test(cleanedText)) {
             matched.push(item);
         }
     }
@@ -527,7 +530,7 @@ export function initChatbot() {
     if (cwClearBtn) {
         cwClearBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (!confirm('คุณต้องการล้างประวัติการสนทนาทั้งหมดใช่หรือไม่?')) return;
+            if (!await confirmDialog('คุณต้องการล้างประวัติการสนทนาทั้งหมดใช่หรือไม่?')) return;
             cwClearBtn.disabled = true;
             try {
                 await fetchAPI(chatHistoryEndpoint(), 'DELETE', null, 10000);

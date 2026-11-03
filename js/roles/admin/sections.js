@@ -1,6 +1,7 @@
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
-import { apiErrorText } from './shared.js';
+import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 
 /* ============================================================
    CLASS SECTIONS — teachers request, admin approves.
@@ -22,13 +23,13 @@ export function sectionStatusBadge(section) {
 let adminSectionStatusFilter = null;  // null = choose automatically on first render
 let adminSectionTermFilter = 'all';
 
-export async function renderAdminSectionsCard() {
+export async function renderAdminSectionsCard({ cached = false } = {}) {
     const container = document.getElementById('adminSectionsCard');
     if (!container) return;
 
     let sections;
     try {
-        sections = await fetchAPI('/sections/mine');
+        sections = await (cached ? fetchCached : fetchFresh)('/sections/mine');
     } catch (err) {
         container.innerHTML = `<div class="card"><div class="card-title">📚 จัดการกลุ่มเรียน</div><p style="color:var(--text-muted)">เชื่อมต่อ backend ไม่ได้ จึงยังจัดการกลุ่มเรียนไม่ได้</p></div>`;
         return;
@@ -55,9 +56,13 @@ export async function renderAdminSectionsCard() {
             <td>${s.enrolledCount}${s.capacity ? ' / ' + s.capacity : ''}</td>
             <td>${sectionStatusBadge(s)}${s.reviewNote ? `<div style="font-size:0.75rem;color:var(--text-muted)">${esc(s.reviewNote)}</div>` : ''}</td>
             <td style="white-space:nowrap">
-                ${s.approvalStatus !== 'APPROVED' ? '<button class="btn btn-sm btn-orange sec-approve">อนุมัติ</button>' : ''}
-                ${s.approvalStatus !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost sec-reject">ไม่อนุมัติ</button>' : ''}
-                <button class="btn btn-sm btn-ghost sec-delete" title="ลบกลุ่มเรียน">🗑️</button>
+                <div class="action-btns" style="display:inline-flex;align-items:center;gap:6px">
+                    ${s.approvalStatus !== 'APPROVED' ? '<button class="btn btn-sm btn-orange sec-approve">อนุมัติ</button>' : ''}
+                    ${s.approvalStatus !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost sec-reject">ไม่อนุมัติ</button>' : ''}
+                    <button type="button" class="btn btn-sm btn-ghost btn-icon sec-delete" title="ลบกลุ่มเรียน" aria-label="ลบกลุ่มเรียน">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
             </td>
         </tr>`).join('');
 
@@ -74,14 +79,14 @@ export async function renderAdminSectionsCard() {
             </p>
             <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
                 <label>สถานะ</label>
-                <select class="batch-select" id="secStatusFilter">
+                <select class="batch-select" id="secStatusFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸ªà¸à¸²à¸à¸°à¸à¸¥à¸¸à¹à¸¡à¹à¸£à¸µà¸¢à¸">
                     ${option('all', 'ทั้งหมด', adminSectionStatusFilter)}
                     ${option('PENDING', 'รออนุมัติ', adminSectionStatusFilter)}
                     ${option('APPROVED', 'อนุมัติแล้ว', adminSectionStatusFilter)}
                     ${option('REJECTED', 'ไม่อนุมัติ', adminSectionStatusFilter)}
                 </select>
                 <label>ภาคเรียน</label>
-                <select class="batch-select" id="secTermFilter">
+                <select class="batch-select" id="secTermFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸ à¸²à¸à¹à¸£à¸µà¸¢à¸">
                     ${option('all', 'ทุกภาคเรียน', adminSectionTermFilter)}
                     ${terms.map(t => option(t, t, adminSectionTermFilter)).join('')}
                 </select>
@@ -133,7 +138,7 @@ export async function renderAdminSectionsCard() {
         row.querySelector('.sec-delete').addEventListener('click', async () => {
             const warning = section.enrolledCount > 0
                 ? `\nนักศึกษา ${section.enrolledCount} คนที่ลงกลุ่มนี้จะถูกถอนออกจากตารางเรียนด้วย` : '';
-            if (!confirm(`ลบ ${label}?${warning}`)) return;
+            if (!await confirmDialog(`ลบ ${label}?${warning}`)) return;
             try {
                 await fetchAPI(`/sections/${section.sectionId}`, 'DELETE', null, 8000);
                 showToast('info', esc(`ลบ ${label} แล้ว`));

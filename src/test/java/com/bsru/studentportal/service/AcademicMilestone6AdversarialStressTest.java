@@ -62,7 +62,7 @@ public class AcademicMilestone6AdversarialStressTest {
 
         private TimetableService timetableService;
 
-        private final String studentId = "6421100042";
+        private final String studentId = "6621100042";
         private final Actor studentActor = new Actor(Actor.Kind.STUDENT, studentId);
         private Student student;
         private Advisor advisor;
@@ -238,8 +238,8 @@ public class AcademicMilestone6AdversarialStressTest {
 
         private AdvisorController advisorController;
 
-        private final String adviseeId = "6421100042";
-        private final String otherStudentId = "6421100099";
+        private final String adviseeId = "6621100042";
+        private final String otherStudentId = "6621100099";
         private final String advisorId = "ADV-01";
         private final String otherAdvisorId = "ADV-02";
 
@@ -284,7 +284,7 @@ public class AcademicMilestone6AdversarialStressTest {
             AdvisingNote foreignNote = new AdvisingNote(888L, otherStudentId, otherAdvisorId, "Foreign note", null, null, LocalDateTime.now());
             when(advisingNoteRepository.findById(888L)).thenReturn(Optional.of(foreignNote));
 
-            // Caller requests delete under adviseeId's URI: DELETE /advisees/6421100042/notes/888
+            // Caller requests delete under adviseeId's URI: DELETE /advisees/6621100042/notes/888
             ResponseEntity<?> resp = advisorController.deleteNote(adviseeId, 888L, advisorAuth);
 
             assertEquals(HttpStatus.NOT_FOUND, resp.getStatusCode());

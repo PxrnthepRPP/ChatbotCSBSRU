@@ -4,6 +4,7 @@
    ============================================================ */
 
 import { getBatch } from '../../utils.js';
+import { fetchAPI } from '../../api.js';
 import { MOCK_STUDENTS_POOL } from './mockData.js';
 
 /**
@@ -57,4 +58,24 @@ export function apiErrorText(err) {
         try { return JSON.parse(match[0]).error || err.message; } catch (e) { /* not JSON */ }
     }
     return err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+}
+
+/* ── Short-lived GET cache for dashboard cards ──
+   renderAdminDashboard() runs again on every filter change and after edits, and each run
+   re-rendered three cards that re-fetched data unrelated to the filter. Cards opened from the
+   dashboard read through this (same request in flight = same promise, reused for maxAgeMs);
+   a card that just changed data calls fetchFresh() so the cache never shows stale rows. */
+const getCache = new Map();   // path -> { at, promise }
+
+export function fetchCached(path, maxAgeMs = 30000) {
+    const hit = getCache.get(path);
+    if (hit && Date.now() - hit.at < maxAgeMs) return hit.promise;
+    return fetchFresh(path);
+}
+
+export function fetchFresh(path) {
+    const promise = fetchAPI(path);
+    getCache.set(path, { at: Date.now(), promise });
+    promise.catch(() => getCache.delete(path));   // never cache a failure
+    return promise;
 }

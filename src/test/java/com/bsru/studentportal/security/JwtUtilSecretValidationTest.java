@@ -28,8 +28,8 @@ class JwtUtilSecretValidationTest {
     @Test
     void validSecretSignsAndVerifiesTokens() {
         JwtUtil jwtUtil = new JwtUtil("0123456789abcdef0123456789abcdef", 60_000L);
-        String token = jwtUtil.generateToken("6421100042", "ROLE_STUDENT", Map.of());
-        assertEquals("6421100042", jwtUtil.extractUsername(token));
+        String token = jwtUtil.generateToken("6621100042", "ROLE_STUDENT", Map.of());
+        assertEquals("6621100042", jwtUtil.extractUsername(token));
         assertTrue(jwtUtil.isTokenValid(token));
 
         JwtUtil otherKey = new JwtUtil("fedcba9876543210fedcba9876543210", 60_000L);

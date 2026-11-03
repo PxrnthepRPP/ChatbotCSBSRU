@@ -50,8 +50,11 @@ export const askAbout = r => `ช่วยวิเคราะห์ควา�
 /** Dashboard card: who needs attention, from the same risk check the chatbot uses */
 export function riskCardHtml() {
     if (!liveAdvisees) return '';
-    const flagged = liveAdvisees.filter(r => r.level !== 'LOW');
-    const rows = flagged.map(r => `
+    // Dismissed students are no longer at risk (the stat card counts them); students on leave need a
+    // different follow-up than an academic risk, so they get their own group
+    const flagged = liveAdvisees.filter(r => r.level !== 'LOW' && r.status !== 'พ้นสภาพ' && r.status !== 'พักการศึกษา');
+    const onLeave = liveAdvisees.filter(r => r.status === 'พักการศึกษา');
+    const rowHtml = r => `
         <div class="advisee-card">
             <div class="advisee-info">
                 <div class="advisee-name">${esc(r.studentId)} ${esc(r.nameTh)} ${r.simulated ? '<span class="badge badge-amber" style="font-size:0.7rem">จำลอง</span> ' : ''}${riskBadge(r)} ${riskChips(r)}</div>
@@ -61,7 +64,12 @@ export function riskCardHtml() {
                 <button class="btn btn-sm btn-orange adv-ai-one-btn" data-sid="${esc(r.studentId)}">🤖 ให้ AI วิเคราะห์ความเสี่ยง</button>
                 <button class="btn btn-sm btn-ghost adv-history-btn" data-sid="${esc(r.studentId)}">ดูประวัติ</button>
             </div>
-        </div>`).join('');
+        </div>`;
+    const rows = flagged.map(rowHtml).join('');
+    const leaveRows = onLeave.length ? `
+            <div style="margin-top:16px;font-weight:600;font-size:0.88rem">⏸️ พักการศึกษา <span class="badge badge-amber" style="font-size:0.72rem">${onLeave.length} คน</span></div>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin:4px 0 8px">ติดตามกำหนดกลับมาเรียนและการรักษาสภาพ</p>
+            ${onLeave.map(rowHtml).join('')}` : '';
     return `
         <div class="card">
             <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -70,5 +78,6 @@ export function riskCardHtml() {
             </div>
             <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px">ประเมินเบื้องต้นจากข้อมูลจริงในระบบ (GPA, เกรด F/D, แนวโน้มรายเทอม, หน่วยกิตที่ลง, เวลาเรียนชน) · <a href="#" class="adv-criteria-link">ดูเกณฑ์ที่ใช้</a></p>
             ${rows || '<div style="color:var(--text-muted)">ไม่มีนักศึกษาที่เข้าเกณฑ์เสี่ยง</div>'}
+            ${leaveRows}
         </div>`;
 }

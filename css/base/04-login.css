@@ -7,11 +7,13 @@
     inset: 0;
     z-index: 9999;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     background: linear-gradient(135deg, #0f2241 0%, #152e56 40%, #0a1628 100%);
     padding: 20px;
-    overflow: hidden;
+    /* scroll instead of clipping the card on short screens; the card's margin:auto centres it when it fits */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .login-bg-shapes {
@@ -77,6 +79,7 @@
     padding: 48px 36px 36px;
     width: 100%;
     max-width: 480px;
+    margin: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: cardEnter 0.6s var(--ease) both;
     position: relative;

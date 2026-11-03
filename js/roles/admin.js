@@ -16,6 +16,7 @@
    ============================================================ */
 
 import { fetchAPI } from '../api.js';
+import { petitionStatus } from '../utils.js';
 import { MOCK_ADVISORS, MOCK_STUDENTS_POOL, MOCK_PETITIONS_LOG } from './admin/mockData.js';
 import { renderAdminDashboard } from './admin/dashboard.js';
 import { renderManageAdvisors } from './admin/advisors.js';
@@ -67,7 +68,7 @@ export async function initAdminDashboard() {
                 const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear() + 543} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                 return {
                     id: p.id,
-                    studentId: p.student ? p.student.studentId : '6421100042',
+                    studentId: p.student ? p.student.studentId : '6621100042',
                     studentName: p.student ? p.student.nameTh : 'นักศึกษา',
                     type: p.type,
                     title: p.title,
@@ -75,7 +76,7 @@ export async function initAdminDashboard() {
                     attachment: p.attachment || (p.attachmentPath ? p.attachmentPath.split(/[/\\]/).pop() : null),
                     attachmentPath: p.attachmentPath,
                     submittedAt: dateStr,
-                    status: p.status || 'รอดำเนินการ',
+                    status: petitionStatus(p.status || 'รอดำเนินการ'),
                     advisorComment: p.advisorComment || '',
                     advisorReviewedAt: p.advisorReviewedAt || '',
                     adminComment: p.adminComment || '',

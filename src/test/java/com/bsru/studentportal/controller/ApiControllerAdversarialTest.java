@@ -73,9 +73,9 @@ class ApiControllerAdversarialTest {
 
     @BeforeEach
     void setUp() {
-        // student "6421100042" (or "student" alias)
+        // student "6621100042" (or "student" alias)
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         // advisor "ADV-01" (or "advisor" alias)
         advisorAuth = new UsernamePasswordAuthenticationToken(
@@ -88,12 +88,12 @@ class ApiControllerAdversarialTest {
         advisor2 = new Advisor("ADV-02", "อ.วิภา", "Wipha", "wipha@bsru.ac.th", "0898765432", "CS");
 
         student1 = new Student();
-        student1.setStudentId("6421100042");
+        student1.setStudentId("6621100042");
         student1.setNameTh("ทดสอบ นักศึกษา");
         student1.setAdvisor(advisor1);
 
         student2 = new Student();
-        student2.setStudentId("6421100099");
+        student2.setStudentId("6621100099");
         student2.setNameTh("นักศึกษา อื่น");
         student2.setAdvisor(advisor2);
     }
@@ -108,7 +108,7 @@ class ApiControllerAdversarialTest {
         PetitionRequest request = new PetitionRequest();
         request.setTitle("ขอผ่อนผันค่าเทอม");
         request.setType("การเงิน");
-        request.setStudentId("6421100099"); // Another student's ID
+        request.setStudentId("6621100099"); // Another student's ID
 
         ResponseEntity<?> response = apiController.submitPetition(request, studentAuth);
 
@@ -125,7 +125,7 @@ class ApiControllerAdversarialTest {
         request.setType("เอกสาร");
         request.setStudentId(null);
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
         when(petitionRepository.existsById(anyString())).thenReturn(false);
         when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -135,7 +135,7 @@ class ApiControllerAdversarialTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         AcademicPetition saved = (AcademicPetition) response.getBody();
         assertNotNull(saved);
-        assertEquals("6421100042", saved.getStudent().getStudentId());
+        assertEquals("6621100042", saved.getStudent().getStudentId());
         assertEquals("รออาจารย์ที่ปรึกษาพิจารณา", saved.getStatus());
     }
 
@@ -147,7 +147,7 @@ class ApiControllerAdversarialTest {
         request.setType("เอกสาร");
         request.setStudentId("   ");
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
         when(petitionRepository.existsById(anyString())).thenReturn(false);
         when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -157,7 +157,7 @@ class ApiControllerAdversarialTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         AcademicPetition saved = (AcademicPetition) response.getBody();
         assertNotNull(saved);
-        assertEquals("6421100042", saved.getStudent().getStudentId());
+        assertEquals("6621100042", saved.getStudent().getStudentId());
     }
 
     @Test
@@ -166,7 +166,7 @@ class ApiControllerAdversarialTest {
         PetitionRequest request = new PetitionRequest();
         request.setTitle("ขอหนังสือรับรอง");
         request.setType("เอกสาร");
-        request.setStudentId(" 6421100099 ");
+        request.setStudentId(" 6621100099 ");
 
         ResponseEntity<?> response = apiController.submitPetition(request, studentAuth);
 
@@ -193,7 +193,7 @@ class ApiControllerAdversarialTest {
         PetitionRequest request = new PetitionRequest();
         request.setTitle("ขอหนังสือรับรอง");
         request.setType("เอกสาร");
-        request.setStudentId("6421100042");
+        request.setStudentId("6621100042");
 
         ResponseEntity<?> response = apiController.submitPetition(request, advisorAuth);
 
@@ -208,7 +208,7 @@ class ApiControllerAdversarialTest {
         request.setTitle("ขอหนังสือรับรอง");
         request.setType("เอกสาร");
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.empty());
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.empty());
 
         ResponseEntity<?> response = apiController.submitPetition(request, studentAuth);
 
@@ -249,7 +249,7 @@ class ApiControllerAdversarialTest {
                 prefix + "003",
                 prefix + "special_char");
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(malformedIds);
         when(petitionRepository.existsById(prefix + "004")).thenReturn(false);
         when(petitionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -273,7 +273,7 @@ class ApiControllerAdversarialTest {
                 prefix + "99999999999999999999999999999999", // Exceeds Integer.MAX_VALUE
                 prefix + "005");
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(extremeIds);
         when(petitionRepository.existsById(prefix + "006")).thenReturn(false);
         when(petitionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -295,7 +295,7 @@ class ApiControllerAdversarialTest {
         // Gap: 001 exists, 002-009 deleted, 010 exists
         List<String> idsWithGaps = List.of(prefix + "001", prefix + "010");
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(idsWithGaps);
         when(petitionRepository.existsById(prefix + "011")).thenReturn(false);
         when(petitionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -314,7 +314,7 @@ class ApiControllerAdversarialTest {
         int yearBE = Year.now().getValue() + 543;
         String prefix = String.format("PET-%d-", yearBE);
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of(prefix + "001"));
 
         // Simulate concurrent insertion: 002 and 003 already exist
@@ -337,7 +337,7 @@ class ApiControllerAdversarialTest {
         int yearBE = Year.now().getValue() + 543;
         String prefix = String.format("PET-%d-", yearBE);
 
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of(prefix + "999"));
         when(petitionRepository.existsById(prefix + "1000")).thenReturn(false);
         when(petitionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -414,7 +414,7 @@ class ApiControllerAdversarialTest {
     @DisplayName("Challenge 3.4: Student has no assigned advisor -> advisor attempt returns 403")
     void testUpdatePetitionStatus_StudentHasNoAdvisor_AdvisorReturns403() {
         Student unassignedStudent = new Student();
-        unassignedStudent.setStudentId("6421100099");
+        unassignedStudent.setStudentId("6621100099");
         unassignedStudent.setAdvisor(null);
 
         AcademicPetition petition = new AcademicPetition();
@@ -654,12 +654,12 @@ class ApiControllerAdversarialTest {
     @Test
     @DisplayName("Challenge 4.1: Student can update their own career information -> returns 200")
     void testUpdateCareer_StudentUpdatesOwnProfile_Succeeds() {
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CareerUpdateRequest req = new CareerUpdateRequest("Fullstack Developer", "Employed", "Tech Corp",
                 "30,000 - 40,000");
-        ResponseEntity<?> response = apiController.updateStudentCareer("6421100042", req, studentAuth);
+        ResponseEntity<?> response = apiController.updateStudentCareer("6621100042", req, studentAuth);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Student updated = (Student) response.getBody();
         assertNotNull(updated);
@@ -674,7 +674,7 @@ class ApiControllerAdversarialTest {
     @DisplayName("Challenge 4.2: Malicious student attempts to alter another student's career -> returns 403")
     void testUpdateCareer_StudentAttemptsToUpdateAnotherStudent_Returns403() {
         CareerUpdateRequest req = new CareerUpdateRequest("Malicious Path", "Unemployed", "Fake Co", "0");
-        ResponseEntity<?> response = apiController.updateStudentCareer("6421100099", req, studentAuth);
+        ResponseEntity<?> response = apiController.updateStudentCareer("6621100099", req, studentAuth);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertTrue(response.getBody().toString().contains("นักศึกษาสามารถแก้ไขข้อมูลสายอาชีพของตนเองเท่านั้น"));
@@ -685,7 +685,7 @@ class ApiControllerAdversarialTest {
     @DisplayName("Challenge 4.3: Advisor attempting to update student career directly -> returns 403")
     void testUpdateCareer_AdvisorAttemptsToUpdateStudentCareer_Returns403() {
         CareerUpdateRequest req = new CareerUpdateRequest("Advisor Suggested Path", "Employed", "Advisor Co", "50,000");
-        ResponseEntity<?> response = apiController.updateStudentCareer("6421100042", req, advisorAuth);
+        ResponseEntity<?> response = apiController.updateStudentCareer("6621100042", req, advisorAuth);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         verify(studentRepository, never()).save(any());
@@ -695,7 +695,7 @@ class ApiControllerAdversarialTest {
     @DisplayName("Challenge 4.4: Unauthenticated caller updating career -> returns 403")
     void testUpdateCareer_UnauthenticatedCaller_Returns403() {
         CareerUpdateRequest req = new CareerUpdateRequest("Path", "Employed", "Co", "50,000");
-        ResponseEntity<?> response = apiController.updateStudentCareer("6421100042", req, null);
+        ResponseEntity<?> response = apiController.updateStudentCareer("6621100042", req, null);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         verify(studentRepository, never()).save(any());
@@ -704,11 +704,11 @@ class ApiControllerAdversarialTest {
     @Test
     @DisplayName("Challenge 4.5: Admin can update any student's career information -> returns 200")
     void testUpdateCareer_AdminCanUpdateStudentCareer() {
-        when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+        when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
         when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CareerUpdateRequest req = new CareerUpdateRequest("DevOps Engineer", "Employed", "Cloud Inc", "45,000");
-        ResponseEntity<?> response = apiController.updateStudentCareer("6421100042", req, adminAuth);
+        ResponseEntity<?> response = apiController.updateStudentCareer("6621100042", req, adminAuth);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Student updated = (Student) response.getBody();
@@ -738,7 +738,7 @@ class ApiControllerAdversarialTest {
         ownPetition.setId("PET-2569-001");
         ownPetition.setStudent(student1);
 
-        when(petitionRepository.findByStudentStudentIdOrderBySubmittedAtDesc("6421100042"))
+        when(petitionRepository.findByStudentStudentIdOrderBySubmittedAtDesc("6621100042"))
                 .thenReturn(List.of(ownPetition));
 
         ResponseEntity<?> response = apiController.getAllPetitions(studentAuth);
@@ -747,7 +747,7 @@ class ApiControllerAdversarialTest {
         List<?> list = (List<?>) response.getBody();
         assertNotNull(list);
         assertEquals(1, list.size());
-        verify(petitionRepository).findByStudentStudentIdOrderBySubmittedAtDesc("6421100042");
+        verify(petitionRepository).findByStudentStudentIdOrderBySubmittedAtDesc("6621100042");
         verify(petitionRepository, never()).findAll();
     }
 
@@ -774,7 +774,7 @@ class ApiControllerAdversarialTest {
     @Test
     @DisplayName("Challenge 5.3: Admin caller retrieves all petitions")
     void testGetAllPetitions_AdminCaller_SeesAllPetitions() {
-        when(petitionRepository.findAll()).thenReturn(List.of(new AcademicPetition(), new AcademicPetition()));
+        when(petitionRepository.findAll(any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(new AcademicPetition(), new AcademicPetition()));
 
         ResponseEntity<?> response = apiController.getAllPetitions(adminAuth);
 
@@ -782,7 +782,7 @@ class ApiControllerAdversarialTest {
         List<?> list = (List<?>) response.getBody();
         assertNotNull(list);
         assertEquals(2, list.size());
-        verify(petitionRepository).findAll();
+        verify(petitionRepository).findAll(any(org.springframework.data.domain.Sort.class));
     }
 
     @Test

@@ -7,9 +7,11 @@
 
 import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
+import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot } from './components/chatbot.js';
 import { initThemeToggle } from './theme.js';
+import { initModalA11y } from './components/modalA11y.js';
 import { openChangePasswordModal } from './components/password.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
@@ -64,6 +66,7 @@ const MODULE_TITLES = {
 // ================================================================
 function initApp() {
     initThemeToggle();
+    initModalA11y();
     const loginOverlay = document.getElementById('loginOverlay');
     const loginForm = document.getElementById('loginForm');
     const loginUsername = document.getElementById('loginUsername');
@@ -151,23 +154,22 @@ function initApp() {
         }, 300);
     });
 
-    // ── Role Hints Click Helper ──
-    document.querySelectorAll('.role-hint').forEach(hint => {
-        hint.style.cursor = 'pointer';
+    // A stale error stays wrong once the user edits either field
+    [loginUsername, document.getElementById('loginPassword')].forEach(input =>
+        input?.addEventListener('input', () => showLoginError('')));
+
+    // ── Demo-account shortcuts (dev profile only; the backend decides) ──
+    fetchAPI('/auth/config', 'GET', null, 5000)
+        .then(cfg => { if (cfg?.showDemoAccounts) document.getElementById('demoAccounts').hidden = false; })
+        .catch(() => { /* backend down or old version: keep the shortcuts hidden */ });
+
+    document.querySelectorAll('.role-hint[data-demo-user]').forEach(hint => {
         hint.addEventListener('click', () => {
-            const badge = hint.querySelector('.rh-badge');
-            if (!badge) return;
-            const text = badge.textContent.trim().toLowerCase();
-            if (text.includes('admin')) {
-                loginUsername.value = 'admin';
-            } else if (text.includes('advisor')) {
-                loginUsername.value = 'advisor';
-            } else {
-                loginUsername.value = 'student';
-            }
+            loginUsername.value = hint.dataset.demoUser;
             const passwordInput = document.getElementById('loginPassword');
             if (passwordInput) passwordInput.value = 'password';
-            loginUsername.focus();
+            showLoginError('');
+            document.getElementById('loginBtn')?.focus();
         });
     });
 
@@ -200,6 +202,11 @@ function initApp() {
         }
     };
 
+    // Module pages share one document; restoring the old scroll offset on Back lands mid-page
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    let replacingHash = false;   // next module change replaces the history entry (first page after login)
+    let fromHistory = false;     // next module change came from Back/Forward: don't push it again
+
     // ── State subscriber: active module changes ──
     subscribe('activeModule', (modId) => {
         if (!modId) return;
@@ -221,6 +228,20 @@ function initApp() {
 
         // Update topbar title
         topbarTitle.textContent = MODULE_TITLES[modId] || '';
+
+        // Each module is its own URL (#module): refresh, Back and shared links land on it
+        if (location.hash !== `#${modId}`) {
+            const url = `${location.pathname}${location.search}#${modId}`;
+            if (replacingHash) history.replaceState(null, '', url);
+            else if (!fromHistory) history.pushState(null, '', url);
+        }
+        replacingHash = false;
+        fromHistory = false;
+
+        // A new page starts at its top, not at the previous page's scroll position
+        // (after the frame: the module renders and the browser may restore a scroll position first)
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 
         // Load component CSS on demand
         if (modId === 'timetable') {
@@ -270,16 +291,35 @@ function initApp() {
         } else {
             const studentId = state.isImpersonating
                 ? state.impersonatedStudent.studentId
-                : (state.user.studentId || '6421100042');
+                : (state.user.studentId || '6621100042');
             initStudentDashboard(studentId);
         }
 
-        // ── Navigate to first module ──
+        // ── Open the module named in the URL (#grades), else the first one ──
+        const fromHash = moduleFromHash();
         const firstLink = sidebarNav.querySelector('.nav-link');
-        if (firstLink) {
+        if (fromHash) {
+            setState({ activeModule: fromHash });
+        } else if (firstLink) {
+            replacingHash = true;   // the landing page replaces the entry instead of adding one
             setState({ activeModule: firstLink.dataset.module });
         }
     }
+
+    /** Module id from location.hash when this role has that module, otherwise null */
+    function moduleFromHash() {
+        const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+        return id && sidebarNav.querySelector(`.nav-link[data-module="${CSS.escape(id)}"]`) ? id : null;
+    }
+
+    // Back / Forward and edited URLs switch modules too
+    window.addEventListener('popstate', () => {
+        const id = moduleFromHash();
+        if (id && id !== getState().activeModule) {
+            fromHistory = true;
+            setState({ activeModule: id });
+        }
+    });
 
     function buildSidebar(state) {
         const role = state.isImpersonating ? 'STUDENT' : state.currentRole;
@@ -289,7 +329,7 @@ function initApp() {
 
         const links = NAV_CONFIG[role] || NAV_CONFIG.STUDENT;
         sidebarNav.innerHTML = links.map(l =>
-            `<a href="#" class="nav-link" data-module="${l.module}">${l.icon}<span>${esc(l.label)}</span></a>`
+            `<a href="#${l.module}" class="nav-link" data-module="${l.module}">${l.icon}<span>${esc(l.label)}</span></a>`
         ).join('');
 
         sidebarNav.querySelectorAll('.nav-link').forEach(link => {

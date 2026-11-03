@@ -2,7 +2,7 @@
    BSRU Student Portal — Student Petitions View & Upload
    ============================================================ */
 
-import { esc, statusBadge, showToast } from '../../utils.js';
+import { esc, statusBadge, showToast, petitionStatus } from '../../utils.js';
 import { fetchAPI, uploadFileAPI, viewPdfAttachmentAPI } from '../../api.js';
 import { MOCK_PETITIONS_LOG } from '../admin.js';
 
@@ -83,7 +83,7 @@ export async function renderPetitions(student) {
     try {
         const liveList = await fetchAPI('/petitions');
         if (Array.isArray(liveList)) {
-            displayList = liveList;
+            displayList = liveList.map(p => ({ ...p, status: petitionStatus(p.status) }));
         }
     } catch (err) {
         console.warn('Backend petitions unavailable, falling back to mock:', err);
@@ -312,7 +312,7 @@ export async function renderPetitions(student) {
             title: form.projectTitle.value.trim(),
             details: form.details.value.trim(),
             attachment: file ? file.name : null,
-            studentId: student.studentId || '6421100042',
+            studentId: student.studentId || '6621100042',
         };
 
         try {

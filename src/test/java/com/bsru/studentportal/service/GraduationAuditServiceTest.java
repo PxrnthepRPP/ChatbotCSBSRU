@@ -35,7 +35,7 @@ class GraduationAuditServiceTest {
     private ObjectMapper objectMapper;
     private GraduationAuditService auditService;
 
-    private final String studentId = "6421100042";
+    private final String studentId = "6621100042";
 
     @BeforeEach
     void setUp() {

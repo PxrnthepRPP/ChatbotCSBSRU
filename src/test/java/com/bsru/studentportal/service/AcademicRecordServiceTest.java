@@ -38,7 +38,7 @@ class AcademicRecordServiceTest {
     @InjectMocks
     private AcademicRecordService academicRecordService;
 
-    private final String studentId = "6421100042";
+    private final String studentId = "6621100042";
     private Student student;
     private ObjectMapper objectMapper;
 

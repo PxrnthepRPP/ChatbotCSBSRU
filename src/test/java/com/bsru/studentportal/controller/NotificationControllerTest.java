@@ -52,13 +52,13 @@ class NotificationControllerTest {
         notificationController = new NotificationController(notificationService);
 
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         studentAliasAuth = new UsernamePasswordAuthenticationToken(
                 "student", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         otherStudentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100099", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100099", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         advisorAuth = new UsernamePasswordAuthenticationToken(
                 "ADV-01", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADVISOR")));
@@ -74,7 +74,7 @@ class NotificationControllerTest {
 
         notifStudent = Notification.builder()
                 .id(101L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .title("คำร้องได้รับการอนุมัติแล้ว")
                 .message("คำร้องของคุณได้รับการอนุมัติเรียบร้อยแล้ว")
                 .type("PETITION")
@@ -87,7 +87,7 @@ class NotificationControllerTest {
                 .id(102L)
                 .recipientUsername("ADV-01")
                 .title("มีคำร้องใหม่รอการพิจารณา")
-                .message("นักศึกษา 6421100042 ยื่นคำร้องใหม่")
+                .message("นักศึกษา 6621100042 ยื่นคำร้องใหม่")
                 .type("PETITION")
                 .targetModule("advisor-petitions")
                 .isRead(false)
@@ -111,7 +111,7 @@ class NotificationControllerTest {
         NotificationListResponse listRes = (NotificationListResponse) res.getBody();
         assertEquals(1, listRes.getNotifications().size());
         assertEquals(1L, listRes.getUnreadCount());
-        assertEquals("6421100042", listRes.getNotifications().get(0).getRecipientUsername());
+        assertEquals("6621100042", listRes.getNotifications().get(0).getRecipientUsername());
     }
 
     @Test
@@ -174,7 +174,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/notifications/{id}/read: Student alias ('student') marks as read for '6421100042'")
+    @DisplayName("PATCH /api/notifications/{id}/read: Student alias ('student') marks as read for '6621100042'")
     void testMarkAsRead_StudentAlias_Success() {
         when(notificationRepository.findById(101L)).thenReturn(Optional.of(notifStudent));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
@@ -260,7 +260,7 @@ class NotificationControllerTest {
     void testResolveRecipientKeys() {
         Set<String> studentKeys = notificationService.resolveRecipientKeys(studentAliasAuth);
         assertTrue(studentKeys.contains("student"));
-        assertTrue(studentKeys.contains("6421100042"));
+        assertTrue(studentKeys.contains("6621100042"));
 
         Set<String> advisorKeys = notificationService.resolveRecipientKeys(advisorAliasAuth);
         assertTrue(advisorKeys.contains("advisor"));
@@ -283,7 +283,7 @@ class NotificationControllerTest {
         });
 
         Notification saved = notificationService.notifyUser(
-                "6421100042",
+                "6621100042",
                 "หัวข้อทดสอบ",
                 "ข้อความทดสอบ",
                 "petitions",
@@ -292,8 +292,8 @@ class NotificationControllerTest {
 
         assertNotNull(saved);
         assertEquals(555L, saved.getId());
-        assertEquals("6421100042", saved.getRecipientUsername());
-        assertEquals("6421100042", saved.getRecipientId());
+        assertEquals("6621100042", saved.getRecipientUsername());
+        assertEquals("6621100042", saved.getRecipientId());
         assertEquals("หัวข้อทดสอบ", saved.getTitle());
         assertEquals("ข้อความทดสอบ", saved.getMessage());
         assertEquals("petitions", saved.getTargetModule());

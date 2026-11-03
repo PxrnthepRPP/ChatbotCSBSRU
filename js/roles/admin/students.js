@@ -4,6 +4,7 @@
    Sec change, password reset, impersonation
    ============================================================ */
 
+import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, statusBadge, getBatch, debounce, showToast } from '../../utils.js';
 import { impersonateStudent } from '../../auth.js';
 import { fetchAPI, API_BASE_URL } from '../../api.js';
@@ -41,6 +42,7 @@ export function toPoolStudent(s) {
     };
 }
 let adminSearchQuery = '';
+let highlightStudentId = null;   // row to show and flash on the next render (after add/edit)
 let adminStudentsPage = 1;
 let adminStudentsPageSize = 15;
 
@@ -68,6 +70,20 @@ export function renderManageStudents() {
         filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
     }
 
+    // Just added / edited: jump to the page with that row (clearing filters that hide it)
+    const highlight = highlightStudentId;
+    highlightStudentId = null;
+    if (highlight) {
+        if (!filtered.some(s => s.studentId === highlight) && MOCK_STUDENTS_POOL.some(s => s.studentId === highlight)) {
+            adminLastSelectedBatch = 'all';
+            adminSearchQuery = '';
+            highlightStudentId = highlight;
+            return renderManageStudents();
+        }
+        const pos = filtered.findIndex(s => s.studentId === highlight);
+        if (pos >= 0) adminStudentsPage = Math.floor(pos / adminStudentsPageSize) + 1;
+    }
+
     // Pagination calculations
     const totalStudents = filtered.length;
     const totalPages = Math.max(1, Math.ceil(totalStudents / adminStudentsPageSize));
@@ -82,24 +98,24 @@ export function renderManageStudents() {
         const realIdx = MOCK_STUDENTS_POOL.indexOf(s);
         const batch = getBatch(s.studentId);
         return `
-        <tr>
+        <tr data-sid="${esc(s.studentId)}">
             <td><strong>${esc(s.studentId)}</strong></td>
             <td>${esc(s.nameTh)} <span class="batch-tag batch-${batch}">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
             <td style="text-align:center"><strong>${s.gpa.toFixed(2)}</strong></td>
             <td>${s.studentSection
-                ? `<select class="batch-select student-sec-select" data-sid="${esc(s.studentId)}">${['D1', 'D2'].map(g => `<option value="${g}" ${s.studentSection === g ? 'selected' : ''}>${g}</option>`).join('')}</select>`
+                ? `<select class="batch-select student-sec-select" data-sid="${esc(s.studentId)}" aria-label="Sec à¸à¸­à¸ ${esc(s.studentId)}">${['D1', 'D2'].map(g => `<option value="${g}" ${s.studentSection === g ? 'selected' : ''}>${g}</option>`).join('')}</select>`
                 : '-'}</td>
             <td><span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="btn btn-sm btn-orange admin-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
+                    <button class="btn btn-sm btn-primary admin-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}" title="เข้าดูระบบในมุมมองของนักศึกษาคนนี้">👁 เข้าใช้แทน</button>
                     ${s.studentSection && !s.simulated ? `
                     <button class="btn btn-sm btn-ghost audit-dl-btn" data-sid="${esc(s.studentId)}" title="ดาวน์โหลดใบตรวจสอบจบ (ใช้เป็นแม่แบบได้)">⬇ ใบตรวจจบ</button>
                     <button class="btn btn-sm btn-ghost audit-ul-btn" data-sid="${esc(s.studentId)}" title="อัปโหลดใบตรวจสอบจบ (.json)">⬆ อัปโหลด</button>
                     <button class="btn btn-sm btn-ghost reset-pw-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="รีเซ็ตรหัสผ่านเป็นรหัสนักศึกษา">🔑 รีเซ็ตรหัส</button>` : ''}
                     <button class="btn btn-sm btn-warning edit-student-btn" data-idx="${realIdx}">แก้ไข</button>
-                    <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}">ลบ</button>
+                    <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}" style="margin-left:12px" title="ลบนักศึกษา">ลบ</button>
                 </div>
             </td>
         </tr>`;
@@ -116,7 +132,7 @@ export function renderManageStudents() {
                 แสดงรายการที่ <strong>${startIndex + 1} - ${endIndex}</strong> จากทั้งหมด <strong>${totalStudents}</strong> คน
                 <span class="pagination-size-select">
                     (หน้าละ 
-                    <select class="page-size-select" id="adminStudentPageSize">
+                    <select class="page-size-select" id="adminStudentPageSize" aria-label="à¸à¸³à¸à¸§à¸à¹à¸à¸§à¸à¹à¸­à¸«à¸à¹à¸²">
                         <option value="10" ${adminStudentsPageSize === 10 ? 'selected' : ''}>10</option>
                         <option value="15" ${adminStudentsPageSize === 15 ? 'selected' : ''}>15</option>
                         <option value="25" ${adminStudentsPageSize === 25 ? 'selected' : ''}>25</option>
@@ -145,13 +161,13 @@ export function renderManageStudents() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 กรองตามรุ่น / ปีการศึกษา
             </label>
-            <select class="batch-select" id="adminBatchFilter">${filterOpts}</select>
+            <select class="batch-select" id="adminBatchFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸£à¸¸à¹à¸">${filterOpts}</select>
             <div class="filter-result-count">
                 กรอง: <strong>${selectedBatchDesc}</strong> (พบ <strong>${totalStudents}</strong> คน)
             </div>
             <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="adminStudentSearch" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
+                <input type="text" id="adminStudentSearch" aria-label="à¸à¹à¸à¸«à¸²à¸à¸±à¸à¸¨à¸¶à¸à¸©à¸²" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
             </div>
             <button class="btn btn-success" id="addStudentBtn">เพิ่มนักศึกษา</button>
             <button class="btn btn-primary" id="exportStudentCsvBtn" title="ส่งออกข้อมูลนักศึกษาเป็นไฟล์ CSV (UTF-8 with BOM)">
@@ -307,7 +323,7 @@ export function renderManageStudents() {
         const warning = studentsFromDb && st.simulated ? '\n(ข้อมูลจำลอง)'
             : studentsFromDb
             ? `\nข้อมูลจะถูกลบออกจากฐานข้อมูลจริง รวมถึงเกรด การลงทะเบียน คำร้อง และใบตรวจสอบจบของนักศึกษาคนนี้ (ย้อนกลับไม่ได้)` : '';
-        if (!confirm(`ต้องการลบ "${st.nameTh}" (${st.studentId}) หรือไม่?${warning}`)) return;
+        if (!await confirmDialog(`ต้องการลบ "${st.nameTh}" (${st.studentId}) หรือไม่?${warning}`)) return;
         if (studentsFromDb) {
             try {
                 await fetchAPI(`/students/${encodeURIComponent(st.studentId)}`, 'DELETE', null, 10000);
@@ -321,21 +337,27 @@ export function renderManageStudents() {
         renderAdminDashboard();
         showToast('success', esc(`ลบ ${st.nameTh} แล้ว`));
     }));
-    document.querySelectorAll('.student-sec-select').forEach(sel => sel.addEventListener('change', async () => {
-        const student = MOCK_STUDENTS_POOL.find(s => s.studentId === sel.dataset.sid);
+    // Saved on change (no extra click), so every move can be undone from the toast
+    const moveSection = async (sel, sid, to, { undo = false } = {}) => {
+        const student = MOCK_STUDENTS_POOL.find(s => s.studentId === sid);
+        const from = student?.studentSection;
         try {
-            await fetchAPI(`/students/${encodeURIComponent(sel.dataset.sid)}/section`, 'PUT', { studentSection: sel.value }, 8000);
-            if (student) student.studentSection = sel.value;
-            showToast('success', esc(`ย้าย ${sel.dataset.sid} ไป Sec ${sel.value} แล้ว`));
+            await fetchAPI(`/students/${encodeURIComponent(sid)}/section`, 'PUT', { studentSection: to }, 8000);
+            if (student) student.studentSection = to;
+            if (sel?.isConnected) sel.value = to;
+            showToast('success', esc(undo ? `ย้าย ${sid} กลับไป Sec ${to} แล้ว` : `ย้าย ${sid} ไป Sec ${to} แล้ว`),
+                undo || !from ? undefined : { label: 'เลิกทำ', onClick: () => moveSection(sel, sid, from, { undo: true }) });
         } catch (err) {
-            if (student) sel.value = student.studentSection;
+            if (student && sel?.isConnected) sel.value = student.studentSection;
             showToast('error', esc(apiErrorText(err)));
         }
-    }));
+    };
+    document.querySelectorAll('.student-sec-select').forEach(sel =>
+        sel.addEventListener('change', () => moveSection(sel, sel.dataset.sid, sel.value)));
     bindGraduationAuditButtons();
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;
-        if (!confirm(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
+        if (!await confirmDialog(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
 รหัสผ่านใหม่จะเป็นรหัสนักศึกษา และนักศึกษาต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ`)) return;
         try {
             const res = await fetchAPI(`/students/${encodeURIComponent(sid)}/reset-password`, 'POST', {}, 10000);
@@ -347,6 +369,61 @@ export function renderManageStudents() {
     document.querySelectorAll('.admin-imp-btn').forEach(b => {
         b.addEventListener('click', () => impersonateStudent(b.dataset.sid, b.dataset.sname));
     });
+
+    if (highlight) {
+        const row = document.querySelector(`#manageStudentsContent tr[data-sid="${CSS.escape(highlight)}"]`);
+        if (row) {
+            row.scrollIntoView({ block: 'center' });
+            row.classList.add('row-highlight');
+            setTimeout(() => row.classList.remove('row-highlight'), 2500);
+        }
+    }
+}
+
+/* ── Student form validation: one inline message per field, same limits as StudentAdminService ── */
+const YEAR_MIN = 1;
+const YEAR_MAX = 8;
+
+const fieldError = id => `<div class="app-field-error" id="${id}Err" role="alert"></div>`;
+
+function setFieldError(id, message) {
+    const input = document.getElementById(id);
+    const box = document.getElementById(`${id}Err`);
+    if (!input || !box) return;
+    input.classList.toggle('is-invalid', !!message);
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (message) input.setAttribute('aria-describedby', box.id); else input.removeAttribute('aria-describedby');
+    box.textContent = message || '';
+    box.classList.toggle('visible', !!message);
+}
+
+/** Checks every field, marks the wrong ones and focuses the first; true when the form can be sent */
+function validateStudentForm(mode) {
+    const val = id => document.getElementById(id)?.value.trim() ?? '';
+    const errors = {};
+    if (mode !== 'edit') {
+        if (!val('mfSid')) errors.mfSid = 'กรุณากรอกรหัสนักศึกษา';
+        else if (!/^\d{10}$/.test(val('mfSid'))) errors.mfSid = 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก';
+    }
+    if (!val('mfSnameTh')) errors.mfSnameTh = 'กรุณากรอกชื่อ-สกุล (ไทย)';
+    else if (!/^[฀-๿\s.]+$/.test(val('mfSnameTh'))) errors.mfSnameTh = 'ใช้ตัวอักษรภาษาไทยเท่านั้น';
+    if (val('mfSnameEn') && !/^[A-Za-z\s.]+$/.test(val('mfSnameEn'))) errors.mfSnameEn = 'ใช้ตัวอักษรภาษาอังกฤษเท่านั้น';
+    const year = Number(val('mfSyear'));
+    if (!Number.isInteger(year) || year < YEAR_MIN || year > YEAR_MAX) errors.mfSyear = `ชั้นปีต้องอยู่ระหว่าง ${YEAR_MIN}–${YEAR_MAX}`;
+    const gpa = Number(val('mfSgpa'));
+    if (val('mfSgpa') === '' || Number.isNaN(gpa) || gpa < 0 || gpa > 4) errors.mfSgpa = 'GPA ต้องอยู่ระหว่าง 0.00–4.00';
+
+    ['mfSid', 'mfSnameTh', 'mfSnameEn', 'mfSyear', 'mfSgpa'].forEach(id => setFieldError(id, errors[id]));
+    const first = Object.keys(errors)[0];
+    if (first) document.getElementById(first)?.focus();
+    return !first;
+}
+
+/** Put a backend validation message under the field it is about (it is still shown as a toast too) */
+function showServerFieldError(message) {
+    const map = [[/รหัสนักศึกษา/, 'mfSid'], [/ภาษาไทย|\(ไทย\)/, 'mfSnameTh'], [/English|Eng/, 'mfSnameEn'], [/ชั้นปี/, 'mfSyear'], [/GPA/, 'mfSgpa']];
+    const hit = map.find(([re]) => re.test(message));
+    if (hit) { setFieldError(hit[1], message); document.getElementById(hit[1])?.focus(); }
 }
 
 function openStudentModal(mode, idx) {
@@ -379,11 +456,12 @@ function openStudentModal(mode, idx) {
 
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขนักศึกษา' : 'เพิ่มนักศึกษาใหม่';
     modalBody.innerHTML = `
-        <div class="modal-field"><label>รหัสนักศึกษา</label><input id="mfSid" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (ไทย)</label><input id="mfSnameTh" value="${esc(s.nameTh || '')}"></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}"></div>
-        <div class="modal-field"><label>ชั้นปี</label><input id="mfSyear" type="number" min="1" max="6" value="${s.year || 1}"></div>
-        <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px"><span class="req" style="color:var(--red-500);font-weight:700">*</span> ช่องที่ต้องกรอก</p>
+        <div class="modal-field"><label for="mfSid">รหัสนักศึกษา <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSid" inputmode="numeric" maxlength="10" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : 'required'}>${fieldError('mfSid')}</div>
+        <div class="modal-field"><label for="mfSnameTh">ชื่อ-สกุล (ไทย) <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSnameTh" required value="${esc(s.nameTh || '')}">${fieldError('mfSnameTh')}</div>
+        <div class="modal-field"><label for="mfSnameEn">ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}">${fieldError('mfSnameEn')}</div>
+        <div class="modal-field"><label for="mfSyear">ชั้นปี (${YEAR_MIN}–${YEAR_MAX})</label><input id="mfSyear" type="number" min="${YEAR_MIN}" max="${YEAR_MAX}" value="${s.year || 1}">${fieldError('mfSyear')}</div>
+        <div class="modal-field"><label for="mfSgpa">GPA (0.00–4.00)</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}">${fieldError('mfSgpa')}</div>
         <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
         <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
         ${studentsFromDb ? `<div class="modal-field"><label>Sec</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
@@ -457,7 +535,7 @@ function openStudentModal(mode, idx) {
             companyName: document.getElementById('mfScompany').value.trim() || undefined,
             salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
-        if (!data.studentId || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
+        if (!validateStudentForm(mode)) return;
 
         if (studentsFromDb) {
             const body = {
@@ -484,6 +562,7 @@ function openStudentModal(mode, idx) {
                 else { MOCK_STUDENTS_POOL.push(toPoolStudent(saved)); }
             } catch (err) {
                 showToast('error', esc(apiErrorText(err)));
+                showServerFieldError(apiErrorText(err));
                 return;
             }
         } else {
@@ -492,6 +571,7 @@ function openStudentModal(mode, idx) {
         }
 
         crudModal.classList.remove('open');
+        highlightStudentId = data.studentId;   // open the page that has this row and flash it
         renderManageStudents();
         renderAdminDashboard();
         showToast('success', !studentsFromDb ? 'บันทึกข้อมูลนักศึกษาเรียบร้อย (โหมดออฟไลน์ ไม่ได้บันทึกลงฐานข้อมูล)'

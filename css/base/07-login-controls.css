@@ -30,7 +30,18 @@
     justify-content: center;
 }
 
+.role-hint:hover {
+    border-color: var(--brand-300, #93b4e0);
+}
+
+.role-hint:focus-visible {
+    outline: 2px solid var(--brand-500, #2a5ea8);
+    outline-offset: 2px;
+}
+
 .role-hint {
+    font-family: inherit;
+    cursor: pointer;
     font-size: 0.72rem;
     color: var(--g-500);
     display: flex;

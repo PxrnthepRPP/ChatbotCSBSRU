@@ -435,7 +435,7 @@ console.log('\n--- Test Suite 8: Empirical Findings on Underscores & Table Tags 
 
 {
     // Test table tags closure strictly (table, thead, tbody, tr, th, td)
-    const testSnakeCaseTable = '| student_id | first_name | last_name |\n|---|---|---|\n| 6421100042 | Somchai | Jaidee |';
+    const testSnakeCaseTable = '| student_id | first_name | last_name |\n|---|---|---|\n| 6621100042 | Somchai | Jaidee |';
     const output = renderSafeMarkdown(testSnakeCaseTable);
 
     // Verify all table tags are closed

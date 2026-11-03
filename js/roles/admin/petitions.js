@@ -118,7 +118,7 @@ export function renderManagePetitions() {
                 แสดงรายการที่ <strong>${startIndex + 1} - ${endIndex}</strong> จากทั้งหมด <strong>${totalPetitions}</strong> รายการ
                 <span class="pagination-size-select">
                     (หน้าละ 
-                    <select class="page-size-select" id="adminPetPageSize">
+                    <select class="page-size-select" id="adminPetPageSize" aria-label="à¸à¸³à¸à¸§à¸à¹à¸à¸§à¸à¹à¸­à¸«à¸à¹à¸²">
                         <option value="5" ${adminPetitionsPageSize === 5 ? 'selected' : ''}>5</option>
                         <option value="10" ${adminPetitionsPageSize === 10 ? 'selected' : ''}>10</option>
                         <option value="20" ${adminPetitionsPageSize === 20 ? 'selected' : ''}>20</option>
@@ -178,17 +178,17 @@ export function renderManagePetitions() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                     รุ่น
                 </label>
-                <select class="batch-select" id="adminPetBatchFilter">${batchFilterOpts}</select>
+                <select class="batch-select" id="adminPetBatchFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸£à¸¸à¹à¸">${batchFilterOpts}</select>
             </div>
 
             <div class="filter-group">
                 <label>ประเภท</label>
-                <select class="batch-select" id="adminPetTypeFilter">${typeFilterOpts}</select>
+                <select class="batch-select" id="adminPetTypeFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸à¸£à¸°à¹à¸ à¸à¸à¸³à¸£à¹à¸­à¸">${typeFilterOpts}</select>
             </div>
 
             <div class="filter-group">
                 <label>สถานะ</label>
-                <select class="batch-select" id="adminPetStatusFilter">
+                <select class="batch-select" id="adminPetStatusFilter" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸ªà¸à¸²à¸à¸°à¸à¸³à¸£à¹à¸­à¸">
                     <option value="all" ${adminPetitionsStatus === 'all' ? 'selected' : ''}>ทุกสถานะ (All Status)</option>
                     <option value="รออาจารย์ที่ปรึกษาพิจารณา" ${adminPetitionsStatus === 'รออาจารย์ที่ปรึกษาพิจารณา' ? 'selected' : ''}>⏳ รออาจารย์ที่ปรึกษาพิจารณา</option>
                     <option value="รอผู้ดูแลระบบอนุมัติ" ${adminPetitionsStatus === 'รอผู้ดูแลระบบอนุมัติ' ? 'selected' : ''}>📋 รอผู้ดูแลระบบอนุมัติ</option>
@@ -205,7 +205,7 @@ export function renderManagePetitions() {
 
             <div class="toolbar-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="adminPetSearchInput" placeholder="ค้นหารหัสคำร้อง, นศ., ชื่อเรื่อง..." value="${esc(adminPetitionsSearch)}">
+                <input type="text" id="adminPetSearchInput" aria-label="à¸à¹à¸à¸«à¸²à¸à¸³à¸£à¹à¸­à¸" placeholder="ค้นหารหัสคำร้อง, นศ., ชื่อเรื่อง..." value="${esc(adminPetitionsSearch)}">
             </div>
         </div>
 

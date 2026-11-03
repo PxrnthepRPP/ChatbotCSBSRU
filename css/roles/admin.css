@@ -127,7 +127,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    /* right padding keeps "ถัดไป" clear of the floating chat button (56px at right:24px) */
+    padding: 12px 64px 12px 20px;
     background: #ffffff;
     border-top: 1px solid var(--border-color, #e5e7eb);
     border-radius: 0 0 12px 12px;
@@ -472,4 +473,59 @@
         flex-wrap: wrap;
         justify-content: center;
     }
+}
+
+/* Labelled fields in the "create registration period" bar */
+.batch-filter-bar .reg-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+/* Wide admin tables scroll sideways: keep the action column (last) pinned so its buttons are never cut off */
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) th:last-child,
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) td:last-child,
+#mod-manage-petitions .table-wrap .data-table th:last-child,
+#mod-manage-petitions .table-wrap .data-table td:last-child,
+#mod-manage-students .table-wrap .data-table th:last-child,
+#mod-manage-students .table-wrap .data-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--bg-card, #fff);
+    box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.25);
+}
+
+/* Admin dashboard: 5 stat cards in one balanced grid instead of a 4 + 1 wrap */
+.stat-row.stat-row-5 {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.stat-row.stat-row-5 .stat-card {
+    min-width: 0;
+    padding: 16px;
+    gap: 12px;
+}
+
+@media (max-width: 1100px) {
+    .stat-row.stat-row-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    .stat-row.stat-row-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-row.stat-row-5 .stat-card:last-child { grid-column: 1 / -1; }
+}
+
+/* Row that was just added / edited */
+@keyframes rowHighlight {
+    from { background: var(--amber-100, #fef3c7); }
+    to { background: transparent; }
+}
+
+.data-table tr.row-highlight td {
+    animation: rowHighlight 2.5s ease-out;
 }

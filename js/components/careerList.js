@@ -14,13 +14,15 @@
  */
 export function aggregateCareerList(students) {
     const graduated = students.filter(s => s.status === 'จบการศึกษา' && s.careerPath);
-    const totalGraduated = graduated.length;
+    const totalGraduated = students.filter(s => s.status === 'จบการศึกษา').length;   // same denominator as the card header
     const counts = {};
 
     graduated.forEach(s => {
         const career = s.careerPath.trim();
         counts[career] = (counts[career] || 0) + 1;
     });
+    const unknown = totalGraduated - graduated.length;
+    if (unknown > 0) counts['ไม่ระบุข้อมูล'] = unknown;
 
     return Object.entries(counts)
         .map(([career, count]) => {

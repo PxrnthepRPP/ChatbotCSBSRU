@@ -113,14 +113,14 @@ export function renderAdminDashboard() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 เลือกดูตามรุ่น / ปีการศึกษา
             </label>
-            <select class="batch-select" id="adminDashboardBatchSelect">${batchOpts}</select>
+            <select class="batch-select" id="adminDashboardBatchSelect" aria-label="à¸à¸£à¸­à¸à¸à¸²à¸¡à¸£à¸¸à¹à¸">${batchOpts}</select>
             <span class="filter-result-count">
                 กำลังแสดงข้อมูล: <strong>${selectedBatchText}</strong> (จำนวน <strong>${totalStudents}</strong> คน)
             </span>
         </div>
         ${chipsHtml}
 
-        <div class="stat-row">
+        <div class="stat-row stat-row-5">
             <div class="stat-card">
                 <div class="stat-icon purple">👩‍🏫</div>
                 <div>
@@ -271,9 +271,9 @@ export function renderAdminDashboard() {
         }
     });
 
-    renderRegistrationCard();
-    renderEnrollmentRequestsCard();
-    renderAdminSectionsCard();
+    renderRegistrationCard({ cached: true });
+    renderEnrollmentRequestsCard({ cached: true });
+    renderAdminSectionsCard({ cached: true });
 }
 
 export function exportCareerStatisticsCsv(students) {

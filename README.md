@@ -137,7 +137,7 @@ docker compose up -d --build
 
 | บทบาท (Role) | Username สำหรับเข้าสู่ระบบ | รหัสผ่าน (Password) | สิทธิ์ระบบ (JWT Role) |
 |---|---|---|---|
-| 🎓 **นักศึกษา (Student)** | `6421100042` หรือ `student` | `password` | `ROLE_STUDENT` |
+| 🎓 **นักศึกษา (Student)** | `6621100042` หรือ `student` | `password` | `ROLE_STUDENT` |
 | 👩‍🏫 **อาจารย์ (Advisor)** | `ADV-01` หรือ `advisor` | `password` | `ROLE_ADVISOR` |
 | 👑 **ผู้ดูแลระบบ (Admin)** | `admin` | `password` | `ROLE_ADMIN` |
 

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
  * Challenger 1 Adversarial Empirical Verification Suite for Milestone 5 (WP-5)
  * Focus areas:
  * 1. GET /api/notifications returns 200 with { notifications: [...], unreadCount: N }
- *    matching caller's username or canonical ID (6421100042 vs "student", ADV-01 vs "advisor").
+ *    matching caller's username or canonical ID (6621100042 vs "student", ADV-01 vs "advisor").
  * 2. Unauthenticated calls to GET /api/notifications return HTTP 401.
  * 3. PATCH /api/notifications/{id}/read blocks cross-user read with HTTP 403 Forbidden.
  * 4. PATCH /api/notifications/{id}/read on non-existent ID returns HTTP 404 Not Found.
@@ -50,9 +50,9 @@ public class NotificationAdversarialChallengerTest {
     private ObjectMapper objectMapper;
 
     // Test Authentications
-    private Authentication studentCanonicalAuth; // "6421100042"
+    private Authentication studentCanonicalAuth; // "6621100042"
     private Authentication studentAliasAuth;     // "student"
-    private Authentication studentOtherAuth;     // "6421100099"
+    private Authentication studentOtherAuth;     // "6621100099"
     private Authentication advisorCanonicalAuth; // "ADV-01"
     private Authentication advisorAliasAuth;     // "advisor"
     private Authentication advisorOtherAuth;     // "ADV-02"
@@ -67,13 +67,13 @@ public class NotificationAdversarialChallengerTest {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
         studentCanonicalAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         studentAliasAuth = new UsernamePasswordAuthenticationToken(
                 "student", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         studentOtherAuth = new UsernamePasswordAuthenticationToken(
-                "6421100099", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100099", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         advisorCanonicalAuth = new UsernamePasswordAuthenticationToken(
                 "ADV-01", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADVISOR")));
@@ -97,22 +97,22 @@ public class NotificationAdversarialChallengerTest {
     }
 
     // =========================================================================
-    // FOCUS 1: Canonical ID & Alias Resolution (6421100042 <-> student, ADV-01 <-> advisor)
+    // FOCUS 1: Canonical ID & Alias Resolution (6621100042 <-> student, ADV-01 <-> advisor)
     // =========================================================================
 
     @Test
-    @DisplayName("Focus 1.1: Student alias 'student' resolves recipient keys containing 'student' and '6421100042'")
+    @DisplayName("Focus 1.1: Student alias 'student' resolves recipient keys containing 'student' and '6621100042'")
     void testAliasResolution_StudentAlias() {
         Set<String> keys = notificationService.resolveRecipientKeys(studentAliasAuth);
         assertTrue(keys.contains("student"), "Keys must contain alias 'student'");
-        assertTrue(keys.contains("6421100042"), "Keys must contain canonical student ID '6421100042'");
+        assertTrue(keys.contains("6621100042"), "Keys must contain canonical student ID '6621100042'");
     }
 
     @Test
-    @DisplayName("Focus 1.2: Student canonical '6421100042' resolves recipient keys containing '6421100042' and 'student'")
+    @DisplayName("Focus 1.2: Student canonical '6621100042' resolves recipient keys containing '6621100042' and 'student'")
     void testAliasResolution_StudentCanonical() {
         Set<String> keys = notificationService.resolveRecipientKeys(studentCanonicalAuth);
-        assertTrue(keys.contains("6421100042"), "Keys must contain canonical student ID '6421100042'");
+        assertTrue(keys.contains("6621100042"), "Keys must contain canonical student ID '6621100042'");
         assertTrue(keys.contains("student"), "Keys must contain alias 'student'");
     }
 
@@ -137,7 +137,7 @@ public class NotificationAdversarialChallengerTest {
     void testGetNotifications_Student_Returns200WithPayload() {
         Notification n = Notification.builder()
                 .id(1L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .title("ผลการลงทะเบียน")
                 .message("อนุมัติแล้ว")
                 .type("REGISTRATION")
@@ -158,7 +158,7 @@ public class NotificationAdversarialChallengerTest {
         NotificationListResponse payload = (NotificationListResponse) response.getBody();
         assertEquals(1, payload.getNotifications().size());
         assertEquals(1L, payload.getUnreadCount());
-        assertEquals("6421100042", payload.getNotifications().get(0).getRecipientUsername());
+        assertEquals("6621100042", payload.getNotifications().get(0).getRecipientUsername());
     }
 
     // =========================================================================
@@ -216,7 +216,7 @@ public class NotificationAdversarialChallengerTest {
     void testMarkAsRead_CrossStudent_Returns403() {
         Notification studentANotif = Notification.builder()
                 .id(201L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .title("คำร้อง")
                 .isRead(false)
                 .build();
@@ -235,7 +235,7 @@ public class NotificationAdversarialChallengerTest {
     void testMarkAsRead_AdvisorAttemptOnStudentNotif_Returns403() {
         Notification studentNotif = Notification.builder()
                 .id(202L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .title("คำร้อง")
                 .isRead(false)
                 .build();
@@ -343,7 +343,7 @@ public class NotificationAdversarialChallengerTest {
     void testMarkAsRead_Idempotent_DoesNotSaveTwice() {
         Notification alreadyRead = Notification.builder()
                 .id(301L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .isRead(true)
                 .build();
 
@@ -362,7 +362,7 @@ public class NotificationAdversarialChallengerTest {
     void testMarkAsRead_AdminBypassesOwnership() {
         Notification anyNotif = Notification.builder()
                 .id(302L)
-                .recipientUsername("6421100099")
+                .recipientUsername("6621100099")
                 .isRead(false)
                 .build();
 
@@ -389,7 +389,7 @@ public class NotificationAdversarialChallengerTest {
     void testNotification_JsonSerialization() throws Exception {
         Notification notif = Notification.builder()
                 .id(999L)
-                .recipientUsername("6421100042")
+                .recipientUsername("6621100042")
                 .title("หัวข้อ")
                 .message("ข้อความ")
                 .type("SYSTEM")
@@ -399,8 +399,8 @@ public class NotificationAdversarialChallengerTest {
                 .build();
 
         String json = objectMapper.writeValueAsString(notif);
-        assertTrue(json.contains("\"recipientUsername\":\"6421100042\""), "JSON must contain recipientUsername");
-        assertTrue(json.contains("\"recipientId\":\"6421100042\""), "JSON must contain recipientId alias");
+        assertTrue(json.contains("\"recipientUsername\":\"6621100042\""), "JSON must contain recipientUsername");
+        assertTrue(json.contains("\"recipientId\":\"6621100042\""), "JSON must contain recipientId alias");
         assertTrue(json.contains("\"isRead\":true"), "JSON must contain isRead boolean");
         assertTrue(json.contains("\"targetModule\":\"petitions\""), "JSON must contain targetModule");
     }

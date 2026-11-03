@@ -6,7 +6,7 @@ import { apiErrorText } from './shared.js';
    GRADUATION AUDIT SHEETS — one JSON per student, same format as
    src/main/resources/graduation/<studentId>.json (see README.md there)
    ============================================================ */
-const AUDIT_TEMPLATE_STUDENT = '6421100042';
+const AUDIT_TEMPLATE_STUDENT = '6621100042';
 
 function downloadJson(data, filename) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
