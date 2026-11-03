@@ -197,7 +197,7 @@
             <button class="hamburger" id="hamburgerBtn" aria-label="เปิดเมนู" onclick="window.toggleMobileSidebar(event)">
                 <span></span><span></span><span></span>
             </button>
-            <h2 class="topbar-title" id="topbarTitle">Dashboard</h2>
+            <div class="topbar-title" id="topbarTitle" aria-hidden="true">Dashboard</div>
             <div class="topbar-actions">
                 <!-- Notification Center Bell -->
                 <div class="notif-container" id="notifContainer">
@@ -249,35 +249,35 @@
             <!-- ======================== ADMIN MODULES ======================== -->
             <section class="module" id="mod-admin-dashboard" style="display:none;">
                 <div class="module-header">
-                    <h2>📊 แดชบอร์ดผู้ดูแลระบบ <span class="header-en">Admin Dashboard</span></h2>
+                    <h1>📊 แดชบอร์ดผู้ดูแลระบบ <span class="header-en">Admin Dashboard</span></h1>
                 </div>
                 <div id="adminDashboardContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-advisors" style="display:none;">
                 <div class="module-header">
-                    <h2>👩‍🏫 จัดการอาจารย์ที่ปรึกษา <span class="header-en">Manage Advisors</span></h2>
+                    <h1>👩‍🏫 จัดการอาจารย์ที่ปรึกษา <span class="header-en">Manage Advisors</span></h1>
                 </div>
                 <div id="manageAdvisorsContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-students" style="display:none;">
                 <div class="module-header">
-                    <h2>👨‍🎓 จัดการนักศึกษา <span class="header-en">Manage Students</span></h2>
+                    <h1>👨‍🎓 จัดการนักศึกษา <span class="header-en">Manage Students</span></h1>
                 </div>
                 <div id="manageStudentsContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-petitions" style="display:none;">
                 <div class="module-header">
-                    <h2>📑 รายการคำร้องวิชาการ <span class="header-en">Petition Logs</span></h2>
+                    <h1>📑 รายการคำร้องวิชาการ <span class="header-en">Petition Logs</span></h1>
                 </div>
                 <div id="managePetitionsContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-knowledge" style="display:none;">
                 <div class="module-header">
-                    <h2>🧠 จัดการคลังความรู้ AI (RAG) <span class="header-en">Knowledge Base Management</span></h2>
+                    <h1>🧠 จัดการคลังความรู้ AI (RAG) <span class="header-en">Knowledge Base Management</span></h1>
                 </div>
                 <div id="manageKnowledgeContent" class="module-body"></div>
             </section>
@@ -285,21 +285,21 @@
             <!-- ======================== ADVISOR MODULES ======================== -->
             <section class="module" id="mod-advisor-dashboard" style="display:none;">
                 <div class="module-header">
-                    <h2>📋 แดชบอร์ดอาจารย์ที่ปรึกษา <span class="header-en">Advisor Dashboard</span></h2>
+                    <h1>📋 แดชบอร์ดอาจารย์ที่ปรึกษา <span class="header-en">Advisor Dashboard</span></h1>
                 </div>
                 <div id="advisorDashboardContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-my-advisees" style="display:none;">
                 <div class="module-header">
-                    <h2>👥 นักศึกษาในที่ปรึกษา <span class="header-en">My Advisees</span></h2>
+                    <h1>👥 นักศึกษาในที่ปรึกษา <span class="header-en">My Advisees</span></h1>
                 </div>
                 <div id="myAdviseesContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-advisor-courses" style="display:none;">
                 <div class="module-header">
-                    <h2>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam Announcements</span></h2>
+                    <h1>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam Announcements</span></h1>
                 </div>
                 <div id="advisorCoursesContent" class="module-body"></div>
             </section>
@@ -307,49 +307,49 @@
             <!-- ======================== STUDENT MODULES ======================== -->
             <section class="module" id="mod-bibliography" style="display:none;">
                 <div class="module-header">
-                    <h2>📋 ประวัตินักศึกษา <span class="header-en">Bibliography</span></h2>
+                    <h1>📋 ประวัตินักศึกษา <span class="header-en">Student Profile</span></h1>
                 </div>
                 <div id="bibliographyContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-timetable" style="display:none;">
                 <div class="module-header">
-                    <h2>📅 ตารางเรียน/สอบ <span class="header-en">Study & Exams Timetable</span></h2>
+                    <h1>📅 ตารางเรียน/สอบ <span class="header-en">Study & Exams Timetable</span></h1>
                 </div>
                 <div id="timetableContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-finance" style="display:none;">
                 <div class="module-header">
-                    <h2>💰 การเงิน/ทุนการศึกษา <span class="header-en">Debt & Scholarship</span></h2>
+                    <h1>💰 การเงิน/ทุนการศึกษา <span class="header-en">Debt & Scholarship</span></h1>
                 </div>
                 <div id="financeContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-grades" style="display:none;">
                 <div class="module-header">
-                    <h2>📊 ผลการเรียน <span class="header-en">Studied Result</span></h2>
+                    <h1>📊 ผลการเรียน <span class="header-en">Studied Result</span></h1>
                 </div>
                 <div id="gradesContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-graduation" style="display:none;">
                 <div class="module-header">
-                    <h2>🎓 ตรวจสอบจบ <span class="header-en">Graduation Check</span></h2>
+                    <h1>🎓 ตรวจสอบจบ <span class="header-en">Graduation Check</span></h1>
                 </div>
                 <div id="graduationContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-activity" style="display:none;">
                 <div class="module-header">
-                    <h2>⚡ กิจกรรม <span class="header-en">Activity Check</span></h2>
+                    <h1>⚡ กิจกรรม <span class="header-en">Activity Check</span></h1>
                 </div>
                 <div id="activityContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-petitions" style="display:none;">
                 <div class="module-header">
-                    <h2>📝 ยื่นคำร้องวิชาการ <span class="header-en">Academic Petitions</span></h2>
+                    <h1>📝 ยื่นคำร้องวิชาการ <span class="header-en">Academic Petitions</span></h1>
                 </div>
                 <div id="petitionsContent" class="module-body"></div>
             </section>

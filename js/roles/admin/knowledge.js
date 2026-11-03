@@ -7,6 +7,13 @@ import { fetchAPI } from '../../api.js';
 // ================================================================
 let adminKnowledgeDocuments = [];
 
+/** Newest createdAt among the documents, as a Thai date ("4 พ.ย. 2569"), or "-" */
+function lastKnowledgeUpdate(docs) {
+    const times = docs.map(d => Date.parse(d.createdAt)).filter(Number.isFinite);
+    if (!times.length) return '-';
+    return new Date(Math.max(...times)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export async function renderKnowledgeManagement() {
     const container = document.getElementById('manageKnowledgeContent');
     if (!container) return;
@@ -32,10 +39,10 @@ export async function renderKnowledgeManagement() {
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon green">⚡</div>
+                <div class="stat-icon green">🕒</div>
                 <div>
-                    <div class="stat-value">PGVector + RAG</div>
-                    <div class="stat-label">สถานะระบบค้นหาเชิงความหมาย</div>
+                    <div class="stat-value" id="kbLastUpdated" style="font-size:1.1rem">${lastKnowledgeUpdate(adminKnowledgeDocuments)}</div>
+                    <div class="stat-label">อัปเดตคลังความรู้ล่าสุด</div>
                 </div>
             </div>
         </div>
@@ -205,6 +212,8 @@ function renderKnowledgeTableRows() {
     const totalChunks = adminKnowledgeDocuments.reduce((sum, d) => sum + (d.chunkCount || d.chunksCount || 1), 0);
     if (docCountEl) docCountEl.textContent = adminKnowledgeDocuments.length;
     if (chunkCountEl) chunkCountEl.textContent = totalChunks;
+    const updatedEl = document.getElementById('kbLastUpdated');
+    if (updatedEl) updatedEl.textContent = lastKnowledgeUpdate(adminKnowledgeDocuments);
 
     if (adminKnowledgeDocuments.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--text-muted);">ยังไม่มีเอกสารในคลังความรู้ AI คุณสามารถนำเข้าเอกสารฉบับแรกได้จากแบบฟอร์มด้านบน</td></tr>`;

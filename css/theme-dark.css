@@ -405,3 +405,22 @@
     color: #f87171 !important;
     background: rgba(239, 68, 68, 0.16) !important;
 }
+
+/* Login logo: the default artwork's blue lettering disappears on the dark card; use the light version */
+[data-theme="dark"] .login-logo img {
+    content: url("../assets/images/cs-bsru-logo-v2.png");
+}
+
+/* Native date/time picker icons are drawn dark; make them visible on dark inputs */
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.2);
+    opacity: 0.85;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    color-scheme: dark;
+}

@@ -143,6 +143,7 @@
 .legend-info {
     flex: 1;
     display: flex;
+    flex-wrap: wrap;   /* the count wraps under the label instead of being cut off */
     justify-content: space-between;
     align-items: center;
     gap: 8px;
@@ -153,7 +154,7 @@
     font-size: 0.84rem;
     font-weight: 600;
     color: var(--g-700);
-    white-space: nowrap;
+    min-width: 0;
 }
 
 .legend-value {

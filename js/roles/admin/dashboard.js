@@ -120,7 +120,7 @@ export function renderAdminDashboard() {
         </div>
         ${chipsHtml}
 
-        <div class="stat-row">
+        <div class="stat-row stat-row-5">
             <div class="stat-card">
                 <div class="stat-icon purple">👩‍🏫</div>
                 <div>
