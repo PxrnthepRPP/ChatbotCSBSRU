@@ -7,6 +7,7 @@
 
 import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
+import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot } from './components/chatbot.js';
 import { initThemeToggle } from './theme.js';
@@ -151,23 +152,22 @@ function initApp() {
         }, 300);
     });
 
-    // ── Role Hints Click Helper ──
-    document.querySelectorAll('.role-hint').forEach(hint => {
-        hint.style.cursor = 'pointer';
+    // A stale error stays wrong once the user edits either field
+    [loginUsername, document.getElementById('loginPassword')].forEach(input =>
+        input?.addEventListener('input', () => showLoginError('')));
+
+    // ── Demo-account shortcuts (dev profile only; the backend decides) ──
+    fetchAPI('/auth/config', 'GET', null, 5000)
+        .then(cfg => { if (cfg?.showDemoAccounts) document.getElementById('demoAccounts').hidden = false; })
+        .catch(() => { /* backend down or old version: keep the shortcuts hidden */ });
+
+    document.querySelectorAll('.role-hint[data-demo-user]').forEach(hint => {
         hint.addEventListener('click', () => {
-            const badge = hint.querySelector('.rh-badge');
-            if (!badge) return;
-            const text = badge.textContent.trim().toLowerCase();
-            if (text.includes('admin')) {
-                loginUsername.value = 'admin';
-            } else if (text.includes('advisor')) {
-                loginUsername.value = 'advisor';
-            } else {
-                loginUsername.value = 'student';
-            }
+            loginUsername.value = hint.dataset.demoUser;
             const passwordInput = document.getElementById('loginPassword');
             if (passwordInput) passwordInput.value = 'password';
-            loginUsername.focus();
+            showLoginError('');
+            document.getElementById('loginBtn')?.focus();
         });
     });
 

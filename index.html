@@ -92,14 +92,15 @@
                     <br>มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา
                 </p>
             </div>
-            <form id="loginForm" autocomplete="off">
+            <form id="loginForm">
                 <div class="form-group">
                     <label for="loginUsername">ชื่อผู้ใช้</label>
                     <div class="input-icon-wrap">
                         <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0H3z" />
                         </svg>
-                        <input type="text" id="loginUsername" placeholder="admin / advisor / student" required>
+                        <input type="text" id="loginUsername" name="username" autocomplete="username"
+                            placeholder="ชื่อผู้ใช้หรือรหัสนักศึกษา" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -110,18 +111,20 @@
                                 d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                                 clip-rule="evenodd" />
                         </svg>
-                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <input type="password" id="loginPassword" name="password" autocomplete="current-password"
+                            placeholder="••••••••" required>
                     </div>
                 </div>
 
-                <!-- Role hint cards -->
-                <div class="role-hints">
-                    <div class="role-hint"><span class="rh-badge rh-admin">ADMIN</span> พิมพ์ <code>admin</code></div>
-                    <div class="role-hint"><span class="rh-badge rh-advisor">ADVISOR</span> พิมพ์ <code>advisor</code>
+                <!-- Demo-account shortcuts: shown only when the backend says so (dev profile) -->
+                <div id="demoAccounts" hidden>
+                    <div class="role-hints" role="group" aria-label="บัญชีทดลอง">
+                        <button type="button" class="role-hint" data-demo-user="admin"><span class="rh-badge rh-admin">ADMIN</span> <code>admin</code></button>
+                        <button type="button" class="role-hint" data-demo-user="advisor"><span class="rh-badge rh-advisor">ADVISOR</span> <code>advisor</code></button>
+                        <button type="button" class="role-hint" data-demo-user="student"><span class="rh-badge rh-student">STUDENT</span> <code>student</code></button>
                     </div>
-                    <div class="role-hint"><span class="rh-badge rh-student">STUDENT</span> พิมพ์ <code>student</code> หรือรหัสนักศึกษา</div>
+                    <p class="role-hint-note" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">บัญชีทดลองสำหรับโหมดพัฒนา: กดที่ป้ายเพื่อกรอกให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
                 </div>
-                <p class="role-hint-note" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">กดที่ป้ายเพื่อกรอกบัญชีทดลองให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
 
                 <button type="submit" class="login-btn" id="loginBtn">
                     <span>เข้าสู่ระบบ</span>
