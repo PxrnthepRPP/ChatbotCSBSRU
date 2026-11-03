@@ -9,7 +9,7 @@ import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
 import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
-import { initChatbot } from './components/chatbot.js';
+import { initChatbot, resetChatSession } from './components/chatbot.js';
 import { initThemeToggle } from './theme.js';
 import { initModalA11y } from './components/modalA11y.js';
 import { openChangePasswordModal } from './components/password.js';
@@ -100,7 +100,7 @@ function initApp() {
         openChangePasswordModal({
             forced: true,
             onChanged: () => setState({ user: { ...getState().user, mustChangePassword: false } }),
-            onLogout: () => { logout(); window.location.reload(); },
+            onLogout: async () => { await resetChatSession(); logout(); window.location.reload(); },
         });
     }
 
@@ -141,6 +141,8 @@ function initApp() {
             if (loginBtn) loginBtn.disabled = false;
             return;
         }
+        // New login = new conversation (also clears what a closed tab or another device left behind)
+        await resetChatSession();
 
         const loginCard = document.getElementById('loginCard');
         if (loginCard) loginCard.style.animation = 'cardExit 0.4s ease forwards';
@@ -180,8 +182,10 @@ function initApp() {
     });
 
     // ── Logout ──
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
+        // Each login gets a fresh chat: drop this user's chat while the token is still valid
+        await resetChatSession();
         const state = getState();
         if (state.isImpersonating) exitImpersonation();
         clearNotifications();
