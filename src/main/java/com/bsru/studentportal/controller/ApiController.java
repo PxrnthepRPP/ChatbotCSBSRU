@@ -15,6 +15,7 @@ import com.bsru.studentportal.service.AcademicRecordService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -185,7 +186,7 @@ public class ApiController {
     @GetMapping("/petitions")
     public ResponseEntity<?> getAllPetitions(Authentication authentication) {
         if (CurrentUser.isAdmin(authentication)) {
-            return ResponseEntity.ok(petitionRepository.findAll());
+            return ResponseEntity.ok(petitionRepository.findAll(Sort.by(Sort.Direction.DESC, "submittedAt")));
         }
         Optional<String> advisorId = CurrentUser.advisorId(authentication);
         if (advisorId.isPresent()) {

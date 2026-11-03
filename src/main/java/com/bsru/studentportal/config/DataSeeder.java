@@ -239,12 +239,12 @@ public class DataSeeder implements CommandLineRunner {
 
     /** Fixed sample profile details (the web page used to make up a new birthday and phone on every visit) */
     private static final Map<String, String[]> SAMPLE_PROFILES = Map.of(
-            // studentId -> email, phone, birth date (ISO), religion, address
-            "6621100042", new String[]{"somchai.j@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
-            "6621100015", new String[]{"wiphada.k@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
-            "6721100088", new String[]{"kittisak.p@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
-            "6821100003", new String[]{"kanrawee.c@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
-            "6721100120", new String[]{"thanaphon.m@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
+            // studentId -> email (BSRU student mail is <id>@bsru.ac.th), phone, birth date (ISO), religion, address
+            "6621100042", new String[]{"6621100042@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
+            "6621100015", new String[]{"6621100015@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
+            "6721100088", new String[]{"6721100088@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
+            "6821100003", new String[]{"6821100003@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
+            "6721100120", new String[]{"6721100120@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
 
     /** Profile fields for students that do not have them yet (faculty, admission year, contact details) */
     private void fillProfileDefaults() {

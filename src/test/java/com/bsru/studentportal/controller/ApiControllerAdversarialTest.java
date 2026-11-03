@@ -774,7 +774,7 @@ class ApiControllerAdversarialTest {
     @Test
     @DisplayName("Challenge 5.3: Admin caller retrieves all petitions")
     void testGetAllPetitions_AdminCaller_SeesAllPetitions() {
-        when(petitionRepository.findAll()).thenReturn(List.of(new AcademicPetition(), new AcademicPetition()));
+        when(petitionRepository.findAll(any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(new AcademicPetition(), new AcademicPetition()));
 
         ResponseEntity<?> response = apiController.getAllPetitions(adminAuth);
 
@@ -782,7 +782,7 @@ class ApiControllerAdversarialTest {
         List<?> list = (List<?>) response.getBody();
         assertNotNull(list);
         assertEquals(2, list.size());
-        verify(petitionRepository).findAll();
+        verify(petitionRepository).findAll(any(org.springframework.data.domain.Sort.class));
     }
 
     @Test
