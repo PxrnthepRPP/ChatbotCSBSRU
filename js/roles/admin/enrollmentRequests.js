@@ -1,6 +1,6 @@
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
-import { apiErrorText } from './shared.js';
+import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 import { renderAdminSectionsCard } from './sections.js';
 
 /* ============================================================
@@ -9,13 +9,13 @@ import { renderAdminSectionsCard } from './sections.js';
    ============================================================ */
 const REQUEST_TIME = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-export async function renderEnrollmentRequestsCard() {
+export async function renderEnrollmentRequestsCard({ cached = false } = {}) {
     const container = document.getElementById('adminEnrollmentRequestsCard');
     if (!container) return;
 
     let requests;
     try {
-        requests = await fetchAPI('/enrollments/pending');
+        requests = await (cached ? fetchCached : fetchFresh)('/enrollments/pending');
     } catch (err) {
         container.innerHTML = '';
         return;

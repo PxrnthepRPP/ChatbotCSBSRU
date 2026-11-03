@@ -271,9 +271,9 @@ export function renderAdminDashboard() {
         }
     });
 
-    renderRegistrationCard();
-    renderEnrollmentRequestsCard();
-    renderAdminSectionsCard();
+    renderRegistrationCard({ cached: true });
+    renderEnrollmentRequestsCard({ cached: true });
+    renderAdminSectionsCard({ cached: true });
 }
 
 export function exportCareerStatisticsCsv(students) {

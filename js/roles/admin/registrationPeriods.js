@@ -1,6 +1,6 @@
 import { showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
-import { apiErrorText } from './shared.js';
+import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 
 /* ============================================================
    REGISTRATION PERIODS — when students may add/drop courses
@@ -9,13 +9,13 @@ import { apiErrorText } from './shared.js';
 /** "2026-10-05T08:00:00" -> "2026-10-05T08:00" for <input type="datetime-local"> */
 const toInputDateTime = (iso) => (iso || '').slice(0, 16);
 
-export async function renderRegistrationCard() {
+export async function renderRegistrationCard({ cached = false } = {}) {
     const container = document.getElementById('adminRegistrationCard');
     if (!container) return;
 
     let periods;
     try {
-        periods = await fetchAPI('/registration-periods');
+        periods = await (cached ? fetchCached : fetchFresh)('/registration-periods');
         if (!container.isConnected) return;
     } catch (err) {
         container.innerHTML = `<div class="card"><div class="card-title">🗓️ ช่วงลงทะเบียนเรียน</div><p style="color:var(--text-muted)">เชื่อมต่อ backend ไม่ได้ จึงยังจัดการช่วงลงทะเบียนไม่ได้</p></div>`;

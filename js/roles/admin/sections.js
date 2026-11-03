@@ -1,7 +1,7 @@
 import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
-import { apiErrorText } from './shared.js';
+import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 
 /* ============================================================
    CLASS SECTIONS — teachers request, admin approves.
@@ -23,13 +23,13 @@ export function sectionStatusBadge(section) {
 let adminSectionStatusFilter = null;  // null = choose automatically on first render
 let adminSectionTermFilter = 'all';
 
-export async function renderAdminSectionsCard() {
+export async function renderAdminSectionsCard({ cached = false } = {}) {
     const container = document.getElementById('adminSectionsCard');
     if (!container) return;
 
     let sections;
     try {
-        sections = await fetchAPI('/sections/mine');
+        sections = await (cached ? fetchCached : fetchFresh)('/sections/mine');
     } catch (err) {
         container.innerHTML = `<div class="card"><div class="card-title">📚 จัดการกลุ่มเรียน</div><p style="color:var(--text-muted)">เชื่อมต่อ backend ไม่ได้ จึงยังจัดการกลุ่มเรียนไม่ได้</p></div>`;
         return;
