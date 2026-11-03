@@ -349,6 +349,52 @@ export function renderManageStudents() {
     });
 }
 
+/* ── Student form validation: one inline message per field, same limits as StudentAdminService ── */
+const YEAR_MIN = 1;
+const YEAR_MAX = 8;
+
+const fieldError = id => `<div class="app-field-error" id="${id}Err" role="alert"></div>`;
+
+function setFieldError(id, message) {
+    const input = document.getElementById(id);
+    const box = document.getElementById(`${id}Err`);
+    if (!input || !box) return;
+    input.classList.toggle('is-invalid', !!message);
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (message) input.setAttribute('aria-describedby', box.id); else input.removeAttribute('aria-describedby');
+    box.textContent = message || '';
+    box.classList.toggle('visible', !!message);
+}
+
+/** Checks every field, marks the wrong ones and focuses the first; true when the form can be sent */
+function validateStudentForm(mode) {
+    const val = id => document.getElementById(id)?.value.trim() ?? '';
+    const errors = {};
+    if (mode !== 'edit') {
+        if (!val('mfSid')) errors.mfSid = 'กรุณากรอกรหัสนักศึกษา';
+        else if (!/^\d{10}$/.test(val('mfSid'))) errors.mfSid = 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก';
+    }
+    if (!val('mfSnameTh')) errors.mfSnameTh = 'กรุณากรอกชื่อ-สกุล (ไทย)';
+    else if (!/^[฀-๿\s.]+$/.test(val('mfSnameTh'))) errors.mfSnameTh = 'ใช้ตัวอักษรภาษาไทยเท่านั้น';
+    if (val('mfSnameEn') && !/^[A-Za-z\s.]+$/.test(val('mfSnameEn'))) errors.mfSnameEn = 'ใช้ตัวอักษรภาษาอังกฤษเท่านั้น';
+    const year = Number(val('mfSyear'));
+    if (!Number.isInteger(year) || year < YEAR_MIN || year > YEAR_MAX) errors.mfSyear = `ชั้นปีต้องอยู่ระหว่าง ${YEAR_MIN}–${YEAR_MAX}`;
+    const gpa = Number(val('mfSgpa'));
+    if (val('mfSgpa') === '' || Number.isNaN(gpa) || gpa < 0 || gpa > 4) errors.mfSgpa = 'GPA ต้องอยู่ระหว่าง 0.00–4.00';
+
+    ['mfSid', 'mfSnameTh', 'mfSnameEn', 'mfSyear', 'mfSgpa'].forEach(id => setFieldError(id, errors[id]));
+    const first = Object.keys(errors)[0];
+    if (first) document.getElementById(first)?.focus();
+    return !first;
+}
+
+/** Put a backend validation message under the field it is about (it is still shown as a toast too) */
+function showServerFieldError(message) {
+    const map = [[/รหัสนักศึกษา/, 'mfSid'], [/ภาษาไทย|\(ไทย\)/, 'mfSnameTh'], [/English|Eng/, 'mfSnameEn'], [/ชั้นปี/, 'mfSyear'], [/GPA/, 'mfSgpa']];
+    const hit = map.find(([re]) => re.test(message));
+    if (hit) { setFieldError(hit[1], message); document.getElementById(hit[1])?.focus(); }
+}
+
 function openStudentModal(mode, idx) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -379,11 +425,12 @@ function openStudentModal(mode, idx) {
 
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขนักศึกษา' : 'เพิ่มนักศึกษาใหม่';
     modalBody.innerHTML = `
-        <div class="modal-field"><label>รหัสนักศึกษา</label><input id="mfSid" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (ไทย)</label><input id="mfSnameTh" value="${esc(s.nameTh || '')}"></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}"></div>
-        <div class="modal-field"><label>ชั้นปี</label><input id="mfSyear" type="number" min="1" max="6" value="${s.year || 1}"></div>
-        <div class="modal-field"><label>GPA</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}"></div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px"><span class="req" style="color:var(--red-500);font-weight:700">*</span> ช่องที่ต้องกรอก</p>
+        <div class="modal-field"><label for="mfSid">รหัสนักศึกษา <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSid" inputmode="numeric" maxlength="10" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : 'required'}>${fieldError('mfSid')}</div>
+        <div class="modal-field"><label for="mfSnameTh">ชื่อ-สกุล (ไทย) <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSnameTh" required value="${esc(s.nameTh || '')}">${fieldError('mfSnameTh')}</div>
+        <div class="modal-field"><label for="mfSnameEn">ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}">${fieldError('mfSnameEn')}</div>
+        <div class="modal-field"><label for="mfSyear">ชั้นปี (${YEAR_MIN}–${YEAR_MAX})</label><input id="mfSyear" type="number" min="${YEAR_MIN}" max="${YEAR_MAX}" value="${s.year || 1}">${fieldError('mfSyear')}</div>
+        <div class="modal-field"><label for="mfSgpa">GPA (0.00–4.00)</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}">${fieldError('mfSgpa')}</div>
         <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
         <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
         ${studentsFromDb ? `<div class="modal-field"><label>Sec</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
@@ -457,7 +504,7 @@ function openStudentModal(mode, idx) {
             companyName: document.getElementById('mfScompany').value.trim() || undefined,
             salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
-        if (!data.studentId || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
+        if (!validateStudentForm(mode)) return;
 
         if (studentsFromDb) {
             const body = {
@@ -484,6 +531,7 @@ function openStudentModal(mode, idx) {
                 else { MOCK_STUDENTS_POOL.push(toPoolStudent(saved)); }
             } catch (err) {
                 showToast('error', esc(apiErrorText(err)));
+                showServerFieldError(apiErrorText(err));
                 return;
             }
         } else {
