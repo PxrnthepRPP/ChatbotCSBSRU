@@ -94,13 +94,13 @@ export function renderManageStudents() {
             <td><span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="btn btn-sm btn-orange admin-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
+                    <button class="btn btn-sm btn-primary admin-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}" title="เข้าดูระบบในมุมมองของนักศึกษาคนนี้">👁 เข้าใช้แทน</button>
                     ${s.studentSection && !s.simulated ? `
                     <button class="btn btn-sm btn-ghost audit-dl-btn" data-sid="${esc(s.studentId)}" title="ดาวน์โหลดใบตรวจสอบจบ (ใช้เป็นแม่แบบได้)">⬇ ใบตรวจจบ</button>
                     <button class="btn btn-sm btn-ghost audit-ul-btn" data-sid="${esc(s.studentId)}" title="อัปโหลดใบตรวจสอบจบ (.json)">⬆ อัปโหลด</button>
                     <button class="btn btn-sm btn-ghost reset-pw-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="รีเซ็ตรหัสผ่านเป็นรหัสนักศึกษา">🔑 รีเซ็ตรหัส</button>` : ''}
                     <button class="btn btn-sm btn-warning edit-student-btn" data-idx="${realIdx}">แก้ไข</button>
-                    <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}">ลบ</button>
+                    <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}" style="margin-left:12px" title="ลบนักศึกษา">ลบ</button>
                 </div>
             </td>
         </tr>`;
@@ -322,17 +322,23 @@ export function renderManageStudents() {
         renderAdminDashboard();
         showToast('success', esc(`ลบ ${st.nameTh} แล้ว`));
     }));
-    document.querySelectorAll('.student-sec-select').forEach(sel => sel.addEventListener('change', async () => {
-        const student = MOCK_STUDENTS_POOL.find(s => s.studentId === sel.dataset.sid);
+    // Saved on change (no extra click), so every move can be undone from the toast
+    const moveSection = async (sel, sid, to, { undo = false } = {}) => {
+        const student = MOCK_STUDENTS_POOL.find(s => s.studentId === sid);
+        const from = student?.studentSection;
         try {
-            await fetchAPI(`/students/${encodeURIComponent(sel.dataset.sid)}/section`, 'PUT', { studentSection: sel.value }, 8000);
-            if (student) student.studentSection = sel.value;
-            showToast('success', esc(`ย้าย ${sel.dataset.sid} ไป Sec ${sel.value} แล้ว`));
+            await fetchAPI(`/students/${encodeURIComponent(sid)}/section`, 'PUT', { studentSection: to }, 8000);
+            if (student) student.studentSection = to;
+            if (sel?.isConnected) sel.value = to;
+            showToast('success', esc(undo ? `ย้าย ${sid} กลับไป Sec ${to} แล้ว` : `ย้าย ${sid} ไป Sec ${to} แล้ว`),
+                undo || !from ? undefined : { label: 'เลิกทำ', onClick: () => moveSection(sel, sid, from, { undo: true }) });
         } catch (err) {
-            if (student) sel.value = student.studentSection;
+            if (student && sel?.isConnected) sel.value = student.studentSection;
             showToast('error', esc(apiErrorText(err)));
         }
-    }));
+    };
+    document.querySelectorAll('.student-sec-select').forEach(sel =>
+        sel.addEventListener('change', () => moveSection(sel, sel.dataset.sid, sel.value)));
     bindGraduationAuditButtons();
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;

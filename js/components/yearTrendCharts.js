@@ -40,7 +40,7 @@ let _statusStackedChart = null;
  * Aggregate students into batch-level statistics.
  * @param {Array} students
  * @param {string[]} selectedBatches - batches to include (already filtered)
- * @returns {{ batch: string, yearBE: number, total: number, graduated: number, studying: number, onLeave: number, dismissed: number, avgGpa: number, employmentRate: number }[]}
+ * @returns {{ batch: string, yearBE: number, total: number, graduated: number, studying: number, onLeave: number, dismissed: number, avgGpa: number, employmentRate: number|null }[]}
  */
 export function aggregateByBatch(students, selectedBatches) {
     const batchMap = {};
@@ -67,7 +67,7 @@ export function aggregateByBatch(students, selectedBatches) {
             const gradWithCareer = batchStudents.filter(s => s.status === 'จบการศึกษา' && s.careerPath && s.careerPath !== 'ว่างงาน').length;
             const employmentRate = graduated > 0
                 ? parseFloat(((gradWithCareer / graduated) * 100).toFixed(1))
-                : 0;
+                : null;   // no graduates yet: no rate (a 0% point would read as "nobody found work")
 
             return {
                 batch,
@@ -116,7 +116,7 @@ export function renderGpaTrendChart(containerId, students, selectedBatches) {
         <div class="trend-chart-card">
             <div class="trend-chart-header">
                 <div class="trend-chart-title"><span class="trend-chart-icon">📈</span> แนวโน้ม GPA เฉลี่ยและอัตราได้งาน</div>
-                <div class="trend-chart-subtitle">GPA Trend & Employment Rate by Batch (${batchData.length} รุ่น)</div>
+                <div class="trend-chart-subtitle">GPA Trend & Employment Rate by Batch (${batchData.length} รุ่น)${batchData.some(d => d.employmentRate === null) ? ' · เส้นอัตราได้งานเว้นช่วงรุ่นที่ยังไม่มีบัณฑิต' : ''}</div>
             </div>
             <div class="trend-chart-body">
                 <canvas id="gpaTrendCanvas"></canvas>

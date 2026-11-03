@@ -98,7 +98,8 @@ export function debounce(func, delay) {
  * @param {'success'|'error'|'info'} type 
  * @param {string} message 
  */
-export function showToast(type, message) {
+/** @param {{label: string, onClick: () => void}} [action] optional button in the toast, e.g. undo */
+export function showToast(type, message, action) {
     const existing = document.querySelector('.petition-toast');
     if (existing) existing.remove();
 
@@ -131,7 +132,22 @@ export function showToast(type, message) {
             toast.classList.remove('visible');
             setTimeout(() => toast.remove(), 300);
         }
-    }, 4500);
+    }, action ? 8000 : 4500);   // an undo needs time to be noticed
+
+    if (action) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'petition-toast-action';
+        btn.textContent = action.label;
+        btn.style.cssText = 'margin-left:8px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer';
+        btn.addEventListener('click', () => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 300);
+            action.onClick();
+        });
+        toast.querySelector('.petition-toast-close').before(btn);
+    }
+    return toast;
 }
 
 export { fetchAPI, uploadFileAPI, viewPdfAttachmentAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';

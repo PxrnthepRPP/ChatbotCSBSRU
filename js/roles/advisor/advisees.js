@@ -52,7 +52,7 @@ export function renderMyAdvisees() {
             </div>
             <span class="badge ${statusBadge(s.status)}">${esc(s.status)}</span>
             <div class="advisee-actions">
-                <button class="btn btn-sm btn-orange adv-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}">จำลอง</button>
+                <button class="btn btn-sm btn-primary adv-imp-btn" data-sid="${s.studentId}" data-sname="${esc(s.nameTh)}" title="เข้าดูระบบในมุมมองของนักศึกษาคนนี้">👁 เข้าใช้แทน</button>
                 ${s.risk
                     ? `<button class="btn btn-sm btn-ghost adv-history-btn" data-sid="${esc(s.studentId)}">ดูประวัติ</button>
                        <button class="btn btn-sm btn-ghost adv-ai-one-btn" data-sid="${esc(s.studentId)}" title="ให้ AI วิเคราะห์ความเสี่ยงรายบุคคล">🤖 วิเคราะห์ความเสี่ยง</button>
