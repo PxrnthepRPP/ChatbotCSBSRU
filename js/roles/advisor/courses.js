@@ -330,7 +330,7 @@ function sectionsCardHtml(sections) {
                     <button type="button" class="btn btn-sm btn-ghost" id="advCloseSectionFormBtn" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                 </div>
                 <div class="app-form-grid app-form-grid-3col">
-                    ${field('ปีการศึกษา <span class="req">*</span>', '<input type="number" id="advSecYear" class="app-input" placeholder="เช่น 2565">')}
+                    ${field('ปีการศึกษา <span class="req">*</span>', '<input type="number" id="advSecYear" class="app-input" placeholder="เช่น 2569">')}
                     ${field('ภาคเรียน <span class="req">*</span>', '<select id="advSecTerm" class="app-select"><option value="1">1</option><option value="2">2</option><option value="3">ฤดูร้อน</option></select>')}
                     ${field('รหัสวิชา <span class="req">*</span>', '<input type="text" id="advSecCode" class="app-input" placeholder="เช่น CS3101">')}
                     ${field('ชื่อวิชา <span class="req">*</span>', '<input type="text" id="advSecName" class="app-input" placeholder="เช่น ปัญญาประดิษฐ์">')}

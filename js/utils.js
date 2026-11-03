@@ -50,6 +50,24 @@ export function petitionStatus(s) {
     return LEGACY_PETITION_STATUS[v.toUpperCase()] || v;
 }
 
+/** Academic year in B.E.; a new academic year starts in June (same rule as the backend DataSeeder) */
+export function currentAcademicYearBE(today = new Date()) {
+    return today.getFullYear() + 543 - (today.getMonth() < 5 ? 1 : 0);
+}
+
+/** B.E. admission year from the 2-digit batch prefix of a student ID ("6621100042" → 2566) */
+export function admissionYearFromId(studentId) {
+    const batch = parseInt(String(studentId || '').slice(0, 2), 10);
+    return Number.isFinite(batch) ? 2500 + batch : null;
+}
+
+/** Year level 1–8 for a student still enrolled, derived from the ID */
+export function yearLevelFromId(studentId, fallback = 1) {
+    const admitted = admissionYearFromId(studentId);
+    if (!admitted) return fallback;
+    return Math.max(1, Math.min(8, currentAcademicYearBE() - admitted + 1));
+}
+
 export function getBatch(studentId) {
     return studentId ? studentId.substring(0, 2) : ''; 
 }

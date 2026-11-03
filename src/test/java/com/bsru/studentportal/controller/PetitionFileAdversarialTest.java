@@ -55,7 +55,7 @@ class PetitionFileAdversarialTest {
     @BeforeEach
     void setUp() {
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         advisorAuth = new UsernamePasswordAuthenticationToken(
                 "ADV-01", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADVISOR")));
@@ -63,7 +63,7 @@ class PetitionFileAdversarialTest {
         advisor1 = new Advisor("ADV-01", "ผศ.ดร.สมชาย", "Somchai", "somchai@bsru.ac.th", "0812345678", "CS");
 
         student1 = new Student();
-        student1.setStudentId("6421100042");
+        student1.setStudentId("6621100042");
         student1.setNameTh("สมหมาย ปรีชา");
         student1.setAdvisor(advisor1);
 

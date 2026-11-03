@@ -115,7 +115,7 @@ function openAddSimulatedModal() {
     const field = (label, input) => `<div class="modal-field"><label>${label}</label>${input}</div>`;
     const overlay = showAdvisorModal('เพิ่มนักศึกษาจำลอง', `
         <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">ข้อมูลจำลองใช้แสดงในแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน · จะอยู่ในความดูแลของคุณ</p>
-        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6721100001">')}
+        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6921100001">')}
         ${field('ชื่อ-สกุล (ไทย)', '<input id="simNameTh" placeholder="เช่น นายทดลอง ใจดี">')}
         ${field('ชื่อ-สกุล (English)', '<input id="simNameEn" placeholder="e.g. Mr. Tadlong Jaidee">')}
         ${field('ชั้นปี', '<input id="simYear" type="number" min="1" max="8" value="1">')}

@@ -139,12 +139,12 @@ try {
         defineFiltered: false,
         defineFilteredStudents: false,
         mockPoolVal: [
-            { studentId: '6421100001', nameTh: 'นายเอ', gpa: 3.50, year: 2 }
+            { studentId: '6621100001', nameTh: 'นายเอ', gpa: 3.50, year: 2 }
         ]
     });
     assert(res.exportListLength === 1, 'Case 2.1: Fallback uses MOCK_STUDENTS_POOL when both filtered variables are undefined');
     assert(res.fullWithBom.startsWith('\uFEFFstudentId,nameTh'), 'Case 2.1: CSV starts with UTF-8 BOM');
-    assert(res.csv.includes('6421100001,"นายเอ"'), 'Case 2.1: Contains formatted student record');
+    assert(res.csv.includes('6621100001,"นายเอ"'), 'Case 2.1: Contains formatted student record');
 } catch (e) {
     assert(false, 'Case 2.1 threw exception', e.message);
 }
@@ -156,11 +156,11 @@ try {
         filteredVal: null,
         defineFilteredStudents: false,
         mockPoolVal: [
-            { studentId: '6421100002', nameTh: 'นายบี', gpa: 2.75 }
+            { studentId: '6621100002', nameTh: 'นายบี', gpa: 2.75 }
         ]
     });
     assert(res.exportListLength === 1, 'Case 2.2: Fallback handles null filtered gracefully');
-    assert(res.csv.includes('6421100002,"นายบี"'), 'Case 2.2: Contains record from pool');
+    assert(res.csv.includes('6621100002,"นายบี"'), 'Case 2.2: Contains record from pool');
 } catch (e) {
     assert(false, 'Case 2.2 threw exception', e.message);
 }
@@ -172,11 +172,11 @@ try {
         filteredVal: [],
         defineFilteredStudents: false,
         mockPoolVal: [
-            { studentId: '6421100003', nameTh: 'นายซี', gpa: 3.00 }
+            { studentId: '6621100003', nameTh: 'นายซี', gpa: 3.00 }
         ]
     });
     assert(res.exportListLength === 1, 'Case 2.3: Empty filtered array falls back to MOCK_STUDENTS_POOL');
-    assert(res.csv.includes('6421100003,"นายซี"'), 'Case 2.3: Record preserved from pool');
+    assert(res.csv.includes('6621100003,"นายซี"'), 'Case 2.3: Record preserved from pool');
 } catch (e) {
     assert(false, 'Case 2.3 threw exception', e.message);
 }
@@ -186,16 +186,16 @@ try {
     const res = simulateClientFallback({
         defineFiltered: true,
         filteredVal: [
-            { studentId: '6421109999', nameTh: 'ตัวกรองเลือกมา', gpa: 4.00 }
+            { studentId: '6621109999', nameTh: 'ตัวกรองเลือกมา', gpa: 4.00 }
         ],
         defineFilteredStudents: false,
         mockPoolVal: [
-            { studentId: '6421100001', nameTh: 'ตัวในพูล' }
+            { studentId: '6621100001', nameTh: 'ตัวในพูล' }
         ]
     });
     assert(res.exportListLength === 1, 'Case 2.4: Filled filtered array takes precedence');
-    assert(res.csv.includes('6421109999'), 'Case 2.4: Contains filtered record');
-    assert(!res.csv.includes('6421100001'), 'Case 2.4: Does not contain pool record when filtered is active');
+    assert(res.csv.includes('6621109999'), 'Case 2.4: Contains filtered record');
+    assert(!res.csv.includes('6621100001'), 'Case 2.4: Does not contain pool record when filtered is active');
 } catch (e) {
     assert(false, 'Case 2.4 threw exception', e.message);
 }
@@ -206,14 +206,14 @@ try {
         defineFiltered: false,
         defineFilteredStudents: true,
         filteredStudentsVal: [
-            { studentId: '6421107777', nameTh: 'นักศึกษาจากแดชบอร์ด', gpa: 3.25 }
+            { studentId: '6621107777', nameTh: 'นักศึกษาจากแดชบอร์ด', gpa: 3.25 }
         ],
         mockPoolVal: [
-            { studentId: '6421100001', nameTh: 'ตัวในพูล' }
+            { studentId: '6621100001', nameTh: 'ตัวในพูล' }
         ]
     });
     assert(res.exportListLength === 1, 'Case 2.5: filteredStudents used when filtered is undefined');
-    assert(res.csv.includes('6421107777'), 'Case 2.5: Contains filteredStudents record');
+    assert(res.csv.includes('6621107777'), 'Case 2.5: Contains filteredStudents record');
 } catch (e) {
     assert(false, 'Case 2.5 threw exception', e.message);
 }
@@ -254,7 +254,7 @@ console.log('\n--- 3. Quote Escaping & Thai Formatting Adversarial Tests ---');
 try {
     const dirtyRecords = [
         {
-            studentId: '6421100010',
+            studentId: '6621100010',
             nameTh: 'นาย "คำพูดสองชั้น" และ , เครื่องหมายจุลภาค',
             nameEn: 'Mr. "Double Quotes" and , Comma',
             email: 'test"quotes"@bsru.ac.th',
@@ -268,7 +268,7 @@ try {
             careerPath: 'AI/ML Engineer, "Data Scientist"'
         },
         {
-            studentId: '6421100020',
+            studentId: '6621100020',
             nameTh: 'นาย ข้อมูลว่างทุกอย่าง',
             nameEn: null,
             email: null,
@@ -297,7 +297,7 @@ try {
     assert(res.csv.includes('""Data Scientist""'), 'Career path quotes properly escaped');
 
     // Verify null field fallbacks
-    assert(res.csv.includes('6421100020@bsru.ac.th'), 'Null email falls back to {studentId}@bsru.ac.th');
+    assert(res.csv.includes('6621100020@bsru.ac.th'), 'Null email falls back to {studentId}@bsru.ac.th');
     assert(res.csv.includes('คณะวิทยาศาสตร์และเทคโนโลยี'), 'Null faculty falls back to default faculty');
     assert(res.csv.includes('สาขาวิทยาการคอมพิวเตอร์'), 'Null department falls back to default department');
     assert(res.csv.includes(',1,'), 'Null year falls back to 1');
@@ -343,16 +343,16 @@ function parseCsvLine(line) {
 }
 
 // 4.1 Comma inside quotes
-const parsed1 = parseCsvLine('6421100001,"นายวิทยาการ, คอมพิวเตอร์",Somchai,test@bsru.ac.th');
+const parsed1 = parseCsvLine('6621100001,"นายวิทยาการ, คอมพิวเตอร์",Somchai,test@bsru.ac.th');
 assert(parsed1.length === 4, 'Comma inside double quotes is not treated as column delimiter');
 assert(parsed1[1] === 'นายวิทยาการ, คอมพิวเตอร์', 'Parsed value correctly retains internal comma without surrounding quotes');
 
 // 4.2 Escaped double quote inside quotes
-const parsed2 = parseCsvLine('6421100002,"นายมี ""ฉายา"" เท่",Somyot,test2@bsru.ac.th');
+const parsed2 = parseCsvLine('6621100002,"นายมี ""ฉายา"" เท่",Somyot,test2@bsru.ac.th');
 assert(parsed2[1] === 'นายมี "ฉายา" เท่', 'Escaped quotes ("") correctly resolve to single quote (")');
 
 // 4.3 Empty and whitespace-only fields
-const parsed3 = parseCsvLine('6421100003,"",  ,0812345678');
+const parsed3 = parseCsvLine('6621100003,"",  ,0812345678');
 assert(parsed3.length === 4, 'Handles empty and space-only fields accurately');
 assert(parsed3[1] === '' && parsed3[2] === '', 'Empty quoted and unquoted whitespace both resolve to empty string');
 

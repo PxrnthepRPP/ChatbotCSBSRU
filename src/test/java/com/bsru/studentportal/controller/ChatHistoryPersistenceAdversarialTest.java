@@ -176,10 +176,10 @@ class ChatHistoryPersistenceAdversarialTest {
 
         // Setup test authentications
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "password", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "password", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         otherStudentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100099", "password", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100099", "password", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
     }
 
     // =========================================================================
@@ -203,8 +203,8 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals("user", userEntry.getRole());
         assertEquals("สวัสดีครับ มีคำถามเรื่องการยื่นคำร้อง", userEntry.getMessage());
         // logged-in: key comes from the JWT, the client-supplied sessionId is ignored
-        assertEquals("student:6421100042", userEntry.getSessionId());
-        assertEquals("student:6421100042", userEntry.getUserKey());
+        assertEquals("student:6621100042", userEntry.getSessionId());
+        assertEquals("student:6621100042", userEntry.getUserKey());
         assertNull(userEntry.getSources(), "User query must have null sources");
         assertNotNull(userEntry.getTimestamp());
 
@@ -213,8 +213,8 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals("bot", botEntry.getRole());
         assertNotNull(botEntry.getMessage());
         assertTrue(botEntry.getMessage().contains("คำร้องวิชาการ"), "Fallback message should contain relevant guidance");
-        assertEquals("student:6421100042", botEntry.getSessionId());
-        assertEquals("student:6421100042", botEntry.getUserKey());
+        assertEquals("student:6621100042", botEntry.getSessionId());
+        assertEquals("student:6621100042", botEntry.getUserKey());
         assertNotNull(botEntry.getTimestamp());
     }
 
@@ -246,7 +246,7 @@ class ChatHistoryPersistenceAdversarialTest {
         ChatHistoryEntry entry = ChatHistoryEntry.builder()
                 .id(42L)
                 .sessionId("sess-json-01")
-                .userKey("student:6421100042")
+                .userKey("student:6621100042")
                 .sender("USER")
                 .message("ทดสอบ JSON")
                 .sources("[\"doc1.pdf\"]")
@@ -305,12 +305,12 @@ class ChatHistoryPersistenceAdversarialTest {
         chatController.chat(reqB, otherStudentAuth);
 
         // User 1 asks for user 2's "session" -> still only sees their own history
-        ResponseEntity<?> respA = chatController.getChatHistory("session-beta", "student:6421100099", studentAuth);
+        ResponseEntity<?> respA = chatController.getChatHistory("session-beta", "student:6621100099", studentAuth);
         @SuppressWarnings("unchecked")
         List<ChatHistoryEntry> listA = (List<ChatHistoryEntry>) respA.getBody();
         assertNotNull(listA);
         assertEquals(2, listA.size(), "User A must see exactly their own 2 entries");
-        assertTrue(listA.stream().allMatch(e -> "student:6421100042".equals(e.getSessionId())));
+        assertTrue(listA.stream().allMatch(e -> "student:6621100042".equals(e.getSessionId())));
         assertTrue(listA.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ B")), "User A must not see User B messages");
 
         // User 2 retrieves their history
@@ -319,7 +319,7 @@ class ChatHistoryPersistenceAdversarialTest {
         List<ChatHistoryEntry> listB = (List<ChatHistoryEntry>) respB.getBody();
         assertNotNull(listB);
         assertEquals(2, listB.size(), "User B must see exactly their own 2 entries");
-        assertTrue(listB.stream().allMatch(e -> "student:6421100099".equals(e.getSessionId())));
+        assertTrue(listB.stream().allMatch(e -> "student:6621100099".equals(e.getSessionId())));
         assertTrue(listB.stream().noneMatch(e -> e.getMessage().contains("ผู้ใช้ A")), "User B must not see User A messages");
     }
 
@@ -344,7 +344,7 @@ class ChatHistoryPersistenceAdversarialTest {
         List<ChatHistoryEntry> list1 = (List<ChatHistoryEntry>) resp1.getBody();
         assertNotNull(list1);
         assertEquals(2, list1.size());
-        assertEquals("student:6421100042", list1.get(0).getUserKey());
+        assertEquals("student:6621100042", list1.get(0).getUserKey());
         assertTrue(list1.stream().noneMatch(e -> e.getMessage().contains("คนที่สอง")));
 
         // Student 2 retrieves history without query param
@@ -353,7 +353,7 @@ class ChatHistoryPersistenceAdversarialTest {
         List<ChatHistoryEntry> list2 = (List<ChatHistoryEntry>) resp2.getBody();
         assertNotNull(list2);
         assertEquals(2, list2.size());
-        assertEquals("student:6421100099", list2.get(0).getUserKey());
+        assertEquals("student:6621100099", list2.get(0).getUserKey());
         assertTrue(list2.stream().noneMatch(e -> e.getMessage().contains("คนที่หนึ่ง")));
     }
 
@@ -435,7 +435,7 @@ class ChatHistoryPersistenceAdversarialTest {
         chatController.chat(req2, studentAuth);
 
         assertEquals(4, inMemoryHistoryTable.size());
-        assertTrue(inMemoryChatMemory.containsKey("student:6421100042"));
+        assertTrue(inMemoryChatMemory.containsKey("student:6621100042"));
 
         // Execute clear request
         ResponseEntity<?> clearResp = chatController.clearChatHistory(sessionId, null, studentAuth);
@@ -449,7 +449,7 @@ class ChatHistoryPersistenceAdversarialTest {
         assertEquals(0, inMemoryHistoryTable.size(), "All records for session must be purged");
 
         // Verify LangChain4j ChatMemoryStore was cleared
-        assertFalse(inMemoryChatMemory.containsKey("student:6421100042"), "Chat memory for session must be purged");
+        assertFalse(inMemoryChatMemory.containsKey("student:6621100042"), "Chat memory for session must be purged");
 
         // Subsequent GET must return empty array
         ResponseEntity<?> getResp = chatController.getChatHistory(sessionId, null, studentAuth);

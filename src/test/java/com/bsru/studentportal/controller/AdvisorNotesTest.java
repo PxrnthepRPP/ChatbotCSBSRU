@@ -51,8 +51,8 @@ class AdvisorNotesTest {
     private Authentication studentAuth;
     private Authentication adminAuth;
 
-    private final String studentId = "6421100042";
-    private final String otherStudentId = "6421100099";
+    private final String studentId = "6621100042";
+    private final String otherStudentId = "6621100099";
     private final String advisorId = "ADV-01";
     private final String otherAdvisorId = "ADV-02";
 

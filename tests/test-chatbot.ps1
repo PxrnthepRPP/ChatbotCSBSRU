@@ -47,9 +47,9 @@ if ($Only.Count -gt 0) { $questions = $questions | Where-Object { $Only -contain
 
 try {
     $login = Invoke-RestMethod -Uri "$backendUrl/api/auth/login" -Method Post `
-        -ContentType "application/json" -Body '{"username":"6421100042","password":"password"}'
+        -ContentType "application/json" -Body '{"username":"6621100042","password":"password"}'
     $studentToken = $login.token
-    Write-Host "[OK] Logged in as student 6421100042" -ForegroundColor Green
+    Write-Host "[OK] Logged in as student 6621100042" -ForegroundColor Green
 } catch {
     Write-Host "[ERR] Cannot log in at $backendUrl - is the backend running? ($_)" -ForegroundColor Red
     exit 1

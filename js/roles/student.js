@@ -44,11 +44,11 @@ export const MOCK_FINANCE = {
     totalPaid: 75000, currentOwed: 18750,
     scholarship: 'ทุน กยศ. (กองทุนเงินให้กู้ยืมเพื่อการศึกษา)', scholarshipAmount: 40000,
     payments: [
-        { semester: '1/2565', amount: 18750, status: 'ชำระแล้ว', date: '15 มิ.ย. 2565', method: 'ธนาคารกรุงไทย' },
-        { semester: '2/2565', amount: 18750, status: 'ชำระแล้ว', date: '12 พ.ย. 2565', method: 'ธนาคารกรุงไทย' },
-        { semester: '1/2566', amount: 18750, status: 'ชำระแล้ว', date: '18 มิ.ย. 2566', method: 'พร้อมเพย์' },
-        { semester: '2/2566', amount: 18750, status: 'ชำระแล้ว', date: '14 พ.ย. 2566', method: 'พร้อมเพย์' },
-        { semester: '1/2567', amount: 18750, status: 'ค้างชำระ', date: '-', method: '-' },
+        { semester: '1/2567', amount: 18750, status: 'ชำระแล้ว', date: '15 มิ.ย. 2567', method: 'ธนาคารกรุงไทย' },
+        { semester: '2/2567', amount: 18750, status: 'ชำระแล้ว', date: '12 พ.ย. 2567', method: 'ธนาคารกรุงไทย' },
+        { semester: '1/2568', amount: 18750, status: 'ชำระแล้ว', date: '18 มิ.ย. 2568', method: 'พร้อมเพย์' },
+        { semester: '2/2568', amount: 18750, status: 'ชำระแล้ว', date: '14 พ.ย. 2568', method: 'พร้อมเพย์' },
+        { semester: '1/2569', amount: 18750, status: 'ค้างชำระ', date: '-', method: '-' },
     ],
 };
 

@@ -11,7 +11,7 @@ import { fetchAPI } from '../../api.js';
 export const MOCK_GRADES = {
     semesters: [
         {
-            label: 'Term 2/2566',
+            label: 'Term 1/2569',
             courses: [
                 { code: 'CS2301', name: 'ระบบฐานข้อมูล', credits: 3, grade: 'A', point: 4.0 },
                 { code: 'CS2302', name: 'การเขียนโปรแกรมเว็บ', credits: 3, grade: 'A', point: 4.0 },
@@ -22,7 +22,7 @@ export const MOCK_GRADES = {
             ],
         },
         {
-            label: 'Term 1/2566',
+            label: 'Term 2/2568',
             courses: [
                 { code: 'CS2101', name: 'โครงสร้างข้อมูล', credits: 3, grade: 'A', point: 4.0 },
                 { code: 'CS2102', name: 'การวิเคราะห์อัลกอริทึม', credits: 3, grade: 'B+', point: 3.5 },
@@ -33,7 +33,7 @@ export const MOCK_GRADES = {
             ],
         },
         {
-            label: 'Term 2/2565',
+            label: 'Term 2/2569',
             courses: [
                 { code: 'CS3101', name: 'ปัญญาประดิษฐ์', credits: 3, grade: '-', point: null },
                 { code: 'CS3102', name: 'วิศวกรรมซอฟต์แวร์', credits: 3, grade: '-', point: null },

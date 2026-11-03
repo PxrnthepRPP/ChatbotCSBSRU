@@ -69,15 +69,15 @@ public class DataSeeder implements CommandLineRunner {
             Advisor adv3 = new Advisor("ADV-03", "ศ.ดร.อนันต์ ยอดเยี่ยม", "Prof. Dr. Anan Yodyeam", "anan.y@bsru.ac.th", "083-456-7890", "สาขาวิทยาการคอมพิวเตอร์");
             List.of(adv1, adv2, adv3).forEach(advisorRepository::save);
 
-            Student s1 = createStudent("6421100042", "นายสมชาย ใจดี", "Mr. Somchai Jaidee", 3, 3.42, "กำลังศึกษา", "Software Engineer", "งานตรงสาย (IT & CS)", "Agoda", "30,000 - 45,000 บาท", adv1);
-            Student s2 = createStudent("6421100015", "นางสาววิภาดา แก้วใส", "Miss Wiphada Kaewsai", 3, 3.82, "กำลังศึกษา", "Data Scientist", "งานตรงสาย (IT & CS)", "SCB TechX", "30,000 - 45,000 บาท", adv2);
-            Student s3 = createStudent("6521100088", "นายกิตติศักดิ์ พรหมดี", "Mr. Kittisak Promdee", 2, 2.95, "กำลังศึกษา", "DevOps Engineer", "งานตรงสาย (IT & CS)", "KBTG", "30,000 - 45,000 บาท", adv1);
-            Student s4 = createStudent("6621100003", "นางสาวกานต์รวี เจริญผล", "Miss Kanrawee Charoenphol", 1, 3.60, "กำลังศึกษา", "AI & ML Specialist", "งานตรงสาย (IT & CS)", "LINE MAN Wongnai", "45,000 - 60,000 บาท", adv3);
+            Student s1 = createStudent("6621100042", "นายสมชาย ใจดี", "Mr. Somchai Jaidee", 3, 3.42, "กำลังศึกษา", "Software Engineer", "งานตรงสาย (IT & CS)", "Agoda", "30,000 - 45,000 บาท", adv1);
+            Student s2 = createStudent("6621100015", "นางสาววิภาดา แก้วใส", "Miss Wiphada Kaewsai", 3, 3.82, "กำลังศึกษา", "Data Scientist", "งานตรงสาย (IT & CS)", "SCB TechX", "30,000 - 45,000 บาท", adv2);
+            Student s3 = createStudent("6721100088", "นายกิตติศักดิ์ พรหมดี", "Mr. Kittisak Promdee", 2, 2.95, "กำลังศึกษา", "DevOps Engineer", "งานตรงสาย (IT & CS)", "KBTG", "30,000 - 45,000 บาท", adv1);
+            Student s4 = createStudent("6821100003", "นางสาวกานต์รวี เจริญผล", "Miss Kanrawee Charoenphol", 1, 3.60, "กำลังศึกษา", "AI & ML Specialist", "งานตรงสาย (IT & CS)", "LINE MAN Wongnai", "45,000 - 60,000 บาท", adv3);
             List.of(s1, s2, s3, s4).forEach(studentRepository::save);
 
-            AcademicPetition p1 = new AcademicPetition("PET-2567-001", "คำร้องขอเทียบโอน", "ขอเทียบโอนรายวิชา SC17351", "ขอเทียบโอนรายวิชาจากมหาวิทยาลัยเดิมเนื่องจากมีเนื้อหาครอบคลุม", "transcript_verified.pdf", LocalDateTime.now().minusDays(2), "อนุมัติ", "เอกสารครบถ้วน อนุมัติการเทียบโอน", s1);
-            AcademicPetition p2 = new AcademicPetition("PET-2567-002", "คำร้องขอเพิ่ม/ถอน", "ขอเพิ่มวิชา CS3103 ล่าช้า", "ขอเพิ่มวิชา CS3103 เนื่องจากระบบโควต้าเต็มในรอบปกติ", "course_add_request.pdf", LocalDateTime.now().minusHours(5), "รออาจารย์ที่ปรึกษาพิจารณา", null, s1);
-            AcademicPetition p3 = new AcademicPetition("PET-2567-003", "คำร้องทั่วไป", "ขอเปิดวิชา CS3301 กรณีพิเศษ", "ขอเปิดวิชา CS3301 Advance Computer Networks ภาคเรียนฤดูร้อน", "student_signatures.pdf", LocalDateTime.now().minusDays(5), "รอผู้ดูแลระบบอนุมัติ", "กำลังเสนอหัวหน้าสาขาพิจารณา", s2);
+            AcademicPetition p1 = new AcademicPetition("PET-2569-001", "คำร้องขอเทียบโอน", "ขอเทียบโอนรายวิชา SC17351", "ขอเทียบโอนรายวิชาจากมหาวิทยาลัยเดิมเนื่องจากมีเนื้อหาครอบคลุม", "transcript_verified.pdf", LocalDateTime.now().minusDays(2), "อนุมัติ", "เอกสารครบถ้วน อนุมัติการเทียบโอน", s1);
+            AcademicPetition p2 = new AcademicPetition("PET-2569-002", "คำร้องขอเพิ่ม/ถอน", "ขอเพิ่มวิชา CS3103 ล่าช้า", "ขอเพิ่มวิชา CS3103 เนื่องจากระบบโควต้าเต็มในรอบปกติ", "course_add_request.pdf", LocalDateTime.now().minusHours(5), "รออาจารย์ที่ปรึกษาพิจารณา", null, s1);
+            AcademicPetition p3 = new AcademicPetition("PET-2569-003", "คำร้องทั่วไป", "ขอเปิดวิชา CS3301 กรณีพิเศษ", "ขอเปิดวิชา CS3301 Advance Computer Networks ภาคเรียนฤดูร้อน", "student_signatures.pdf", LocalDateTime.now().minusDays(5), "รอผู้ดูแลระบบอนุมัติ", "กำลังเสนอหัวหน้าสาขาพิจารณา", s2);
             List.of(p1, p2, p3).forEach(petitionRepository::save);
 
             log.info("Database seeding completed successfully.");
@@ -131,39 +131,39 @@ public class DataSeeder implements CommandLineRunner {
         Advisor anan = advisorRepository.findById("ADV-03").orElse(null);
 
         List<ClassSection> enrolled = classSectionRepository.saveAll(List.of(
-                // 2/2566
-                section(2566, 2, "CS2301", "ระบบฐานข้อมูล", 3, "D1", 1, "09:00", "12:00", "CS-Lab2", somchai, 40),
-                section(2566, 2, "CS2302", "การเขียนโปรแกรมเว็บ", 3, "D1", 2, "09:00", "12:00", "CS-Lab3", suda, 40),
-                section(2566, 2, "CS2303", "ระบบจัดการฐานข้อมูล (Lab)", 1, "D1", 1, "13:00", "15:00", "CS-Lab2", somchai, 40),
-                section(2566, 2, "CS2401", "วิศวกรรมความต้องการ", 3, "D1", 3, "13:00", "16:00", "CS-205", anan, 45),
-                section(2566, 2, "MA2101", "สถิติสำหรับวิทยาการคอมพิวเตอร์", 3, "D1", 0, "13:00", "16:00", "SC-201", suda, 60),
-                section(2566, 2, "GE1301", "จิตวิทยาทั่วไป", 3, "D1", 4, "09:00", "12:00", "LA-301", null, 80),
-                // 1/2566
-                section(2566, 1, "CS2101", "โครงสร้างข้อมูล", 3, "D1", 0, "09:00", "12:00", "CS-301", anan, 45),
-                section(2566, 1, "CS2102", "การวิเคราะห์อัลกอริทึม", 3, "D1", 0, "13:00", "16:00", "CS-205", anan, 45),
-                section(2566, 1, "CS2201", "สถาปัตยกรรมคอมพิวเตอร์", 3, "D1", 1, "09:00", "12:00", "CS-Lab2", somchai, 40),
-                section(2566, 1, "CS2103", "ระบบปฏิบัติการ", 3, "D1", 3, "09:00", "12:00", "CS-Lab1", suda, 40),
-                section(2566, 1, "GE1201", "คณิตศาสตร์ดิสครีต", 3, "D1", 4, "09:00", "12:00", "SC-105", null, 60),
-                section(2566, 1, "GE1102", "ภาษาอังกฤษเพื่อการสื่อสาร", 3, "D1", 2, "13:00", "16:00", "LA-402", null, 50),
-                // 2/2565 (grades not released yet)
-                section(2565, 2, "CS3101", "ปัญญาประดิษฐ์", 3, "D1", 0, "09:00", "12:00", "CS-Lab1", anan, 40),
-                section(2565, 2, "CS3102", "วิศวกรรมซอฟต์แวร์", 3, "D1", 1, "13:00", "16:00", "CS-205", anan, 45),
-                section(2565, 2, "CS3201", "ระบบฐานข้อมูลขั้นสูง", 3, "D1", 2, "09:00", "12:00", "CS-Lab2", somchai, 40),
-                section(2565, 2, "CS3301", "เครือข่ายคอมพิวเตอร์", 3, "D1", 3, "09:00", "12:00", "CS-Lab3", suda, 40),
-                section(2565, 2, "CS3103", "การพัฒนาเว็บแอปพลิเคชัน", 3, "D1", 4, "13:00", "16:00", "CS-Lab3", suda, 40),
-                section(2565, 2, "GE2301", "ภาษาอังกฤษเชิงวิชาการ", 3, "D1", 4, "09:00", "12:00", "LA-402", null, 50)));
+                // 1/2569
+                section(2569, 1, "CS2301", "ระบบฐานข้อมูล", 3, "D1", 1, "09:00", "12:00", "CS-Lab2", somchai, 40),
+                section(2569, 1, "CS2302", "การเขียนโปรแกรมเว็บ", 3, "D1", 2, "09:00", "12:00", "CS-Lab3", suda, 40),
+                section(2569, 1, "CS2303", "ระบบจัดการฐานข้อมูล (Lab)", 1, "D1", 1, "13:00", "15:00", "CS-Lab2", somchai, 40),
+                section(2569, 1, "CS2401", "วิศวกรรมความต้องการ", 3, "D1", 3, "13:00", "16:00", "CS-205", anan, 45),
+                section(2569, 1, "MA2101", "สถิติสำหรับวิทยาการคอมพิวเตอร์", 3, "D1", 0, "13:00", "16:00", "SC-201", suda, 60),
+                section(2569, 1, "GE1301", "จิตวิทยาทั่วไป", 3, "D1", 4, "09:00", "12:00", "LA-301", null, 80),
+                // 2/2568
+                section(2568, 2, "CS2101", "โครงสร้างข้อมูล", 3, "D1", 0, "09:00", "12:00", "CS-301", anan, 45),
+                section(2568, 2, "CS2102", "การวิเคราะห์อัลกอริทึม", 3, "D1", 0, "13:00", "16:00", "CS-205", anan, 45),
+                section(2568, 2, "CS2201", "สถาปัตยกรรมคอมพิวเตอร์", 3, "D1", 1, "09:00", "12:00", "CS-Lab2", somchai, 40),
+                section(2568, 2, "CS2103", "ระบบปฏิบัติการ", 3, "D1", 3, "09:00", "12:00", "CS-Lab1", suda, 40),
+                section(2568, 2, "GE1201", "คณิตศาสตร์ดิสครีต", 3, "D1", 4, "09:00", "12:00", "SC-105", null, 60),
+                section(2568, 2, "GE1102", "ภาษาอังกฤษเพื่อการสื่อสาร", 3, "D1", 2, "13:00", "16:00", "LA-402", null, 50),
+                // 2/2569 (current term, grades not released yet)
+                section(2569, 2, "CS3101", "ปัญญาประดิษฐ์", 3, "D1", 0, "09:00", "12:00", "CS-Lab1", anan, 40),
+                section(2569, 2, "CS3102", "วิศวกรรมซอฟต์แวร์", 3, "D1", 1, "13:00", "16:00", "CS-205", anan, 45),
+                section(2569, 2, "CS3201", "ระบบฐานข้อมูลขั้นสูง", 3, "D1", 2, "09:00", "12:00", "CS-Lab2", somchai, 40),
+                section(2569, 2, "CS3301", "เครือข่ายคอมพิวเตอร์", 3, "D1", 3, "09:00", "12:00", "CS-Lab3", suda, 40),
+                section(2569, 2, "CS3103", "การพัฒนาเว็บแอปพลิเคชัน", 3, "D1", 4, "13:00", "16:00", "CS-Lab3", suda, 40),
+                section(2569, 2, "GE2301", "ภาษาอังกฤษเชิงวิชาการ", 3, "D1", 4, "09:00", "12:00", "LA-402", null, 50)));
         enrolled.forEach(sec -> sectionEnrollmentRepository.save(new SectionEnrollment(null, s, sec, LocalDateTime.now(),
                 SectionEnrollment.EnrollmentStatus.CONFIRMED, null)));
 
         // Open for students to add during registration; CS3402 section 1 clashes with CS3101 on purpose
         classSectionRepository.saveAll(List.of(
-                section(2565, 2, "CS3401", "การเรียนรู้ของเครื่อง", 3, "D1", 2, "13:00", "16:00", "CS-Lab1", anan, 40),
-                section(2565, 2, "CS3402", "การประมวลผลภาษาธรรมชาติ", 3, "D1", 0, "09:00", "12:00", "CS-301", somchai, 35),
-                section(2565, 2, "CS3402", "การประมวลผลภาษาธรรมชาติ", 3, "D2", 3, "13:00", "16:00", "CS-301", somchai, 35)));
+                section(2569, 2, "CS3401", "การเรียนรู้ของเครื่อง", 3, "D1", 2, "13:00", "16:00", "CS-Lab1", anan, 40),
+                section(2569, 2, "CS3402", "การประมวลผลภาษาธรรมชาติ", 3, "D1", 0, "09:00", "12:00", "CS-301", somchai, 35),
+                section(2569, 2, "CS3402", "การประมวลผลภาษาธรรมชาติ", 3, "D2", 3, "13:00", "16:00", "CS-301", somchai, 35)));
 
         // Closed until an admin opens it from the admin page
         RegistrationPeriod period = new RegistrationPeriod();
-        period.setAcademicYear(2565);
+        period.setAcademicYear(2569);
         period.setTerm(2);
         period.setOpensAt(LocalDateTime.now().minusDays(1).withHour(8).withMinute(0).withSecond(0).withNano(0));
         period.setClosesAt(LocalDateTime.now().plusDays(14).withHour(23).withMinute(59).withSecond(0).withNano(0));
@@ -182,30 +182,30 @@ public class DataSeeder implements CommandLineRunner {
     private void seedCourseGrades(Student s) {
         log.info("Seeding course grades for {}...", s.getStudentId());
         List<CourseGrade> grades = List.of(
-                grade(s, 2566, 2, "CS2301", "ระบบฐานข้อมูล", 3, "A", 4.0),
-                grade(s, 2566, 2, "CS2302", "การเขียนโปรแกรมเว็บ", 3, "A", 4.0),
-                grade(s, 2566, 2, "CS2303", "ระบบจัดการฐานข้อมูล (Lab)", 1, "A", 4.0),
-                grade(s, 2566, 2, "CS2401", "วิศวกรรมความต้องการ", 3, "B+", 3.5),
-                grade(s, 2566, 2, "MA2101", "สถิติสำหรับวิทยาการคอมพิวเตอร์", 3, "B", 3.0),
-                grade(s, 2566, 2, "GE1301", "จิตวิทยาทั่วไป", 3, "A", 4.0),
-                grade(s, 2566, 1, "CS2101", "โครงสร้างข้อมูล", 3, "A", 4.0),
-                grade(s, 2566, 1, "CS2102", "การวิเคราะห์อัลกอริทึม", 3, "B+", 3.5),
-                grade(s, 2566, 1, "CS2201", "สถาปัตยกรรมคอมพิวเตอร์", 3, "A", 4.0),
-                grade(s, 2566, 1, "CS2103", "ระบบปฏิบัติการ", 3, "B+", 3.5),
-                grade(s, 2566, 1, "GE1201", "คณิตศาสตร์ดิสครีต", 3, "B", 3.0),
-                grade(s, 2566, 1, "GE1102", "ภาษาอังกฤษเพื่อการสื่อสาร", 3, "A", 4.0),
+                grade(s, 2569, 1, "CS2301", "ระบบฐานข้อมูล", 3, "A", 4.0),
+                grade(s, 2569, 1, "CS2302", "การเขียนโปรแกรมเว็บ", 3, "A", 4.0),
+                grade(s, 2569, 1, "CS2303", "ระบบจัดการฐานข้อมูล (Lab)", 1, "A", 4.0),
+                grade(s, 2569, 1, "CS2401", "วิศวกรรมความต้องการ", 3, "B+", 3.5),
+                grade(s, 2569, 1, "MA2101", "สถิติสำหรับวิทยาการคอมพิวเตอร์", 3, "B", 3.0),
+                grade(s, 2569, 1, "GE1301", "จิตวิทยาทั่วไป", 3, "A", 4.0),
+                grade(s, 2568, 2, "CS2101", "โครงสร้างข้อมูล", 3, "A", 4.0),
+                grade(s, 2568, 2, "CS2102", "การวิเคราะห์อัลกอริทึม", 3, "B+", 3.5),
+                grade(s, 2568, 2, "CS2201", "สถาปัตยกรรมคอมพิวเตอร์", 3, "A", 4.0),
+                grade(s, 2568, 2, "CS2103", "ระบบปฏิบัติการ", 3, "B+", 3.5),
+                grade(s, 2568, 2, "GE1201", "คณิตศาสตร์ดิสครีต", 3, "B", 3.0),
+                grade(s, 2568, 2, "GE1102", "ภาษาอังกฤษเพื่อการสื่อสาร", 3, "A", 4.0),
                 // Results not released yet
-                grade(s, 2565, 2, "CS3101", "ปัญญาประดิษฐ์", 3, null, null),
-                grade(s, 2565, 2, "CS3102", "วิศวกรรมซอฟต์แวร์", 3, null, null),
-                grade(s, 2565, 2, "CS3201", "ระบบฐานข้อมูลขั้นสูง", 3, null, null),
-                grade(s, 2565, 2, "CS3301", "เครือข่ายคอมพิวเตอร์", 3, null, null),
-                grade(s, 2565, 2, "CS3103", "การพัฒนาเว็บแอปพลิเคชัน", 3, null, null),
-                grade(s, 2565, 2, "GE2301", "ภาษาอังกฤษเชิงวิชาการ", 3, null, null));
+                grade(s, 2569, 2, "CS3101", "ปัญญาประดิษฐ์", 3, null, null),
+                grade(s, 2569, 2, "CS3102", "วิศวกรรมซอฟต์แวร์", 3, null, null),
+                grade(s, 2569, 2, "CS3201", "ระบบฐานข้อมูลขั้นสูง", 3, null, null),
+                grade(s, 2569, 2, "CS3301", "เครือข่ายคอมพิวเตอร์", 3, null, null),
+                grade(s, 2569, 2, "CS3103", "การพัฒนาเว็บแอปพลิเคชัน", 3, null, null),
+                grade(s, 2569, 2, "GE2301", "ภาษาอังกฤษเชิงวิชาการ", 3, null, null));
         courseGradeRepository.saveAll(grades);
     }
 
     /**
-     * The old demo list (39 students in batches 61–66, 5 advisors) as simulated students: basic data only,
+     * The old demo list (39 students in batches 63–68, 5 advisors) as simulated students: basic data only,
      * no grades / audit / login. ADV001's students go to ADV-01, ADV002–005 become ADV-04..07.
      * Runs once (while ADV-04 does not exist), so simulated students an admin deleted do not come back.
      */
@@ -240,11 +240,11 @@ public class DataSeeder implements CommandLineRunner {
     /** Fixed sample profile details (the web page used to make up a new birthday and phone on every visit) */
     private static final Map<String, String[]> SAMPLE_PROFILES = Map.of(
             // studentId -> email, phone, birth date (ISO), religion, address
-            "6421100042", new String[]{"somchai.j@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
-            "6421100015", new String[]{"wiphada.k@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
-            "6521100088", new String[]{"kittisak.p@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
-            "6621100003", new String[]{"kanrawee.c@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
-            "6521100120", new String[]{"thanaphon.m@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
+            "6621100042", new String[]{"somchai.j@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
+            "6621100015", new String[]{"wiphada.k@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
+            "6721100088", new String[]{"kittisak.p@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
+            "6821100003", new String[]{"kanrawee.c@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
+            "6721100120", new String[]{"thanaphon.m@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
 
     /** Profile fields for students that do not have them yet (faculty, admission year, contact details) */
     private void fillProfileDefaults() {
@@ -269,10 +269,10 @@ public class DataSeeder implements CommandLineRunner {
     /**
      * Fictional sample advisee of ADV-01 whose grades are falling (F / D, GPA 1.38) and who registered a
      * heavy, clashing timetable, so the advisor risk check has a real case to show.
-     * Grades come from graduation/6521100120.json; created once.
+     * Grades come from graduation/6721100120.json; created once.
      */
     private void seedSampleAtRiskStudent() {
-        String id = "6521100120";
+        String id = "6721100120";
         if (studentRepository.existsById(id)) return;
         Advisor advisor = advisorRepository.findById(CurrentUser.DEMO_ADVISOR_ID).orElse(null);
         if (advisor == null) return;
@@ -280,7 +280,7 @@ public class DataSeeder implements CommandLineRunner {
                 null, null, null, null, advisor);
         studentRepository.save(s);
         List<String> heavyLoad = List.of("CS3101", "CS3402", "CS3102", "CS3201", "CS3301", "CS3103", "GE2301");
-        classSectionRepository.findByAcademicYearAndTermOrderByCourseCodeAscSectionNoAsc(2565, 2).stream()
+        classSectionRepository.findByAcademicYearAndTermOrderByCourseCodeAscSectionNoAsc(2569, 2).stream()
                 .filter(sec -> "D1".equals(sec.getSectionNo()) && heavyLoad.contains(sec.getCourseCode()))
                 .forEach(sec -> sectionEnrollmentRepository.save(new SectionEnrollment(null, s, sec, LocalDateTime.now(),
                         SectionEnrollment.EnrollmentStatus.CONFIRMED, null)));
@@ -344,7 +344,9 @@ public class DataSeeder implements CommandLineRunner {
         s.setStudentId(id);
         s.setNameTh(nameTh);
         s.setNameEn(nameEn);
-        s.setYear(year);
+        // Sample data must stay true as the calendar moves: a student still enrolled is in the year
+        // that follows from the batch in their ID (6621100042 → admitted 2566 → year 4 in 2569)
+        s.setYear("จบการศึกษา".equals(status) ? year : yearLevelFromId(id, year));
         s.setGpa(gpa);
         s.setStatus(status);
         s.setCareerPath(careerPath);
@@ -353,6 +355,19 @@ public class DataSeeder implements CommandLineRunner {
         s.setSalaryRange(salaryRange);
         s.setAdvisor(advisor);
         return s;
+    }
+
+    /** Academic year in B.E.; a new academic year starts in June */
+    static int currentAcademicYearBE(java.time.LocalDate today) {
+        return today.getYear() + 543 - (today.getMonthValue() < 6 ? 1 : 0);
+    }
+
+    /** Year level 1–8 from the 2-digit batch prefix of a student ID; falls back to the given year */
+    static Integer yearLevelFromId(String studentId, Integer fallback) {
+        if (studentId == null || !studentId.matches("\\d{2}.*")) return fallback;
+        int admitted = 2500 + Integer.parseInt(studentId.substring(0, 2));
+        int level = currentAcademicYearBE(java.time.LocalDate.now()) - admitted + 1;
+        return Math.max(1, Math.min(8, level));
     }
     /**
      * Sample Sec D2 for every course that only has D1. Each D2 keeps the D1 length, room, teacher and

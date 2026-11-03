@@ -65,7 +65,7 @@ class ChatControllerAdversarialTest {
         ReflectionTestUtils.setField(chatController, "geminiApiKey", "demo-api-key");
 
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042",
+                "6621100042",
                 "password",
                 List.of(new SimpleGrantedAuthority("ROLE_STUDENT"))
         );
@@ -372,13 +372,13 @@ class ChatControllerAdversarialTest {
     void testAnonymousChatCannotImpersonateStudentKey() {
         ChatRequest req = new ChatRequest();
         req.setMessage("สวัสดี");
-        req.setSessionId("student:6421100042");
+        req.setSessionId("student:6621100042");
 
         ChatResponse chatResponse = (ChatResponse) chatController.chat(req, null).getBody();
 
-        assertNotEquals("student:6421100042", chatResponse.getSessionId());
-        verify(chatMemoryStore, never()).updateMessages(eq("student:6421100042"), any());
-        verify(chatMemoryStore, never()).updateMessages(eq("guest:student:6421100042"), any());
+        assertNotEquals("student:6621100042", chatResponse.getSessionId());
+        verify(chatMemoryStore, never()).updateMessages(eq("student:6621100042"), any());
+        verify(chatMemoryStore, never()).updateMessages(eq("guest:student:6621100042"), any());
     }
 
     @Test
@@ -391,7 +391,7 @@ class ChatControllerAdversarialTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         ChatResponse chatResponse = (ChatResponse) response.getBody();
-        assertEquals("student:6421100042", chatResponse.getSessionId());
+        assertEquals("student:6621100042", chatResponse.getSessionId());
     }
 
     @Test
@@ -410,29 +410,29 @@ class ChatControllerAdversarialTest {
     @Test
     @DisplayName("Advisor per-student risk query loads individual advisee record without bulk overview in Gemini mode and fallback mode")
     void testAdvisorPerStudentRiskQueryTargetsIndividualStudent() throws Exception {
-        when(advisorTools.getAdviseeRecord("advisor:ADV-01", "6421100042"))
-                .thenReturn("6421100042 นายสมชาย ใจดี | GPA สะสม: 1.85 | ระดับความเสี่ยง: สูง");
+        when(advisorTools.getAdviseeRecord("advisor:ADV-01", "6621100042"))
+                .thenReturn("6621100042 นายสมชาย ใจดี | GPA สะสม: 1.85 | ระดับความเสี่ยง: สูง");
 
         ChatRequest req = new ChatRequest();
-        req.setMessage("ช่วยวิเคราะห์ความเสี่ยงของนักศึกษา 6421100042 นายสมชาย ใจดี ว่ามีความเสี่ยงอะไรบ้าง");
+        req.setMessage("ช่วยวิเคราะห์ความเสี่ยงของนักศึกษา 6621100042 นายสมชาย ใจดี ว่ามีความเสี่ยงอะไรบ้าง");
 
         // 1. Fallback mode (demo-api-key) returns individual student risk details directly
         ResponseEntity<?> fallbackRes = chatController.chat(req, advisorAuth);
         assertEquals(HttpStatus.OK, fallbackRes.getStatusCode());
         ChatResponse fallbackBody = (ChatResponse) fallbackRes.getBody();
         assertNotNull(fallbackBody);
-        assertTrue(fallbackBody.getReply().contains("6421100042"));
+        assertTrue(fallbackBody.getReply().contains("6621100042"));
         assertTrue(fallbackBody.getReply().contains("GPA สะสม: 1.85"));
 
         // 2. Gemini mode injects only individual student record without calling getMyAdviseesRiskOverview
         ReflectionTestUtils.setField(chatController, "geminiApiKey", "AIzaSyD-valid-39-character-gemini-key");
         when(geminiDirectService.generateContent(anyString(), anyString()))
-                .thenReturn("ผลการวิเคราะห์รายบุคคลของ 6421100042: เสี่ยงพ้นสภาพเนื่องจาก GPA 1.85");
+                .thenReturn("ผลการวิเคราะห์รายบุคคลของ 6621100042: เสี่ยงพ้นสภาพเนื่องจาก GPA 1.85");
 
         ResponseEntity<?> geminiRes = chatController.chat(req, advisorAuth);
         assertEquals(HttpStatus.OK, geminiRes.getStatusCode());
         verify(advisorTools, never()).getMyAdviseesRiskOverview(anyString());
-        verify(advisorTools, times(2)).getAdviseeRecord("advisor:ADV-01", "6421100042");
+        verify(advisorTools, times(2)).getAdviseeRecord("advisor:ADV-01", "6621100042");
     }
 
     @Test

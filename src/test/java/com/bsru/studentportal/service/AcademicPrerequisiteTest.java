@@ -53,7 +53,7 @@ class AcademicPrerequisiteTest {
 
     private TimetableService timetableService;
 
-    private final String studentId = "6421100042";
+    private final String studentId = "6621100042";
     private final Actor studentActor = new Actor(Actor.Kind.STUDENT, studentId);
     private Student student;
     private ClassSection cs201Section;

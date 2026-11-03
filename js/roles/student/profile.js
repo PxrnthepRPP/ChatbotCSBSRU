@@ -2,7 +2,7 @@
    BSRU Student Portal — Student Profile, Career Tracking & Bio
    ============================================================ */
 
-import { esc, statusBadge, showToast } from '../../utils.js';
+import { esc, statusBadge, showToast, admissionYearFromId } from '../../utils.js';
 import { MOCK_STUDENTS_POOL, MOCK_ADVISORS } from '../admin.js';
 import { fetchAPI } from '../../api.js';
 import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../../components/careerCatalog.js';
@@ -17,8 +17,7 @@ export const studentEditableData = {};
 
 export function getStudentFullData(studentId) {
     const base = MOCK_STUDENTS_POOL.find(s => s.studentId === studentId) || MOCK_STUDENTS_POOL[0];
-    const creditsMap = { 3: 96, 2: 48, 1: 18 };
-    const admitMap = { 3: 2564, 2: 2565, 1: 2566 };
+    const creditsMap = { 4: 120, 3: 96, 2: 48, 1: 18 };
 
     // Initialize editable data from localStorage or defaults
     if (!studentEditableData[studentId]) {
@@ -46,7 +45,7 @@ export function getStudentFullData(studentId) {
         email: editable.email,
         phone: editable.phone,
         credits: creditsMap[base.year] || 48,
-        admitYear: admitMap[base.year] || 2565,
+        admitYear: admissionYearFromId(base.studentId) || 2566,
         birthDate: editable.birthDate,
         religion: editable.religion || 'พุทธ',
         address: editable.address,

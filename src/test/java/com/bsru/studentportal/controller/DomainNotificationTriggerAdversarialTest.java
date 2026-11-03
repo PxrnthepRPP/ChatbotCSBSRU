@@ -108,7 +108,7 @@ class DomainNotificationTriggerAdversarialTest {
         );
 
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6421100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
         advisorAuth = new UsernamePasswordAuthenticationToken(
                 "ADV-01", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADVISOR")));
         adminAuth = new UsernamePasswordAuthenticationToken(
@@ -117,12 +117,12 @@ class DomainNotificationTriggerAdversarialTest {
         advisor1 = new Advisor("ADV-01", "ผศ.ดร.สมชาย ใจดี", "Somchai", "somchai@bsru.ac.th", "0812345678", "CS");
 
         student1 = new Student();
-        student1.setStudentId("6421100042");
+        student1.setStudentId("6621100042");
         student1.setNameTh("นายสมศักดิ์ ทดสอบ");
         student1.setAdvisor(advisor1);
 
         student2 = new Student();
-        student2.setStudentId("6421100099");
+        student2.setStudentId("6621100099");
         student2.setNameTh("นางสาวใจดี เรียนเก่ง");
         student2.setAdvisor(advisor1);
     }
@@ -142,7 +142,7 @@ class DomainNotificationTriggerAdversarialTest {
             request.setType("การเงิน");
             request.setDetails("เนื่องจากประสบปัญหาอุทกภัย");
 
-            when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
             when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
             when(petitionRepository.existsById(anyString())).thenReturn(false);
             when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(i -> i.getArgument(0));
@@ -168,7 +168,7 @@ class DomainNotificationTriggerAdversarialTest {
             assertEquals("advisor-petitions", targetCap.getValue(), "Target module must be advisor-petitions");
             assertEquals("PETITION", typeCap.getValue(), "Type must be PETITION");
             assertEquals("มีคำร้องใหม่รอการพิจารณา", titleCap.getValue());
-            assertTrue(msgCap.getValue().contains("6421100042"), "Message must contain student ID");
+            assertTrue(msgCap.getValue().contains("6621100042"), "Message must contain student ID");
             assertTrue(msgCap.getValue().contains("ขอผ่อนผันค่าธรรมเนียมการศึกษา"), "Message must contain petition title");
         }
 
@@ -181,7 +181,7 @@ class DomainNotificationTriggerAdversarialTest {
             request.setTitle("ขอหนังสือรับรอง");
             request.setType("เอกสาร");
 
-            when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
             when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
             when(petitionRepository.existsById(anyString())).thenReturn(false);
             when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(i -> i.getArgument(0));
@@ -203,7 +203,7 @@ class DomainNotificationTriggerAdversarialTest {
             request.setTitle("ขอหนังสือรับรอง");
             request.setType("เอกสาร");
 
-            when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
             when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
             when(petitionRepository.existsById(anyString())).thenReturn(false);
             when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(i -> i.getArgument(0));
@@ -223,7 +223,7 @@ class DomainNotificationTriggerAdversarialTest {
             request.setTitle("ขอลาพักการเรียน");
             request.setType("วิชาการ");
 
-            when(studentRepository.findById("6421100042")).thenReturn(Optional.of(student1));
+            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(student1));
             when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(List.of());
             when(petitionRepository.existsById(anyString())).thenReturn(false);
             when(petitionRepository.save(any(AcademicPetition.class))).thenAnswer(i -> i.getArgument(0));
@@ -234,7 +234,7 @@ class DomainNotificationTriggerAdversarialTest {
             ArgumentCaptor<String> msgCap = ArgumentCaptor.forClass(String.class);
             verify(notificationService).notifyUser(any(), any(), msgCap.capture(), any(), any());
 
-            assertTrue(msgCap.getValue().contains("นักศึกษา 6421100042 (6421100042)"));
+            assertTrue(msgCap.getValue().contains("นักศึกษา 6621100042 (6621100042)"));
         }
     }
 
@@ -285,7 +285,7 @@ class DomainNotificationTriggerAdversarialTest {
             assertEquals("manage-petitions", targets.get(0));
 
             // 2nd notification: to student
-            assertEquals("6421100042", recipients.get(1));
+            assertEquals("6621100042", recipients.get(1));
             assertEquals("คำร้องผ่านการพิจารณาจากอาจารย์ที่ปรึกษาแล้ว", titles.get(1));
             assertEquals("petitions", targets.get(1));
         }
@@ -352,7 +352,7 @@ class DomainNotificationTriggerAdversarialTest {
                     eq("PETITION")
             );
 
-            assertEquals("6421100042", recipientCap.getValue());
+            assertEquals("6621100042", recipientCap.getValue());
             assertEquals("คำร้องไม่ผ่านความเห็นชอบจากอาจารย์ที่ปรึกษา", titleCap.getValue());
             assertEquals("petitions", targetCap.getValue());
             assertTrue(msgCap.getValue().contains("เนื่องจาก: เกรดเฉลี่ยไม่ถึงเกณฑ์"));
@@ -375,7 +375,7 @@ class DomainNotificationTriggerAdversarialTest {
             assertEquals(HttpStatus.OK, res.getStatusCode());
 
             verify(notificationService, times(1)).notifyUser(
-                    eq("6421100042"),
+                    eq("6621100042"),
                     eq("คำร้องไม่ผ่านความเห็นชอบจากอาจารย์ที่ปรึกษา"),
                     contains("เนื่องจาก: ยื่นพ้นกำหนดเวลา"),
                     eq("petitions"),
@@ -442,7 +442,7 @@ class DomainNotificationTriggerAdversarialTest {
                     eq("PETITION")
             );
 
-            assertEquals("6421100042", recipientCap.getValue());
+            assertEquals("6621100042", recipientCap.getValue());
             assertEquals("คำร้องได้รับการอนุมัติแล้ว", titleCap.getValue());
             assertEquals("petitions", targetCap.getValue());
         }
@@ -464,7 +464,7 @@ class DomainNotificationTriggerAdversarialTest {
             assertEquals(HttpStatus.OK, res.getStatusCode());
 
             verify(notificationService, times(1)).notifyUser(
-                    eq("6421100042"),
+                    eq("6621100042"),
                     eq("คำร้องไม่ได้รับการอนุมัติ"),
                     contains("เนื่องจาก: จำนวนผู้เรียนไม่ครบตามเกณฑ์ขั้นต่ำ"),
                     eq("petitions"),
@@ -532,7 +532,7 @@ class DomainNotificationTriggerAdversarialTest {
         @BeforeEach
         void initSections() {
             adminActor = new Actor(Actor.Kind.ADMIN, "admin");
-            studentActor = new Actor(Actor.Kind.STUDENT, "6421100042");
+            studentActor = new Actor(Actor.Kind.STUDENT, "6621100042");
 
             section1 = new ClassSection();
             section1.setId(10L);
@@ -602,13 +602,13 @@ class DomainNotificationTriggerAdversarialTest {
             List<String> types = typeCap.getAllValues();
             List<String> msgs = msgCap.getAllValues();
 
-            assertEquals("6421100042", recipients.get(0));
+            assertEquals("6621100042", recipients.get(0));
             assertEquals("ผลการลงทะเบียนเรียนได้รับการอนุมัติ", titles.get(0));
             assertEquals("timetable", targets.get(0));
             assertEquals("REGISTRATION", types.get(0));
             assertTrue(msgs.get(0).contains("CS3101"));
 
-            assertEquals("6421100099", recipients.get(1));
+            assertEquals("6621100099", recipients.get(1));
             assertEquals("ผลการลงทะเบียนเรียนได้รับการอนุมัติ", titles.get(1));
             assertEquals("timetable", targets.get(1));
             assertEquals("REGISTRATION", types.get(1));
@@ -640,7 +640,7 @@ class DomainNotificationTriggerAdversarialTest {
                     typeCap.capture()
             );
 
-            assertEquals("6421100042", recipientCap.getValue());
+            assertEquals("6621100042", recipientCap.getValue());
             assertEquals("ผลการลงทะเบียนเรียนไม่ผ่านการอนุมัติ", titleCap.getValue());
             assertEquals("timetable", targetCap.getValue());
             assertEquals("REGISTRATION", typeCap.getValue());

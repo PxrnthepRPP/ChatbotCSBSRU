@@ -70,8 +70,8 @@ class ChatHistoryAuthorizationTest {
         }
     }
 
-    private static final String STUDENT_A = "6421100042";
-    private static final String STUDENT_B = "6421100099";
+    private static final String STUDENT_A = "6621100042";
+    private static final String STUDENT_B = "6621100099";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtUtil jwtUtil;
@@ -182,7 +182,7 @@ class ChatHistoryAuthorizationTest {
     // ------------------------------------------------------------------ tests
 
     @Test
-    @DisplayName("Unauthenticated caller cannot read student 6421100042's history by any identifier")
+    @DisplayName("Unauthenticated caller cannot read student 6621100042's history by any identifier")
     void unauthenticatedCannotReadStudentHistory() throws Exception {
         chat(studentAToken, "ข้อความลับของนักศึกษา A", null);
         assertEquals(2, rowsFor("student:" + STUDENT_A));
@@ -204,7 +204,7 @@ class ChatHistoryAuthorizationTest {
     }
 
     @Test
-    @DisplayName("Unauthenticated caller cannot delete student 6421100042's history")
+    @DisplayName("Unauthenticated caller cannot delete student 6621100042's history")
     void unauthenticatedCannotDeleteStudentHistory() throws Exception {
         chat(studentAToken, "ประวัติที่ต้องไม่ถูกลบ", null);
 
@@ -288,7 +288,7 @@ class ChatHistoryAuthorizationTest {
     @Test
     @DisplayName("A logged-in student still sees and clears their own history")
     void loggedInUserSeesOwnHistory() throws Exception {
-        JsonNode response = chat(studentAToken, "สวัสดีครับ", "6421100042");
+        JsonNode response = chat(studentAToken, "สวัสดีครับ", "6621100042");
         assertEquals("student:" + STUDENT_A, response.path("sessionId").asText());
 
         // legacy row written by the old frontend (session_id = raw username, user_key from the JWT)

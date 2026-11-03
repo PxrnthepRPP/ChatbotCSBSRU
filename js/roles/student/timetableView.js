@@ -12,7 +12,7 @@ import { showPetitionToast } from './petitionsView.js';
    ============================================================ */
 export let MOCK_TIMETABLE_SEMESTERS = [
     {
-        label: 'Term 2/2566',
+        label: 'Term 1/2569',
         schedule: [
             { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'SC17351', subjectName: 'Object-Oriented Programming', teacherName: 'Dr. Somchai', room: 'Room 423' },
             { day: 2, startTime: '12:00', endTime: '15:00', subjectCode: 'SC17411', subjectName: 'Web Development', teacherName: 'Dr. Suda', room: 'Room 6121' },
@@ -21,7 +21,7 @@ export let MOCK_TIMETABLE_SEMESTERS = [
         ],
     },
     {
-        label: 'Term 1/2566',
+        label: 'Term 2/2568',
         schedule: [
             { day: 0, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2101', subjectName: 'Data Structures', teacherName: 'Dr. Wicha', room: 'CS-301' },
             { day: 0, startTime: '13:00', endTime: '16:00', subjectCode: 'CS2102', subjectName: 'Algorithms', teacherName: 'Prof. Anan', room: 'CS-205' },
@@ -31,7 +31,7 @@ export let MOCK_TIMETABLE_SEMESTERS = [
         ],
     },
     {
-        label: 'Term 2/2565',
+        label: 'Term 2/2569',
         schedule: [
             { day: 1, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2301', subjectName: 'Database Systems', teacherName: 'Dr. Manop', room: 'CS-Lab2' },
             { day: 2, startTime: '09:00', endTime: '12:00', subjectCode: 'CS2302', subjectName: 'Web Programming', teacherName: 'Aj. Suda', room: 'CS-Lab3' },
