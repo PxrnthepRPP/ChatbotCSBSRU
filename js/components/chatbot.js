@@ -413,6 +413,22 @@ export function renderSafeMarkdown(text) {
     return safe.trim();
 }
 
+/* ── Chat lifetime: one conversation per login ──
+   History is kept on the server (so a refresh or reopening the panel in the same visit keeps it),
+   but every login and every logout starts over: the server copy and the AI memory are deleted
+   and the panel is emptied. */
+let resetChatView = () => {};
+
+/** Delete the signed-in user's chat history + AI memory and empty the panel. Never throws. */
+export async function resetChatSession() {
+    try {
+        await fetchAPI('/chat/history', 'DELETE', null, 5000);
+    } catch (e) {
+        console.warn('⚠️ [Chatbot] Could not clear chat history:', e.message);
+    }
+    resetChatView();
+}
+
 export function initChatbot() {
     if (_chatbotInitialized) return;
     _chatbotInitialized = true;
@@ -434,6 +450,13 @@ export function initChatbot() {
     let historyLoaded = false;
 
     if (!chatbotFab) return;
+
+    resetChatView = () => {
+        cwMessages.innerHTML = '';
+        historyLoaded = false;
+        welcomeShown = false;
+        if (chatbotOpen) loadChatHistory();   // shows the welcome message for the empty history
+    };
 
     const GUEST_SESSION_STORAGE_KEY = 'bsru_chat_guest_id';
 
