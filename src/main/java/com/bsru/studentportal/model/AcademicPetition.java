@@ -35,15 +35,43 @@ public class AcademicPetition {
 
     private String attachment;
 
+    @Column(name = "attachment_path")
+    private String attachmentPath;
+
+    @Column(name = "attachment_name")
+    private String attachmentName;
+
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
     private String status;
 
+    @Column(name = "advisor_comment", columnDefinition = "TEXT")
+    private String advisorComment;
+
+    @Column(name = "advisor_reviewed_at")
+    private LocalDateTime advisorReviewedAt;
+
     @Column(name = "admin_comment", columnDefinition = "TEXT")
     private String adminComment;
+
+    @Column(name = "admin_reviewed_at")
+    private LocalDateTime adminReviewedAt;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "student_id")
     private Student student;
+
+    public AcademicPetition(String id, String type, String title, String details, String attachment,
+                            LocalDateTime submittedAt, String status, String adminComment, Student student) {
+        this.id = id;
+        this.type = type;
+        this.title = title;
+        this.details = details;
+        this.attachment = attachment;
+        this.submittedAt = submittedAt;
+        this.status = status;
+        this.adminComment = adminComment;
+        this.student = student;
+    }
 }

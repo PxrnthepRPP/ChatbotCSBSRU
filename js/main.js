@@ -7,13 +7,16 @@
 
 import { getState, setState, subscribe } from './state.js';
 import { login, logout, getAuthState, exitImpersonation } from './auth.js';
+import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
-import { initChatbot } from './components/chatbot.js';
+import { initChatbot, resetChatSession } from './components/chatbot.js';
 import { initThemeToggle } from './theme.js';
+import { initModalA11y } from './components/modalA11y.js';
 import { openChangePasswordModal } from './components/password.js';
 import { initAdminDashboard } from './roles/admin.js';
 import { initAdvisorDashboard } from './roles/advisor.js';
 import { initStudentDashboard } from './roles/student.js';
+import { initNotifications, clearNotifications } from './components/notifications.js';
 
 // ================================================================
 // UTILITY FUNCTIONS (Imported & re-exported for backward compatibility)
@@ -30,11 +33,13 @@ const NAV_CONFIG = {
         { module: 'manage-advisors', label: 'จัดการอาจารย์ที่ปรึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
         { module: 'manage-students', label: 'จัดการนักศึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
         { module: 'manage-petitions', label: 'รายการคำร้องวิชาการ', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>' },
+        { module: 'manage-knowledge', id: 'manage-knowledge', label: 'จัดการคลังความรู้', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v6"/><path d="M9 9h6"/></svg>' },
     ],
     ADVISOR: [
         { module: 'advisor-dashboard', label: 'แดชบอร์ด', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
         { module: 'my-advisees', label: 'นักศึกษาในที่ปรึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
         { module: 'advisor-courses', label: 'จัดการรายวิชา & ประกาศสอบ', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>' },
+
     ],
     STUDENT: [
         { module: 'bibliography', label: 'ประวัตินักศึกษา', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
@@ -49,7 +54,9 @@ const NAV_CONFIG = {
 
 const MODULE_TITLES = {
     'admin-dashboard': 'แดชบอร์ดผู้ดูแล', 'manage-advisors': 'จัดการอาจารย์', 'manage-students': 'จัดการนักศึกษา', 'manage-petitions': 'รายการคำร้องวิชาการ',
+    'manage-knowledge': 'จัดการคลังความรู้',
     'advisor-dashboard': 'แดชบอร์ดอาจารย์', 'my-advisees': 'นักศึกษาในที่ปรึกษา', 'advisor-courses': 'จัดการรายวิชา & ประกาศสอบ',
+
     'bibliography': 'ประวัตินักศึกษา', 'timetable': 'ตารางเรียน/สอบ', 'finance': 'การเงิน/ทุนการศึกษา',
     'grades': 'ผลการเรียน', 'graduation': 'ตรวจสอบจบ', 'activity': 'กิจกรรม', 'petitions': 'ยื่นคำร้องวิชาการ',
 };
@@ -59,6 +66,7 @@ const MODULE_TITLES = {
 // ================================================================
 function initApp() {
     initThemeToggle();
+    initModalA11y();
     const loginOverlay = document.getElementById('loginOverlay');
     const loginForm = document.getElementById('loginForm');
     const loginUsername = document.getElementById('loginUsername');
@@ -78,11 +86,11 @@ function initApp() {
     // ── Read initial state ──
     const initialState = getState();
 
-
     if (initialState.currentRole) {
         loginOverlay.style.display = 'none';
         dashboard.style.display = 'flex';
         initDashboard();
+        initNotifications();
         requirePasswordChangeIfNeeded();
     }
 
@@ -92,7 +100,7 @@ function initApp() {
         openChangePasswordModal({
             forced: true,
             onChanged: () => setState({ user: { ...getState().user, mustChangePassword: false } }),
-            onLogout: () => { logout(); window.location.reload(); },
+            onLogout: async () => { await resetChatSession(); logout(); window.location.reload(); },
         });
     }
 
@@ -133,6 +141,8 @@ function initApp() {
             if (loginBtn) loginBtn.disabled = false;
             return;
         }
+        // New login = new conversation (also clears what a closed tab or another device left behind)
+        await resetChatSession();
 
         const loginCard = document.getElementById('loginCard');
         if (loginCard) loginCard.style.animation = 'cardExit 0.4s ease forwards';
@@ -141,27 +151,27 @@ function initApp() {
             loginOverlay.style.display = 'none';
             dashboard.style.display = 'flex';
             await initDashboard();
+            initNotifications();
             requirePasswordChangeIfNeeded();
         }, 300);
     });
 
-    // ── Role Hints Click Helper ──
-    document.querySelectorAll('.role-hint').forEach(hint => {
-        hint.style.cursor = 'pointer';
+    // A stale error stays wrong once the user edits either field
+    [loginUsername, document.getElementById('loginPassword')].forEach(input =>
+        input?.addEventListener('input', () => showLoginError('')));
+
+    // ── Demo-account shortcuts (dev profile only; the backend decides) ──
+    fetchAPI('/auth/config', 'GET', null, 5000)
+        .then(cfg => { if (cfg?.showDemoAccounts) document.getElementById('demoAccounts').hidden = false; })
+        .catch(() => { /* backend down or old version: keep the shortcuts hidden */ });
+
+    document.querySelectorAll('.role-hint[data-demo-user]').forEach(hint => {
         hint.addEventListener('click', () => {
-            const badge = hint.querySelector('.rh-badge');
-            if (!badge) return;
-            const text = badge.textContent.trim().toLowerCase();
-            if (text.includes('admin')) {
-                loginUsername.value = 'admin';
-            } else if (text.includes('advisor')) {
-                loginUsername.value = 'advisor';
-            } else {
-                loginUsername.value = 'student';
-            }
+            loginUsername.value = hint.dataset.demoUser;
             const passwordInput = document.getElementById('loginPassword');
             if (passwordInput) passwordInput.value = 'password';
-            loginUsername.focus();
+            showLoginError('');
+            document.getElementById('loginBtn')?.focus();
         });
     });
 
@@ -172,10 +182,13 @@ function initApp() {
     });
 
     // ── Logout ──
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
+        // Each login gets a fresh chat: drop this user's chat while the token is still valid
+        await resetChatSession();
         const state = getState();
         if (state.isImpersonating) exitImpersonation();
+        clearNotifications();
         logout();
         window.location.reload();
     });
@@ -183,6 +196,20 @@ function initApp() {
     if (exitImpBtn) {
         exitImpBtn.addEventListener('click', exitImpersonation);
     }
+
+    // Expose navigation helper for notification deep linking
+    window.navigateToModule = (modId) => {
+        if (!modId) return;
+        setState({ activeModule: modId });
+        if (typeof window.closeMobileSidebar === 'function') {
+            window.closeMobileSidebar();
+        }
+    };
+
+    // Module pages share one document; restoring the old scroll offset on Back lands mid-page
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    let replacingHash = false;   // next module change replaces the history entry (first page after login)
+    let fromHistory = false;     // next module change came from Back/Forward: don't push it again
 
     // ── State subscriber: active module changes ──
     subscribe('activeModule', (modId) => {
@@ -206,6 +233,20 @@ function initApp() {
         // Update topbar title
         topbarTitle.textContent = MODULE_TITLES[modId] || '';
 
+        // Each module is its own URL (#module): refresh, Back and shared links land on it
+        if (location.hash !== `#${modId}`) {
+            const url = `${location.pathname}${location.search}#${modId}`;
+            if (replacingHash) history.replaceState(null, '', url);
+            else if (!fromHistory) history.pushState(null, '', url);
+        }
+        replacingHash = false;
+        fromHistory = false;
+
+        // A new page starts at its top, not at the previous page's scroll position
+        // (after the frame: the module renders and the browser may restore a scroll position first)
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+
         // Load component CSS on demand
         if (modId === 'timetable') {
             loadComponentCSS('timetable');
@@ -219,8 +260,6 @@ function initApp() {
 
         closeMobileSidebar();
     });
-
-
 
     // Initialize Chatbot Widget
     initChatbot();
@@ -256,16 +295,35 @@ function initApp() {
         } else {
             const studentId = state.isImpersonating
                 ? state.impersonatedStudent.studentId
-                : (state.user.studentId || '6421100042');
+                : (state.user.studentId || '6621100042');
             initStudentDashboard(studentId);
         }
 
-        // ── Navigate to first module ──
+        // ── Open the module named in the URL (#grades), else the first one ──
+        const fromHash = moduleFromHash();
         const firstLink = sidebarNav.querySelector('.nav-link');
-        if (firstLink) {
+        if (fromHash) {
+            setState({ activeModule: fromHash });
+        } else if (firstLink) {
+            replacingHash = true;   // the landing page replaces the entry instead of adding one
             setState({ activeModule: firstLink.dataset.module });
         }
     }
+
+    /** Module id from location.hash when this role has that module, otherwise null */
+    function moduleFromHash() {
+        const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+        return id && sidebarNav.querySelector(`.nav-link[data-module="${CSS.escape(id)}"]`) ? id : null;
+    }
+
+    // Back / Forward and edited URLs switch modules too
+    window.addEventListener('popstate', () => {
+        const id = moduleFromHash();
+        if (id && id !== getState().activeModule) {
+            fromHistory = true;
+            setState({ activeModule: id });
+        }
+    });
 
     function buildSidebar(state) {
         const role = state.isImpersonating ? 'STUDENT' : state.currentRole;
@@ -275,7 +333,7 @@ function initApp() {
 
         const links = NAV_CONFIG[role] || NAV_CONFIG.STUDENT;
         sidebarNav.innerHTML = links.map(l =>
-            `<a href="#" class="nav-link" data-module="${l.module}">${l.icon}<span>${esc(l.label)}</span></a>`
+            `<a href="#${l.module}" class="nav-link" data-module="${l.module}">${l.icon}<span>${esc(l.label)}</span></a>`
         ).join('');
 
         sidebarNav.querySelectorAll('.nav-link').forEach(link => {

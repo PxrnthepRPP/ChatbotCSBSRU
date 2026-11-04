@@ -72,6 +72,8 @@ public class AcademicRecordService {
     /** Teacher grades of a student whose course is released (release time passed) and who is still enrolled */
     @Transactional(readOnly = true)
     public List<ReleasedGrade> releasedGradesOf(String studentId) {
+        // Unit tests may build this service without the teacher-grade repositories
+        if (instructorGradeRepository == null || gradeScheduleRepository == null) return List.of();
         LocalDateTime now = LocalDateTime.now();
         return instructorGradeRepository.findByStudentStudentId(studentId).stream()
                 .filter(g -> {

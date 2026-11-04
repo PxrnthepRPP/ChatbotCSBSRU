@@ -1,7 +1,11 @@
 package com.bsru.studentportal.controller;
 
 import com.bsru.studentportal.dto.StudentRequest;
+import com.bsru.studentportal.model.AdvisingNote;
+import com.bsru.studentportal.model.Student;
+import com.bsru.studentportal.repository.AdvisingNoteRepository;
 import com.bsru.studentportal.repository.AdvisorRepository;
+import com.bsru.studentportal.repository.StudentRepository;
 import com.bsru.studentportal.security.CurrentUser;
 import com.bsru.studentportal.service.AdvisorInsightService;
 import com.bsru.studentportal.service.StudentAdminService;
@@ -10,12 +14,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,6 +40,8 @@ public class AdvisorController {
     private final AdvisorInsightService insights;
     private final AdvisorRepository advisorRepository;
     private final StudentAdminService studentAdminService;
+    private final AdvisingNoteRepository advisingNoteRepository;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     public ResponseEntity<?> me(Authentication auth) {
@@ -76,6 +90,105 @@ public class AdvisorController {
         if (advisorId.isEmpty()) return forbidden();
         studentAdminService.deleteSimulatedForAdvisor(advisorId.get(), studentId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ------------------------------------------------------------------ advising notes
+
+    @GetMapping("/advisees/{studentId}/notes")
+    public ResponseEntity<?> listNotes(@PathVariable String studentId, Authentication auth) {
+        ResponseEntity<?> denied = verifyAdviseeAccess(auth, studentId);
+        if (denied != null) return denied;
+        List<AdvisingNote> notes = advisingNoteRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
+        return ResponseEntity.ok(notes);
+    }
+
+    @PostMapping("/advisees/{studentId}/notes")
+    public ResponseEntity<?> createNote(@PathVariable String studentId,
+                                        @RequestBody Map<String, Object> body,
+                                        Authentication auth) {
+        ResponseEntity<?> denied = verifyAdviseeAccess(auth, studentId);
+        if (denied != null) return denied;
+
+        String summary = body != null && body.get("summary") != null ? body.get("summary").toString().trim() : "";
+        if (summary.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "กรุณาระบุบันทึกการให้คำปรึกษา"));
+        }
+
+        String advisorId = CurrentUser.advisorId(auth).orElseGet(() -> {
+            if (CurrentUser.isAdmin(auth)) {
+                return studentRepository.findById(studentId)
+                        .map(s -> s.getAdvisor() != null ? s.getAdvisor().getId() : "ADV-ADMIN")
+                        .orElse("ADV-ADMIN");
+            }
+            return "UNKNOWN";
+        });
+
+        LocalDate followUpDate = null;
+        if (body != null && body.get("followUpDate") != null) {
+            String fDateStr = body.get("followUpDate").toString().trim();
+            if (!fDateStr.isEmpty()) {
+                try {
+                    followUpDate = LocalDate.parse(fDateStr.length() > 10 ? fDateStr.substring(0, 10) : fDateStr);
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(Map.of("error", "รูปแบบวันที่ติดตามผลไม่ถูกต้อง (yyyy-MM-dd)"));
+                }
+            }
+        }
+
+        String riskLevelSnapshot = (body != null && body.get("riskLevelSnapshot") != null)
+                ? body.get("riskLevelSnapshot").toString().trim()
+                : null;
+
+        AdvisingNote note = new AdvisingNote();
+        note.setStudentId(studentId);
+        note.setAdvisorId(advisorId);
+        note.setSummary(summary);
+        note.setFollowUpDate(followUpDate);
+        note.setRiskLevelSnapshot(riskLevelSnapshot);
+        note.setCreatedAt(LocalDateTime.now());
+
+        AdvisingNote saved = advisingNoteRepository.save(note);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @DeleteMapping("/advisees/{studentId}/notes/{noteId}")
+    public ResponseEntity<?> deleteNote(@PathVariable String studentId,
+                                        @PathVariable Long noteId,
+                                        Authentication auth) {
+        ResponseEntity<?> denied = verifyAdviseeAccess(auth, studentId);
+        if (denied != null) return denied;
+
+        Optional<AdvisingNote> noteOpt = advisingNoteRepository.findById(noteId);
+        if (noteOpt.isEmpty() || !noteOpt.get().getStudentId().equals(studentId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "ไม่พบบันทึกการให้คำปรึกษา"));
+        }
+
+        advisingNoteRepository.delete(noteOpt.get());
+        return ResponseEntity.ok(Map.of("success", true, "message", "ลบบันทึกการให้คำปรึกษาสำเร็จ"));
+    }
+
+    private ResponseEntity<?> verifyAdviseeAccess(Authentication auth, String studentId) {
+        if (CurrentUser.isAdmin(auth)) {
+            if (!studentRepository.existsById(studentId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "ไม่พบนักศึกษารหัส " + studentId));
+            }
+            return null;
+        }
+        Optional<String> advisorId = CurrentUser.advisorId(auth);
+        if (advisorId.isEmpty()) {
+            return forbidden();
+        }
+        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isEmpty() || studentOpt.get().getAdvisor() == null
+                || !studentOpt.get().getAdvisor().getId().equals(advisorId.get())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "นักศึกษารหัส " + studentId + " ไม่ได้อยู่ในความดูแลของคุณ"));
+        }
+        return null;
     }
 
     @ExceptionHandler(StudentAdminException.class)

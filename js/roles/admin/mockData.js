@@ -1,0 +1,136 @@
+/* ============================================================
+   BSRU Student Portal — Admin Mock / Fallback Datasets
+   Shared (via ../admin.js) with the advisor and student modules.
+   initAdminDashboard() replaces the contents in place with live
+   data from the backend, so importers always see the same arrays.
+   ============================================================ */
+
+import { yearLevelFromId } from '../../utils.js';
+
+export const MOCK_ADVISORS = [
+    { id: 'ADV001', nameTh: 'ผศ.ดร.วิชัย เทคโนโลยี', nameEn: 'Asst.Prof.Dr. Wichai Technology', email: 'wichai.t@bsru.ac.th', phone: '02-473-7000 ต่อ 4001', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 12 },
+    { id: 'ADV002', nameTh: 'อ.สุภา โปรแกรม', nameEn: 'Supa Program', email: 'supa.p@bsru.ac.th', phone: '02-473-7000 ต่อ 4002', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 10 },
+    { id: 'ADV003', nameTh: 'ผศ.มานะ ดาต้า', nameEn: 'Asst.Prof. Mana Data', email: 'mana.d@bsru.ac.th', phone: '02-473-7000 ต่อ 4003', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 8 },
+    { id: 'ADV004', nameTh: 'ผศ.ดร.ณัฐ เน็ตเวิร์ค', nameEn: 'Asst.Prof.Dr. Nat Network', email: 'nat.n@bsru.ac.th', phone: '02-473-7000 ต่อ 4004', department: 'วิทยาการคอมพิวเตอร์', studentsCount: 11 },
+    { id: 'ADV005', nameTh: 'อ.พิมพ์ เว็บเทค', nameEn: 'Pim Webtech', email: 'pim.w@bsru.ac.th', phone: '02-473-7000 ต่อ 4005', department: 'เทคโนโลยีสารสนเทศ', studentsCount: 9 },
+];
+
+export const MOCK_STUDENTS_POOL = [
+    { studentId: '6621100042', nameTh: 'สมชาย ใจดี', nameEn: 'Somchai Jaidee', year: 3, gpa: 3.42, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6621100015', nameTh: 'สมหญิง รักเรียน', nameEn: 'Somying Rakrian', year: 3, gpa: 3.78, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6621100023', nameTh: 'วิชัย โปรแกรมเมอร์', nameEn: 'Wichai Programmer', year: 3, gpa: 3.15, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6621100031', nameTh: 'พิมพ์ใจ คอมพิวเตอร์', nameEn: 'Pimjai Computer', year: 3, gpa: 3.88, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6621100058', nameTh: 'อนันต์ ดิจิทัล', nameEn: 'Anan Digital', year: 3, gpa: 2.95, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6621100066', nameTh: 'กานต์ เน็ตเวิร์ค', nameEn: 'Kan Network', year: 3, gpa: 3.55, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6721100010', nameTh: 'ธนา อัลกอริทึม', nameEn: 'Thana Algorithm', year: 2, gpa: 3.20, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6721100028', nameTh: 'ปริญญา ซอฟต์แวร์', nameEn: 'Prinya Software', year: 2, gpa: 3.65, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6721100036', nameTh: 'มานี ฐานข้อมูล', nameEn: 'Manee Database', year: 2, gpa: 2.80, status: 'พักการศึกษา', advisor: 'ADV001' },
+    { studentId: '6721100044', nameTh: 'จิตรา เอไอ', nameEn: 'Jittra AI', year: 2, gpa: 3.90, status: 'กำลังศึกษา', advisor: 'ADV004' },
+    { studentId: '6721100052', nameTh: 'นภา ไซเบอร์', nameEn: 'Napa Cyber', year: 2, gpa: 3.35, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6721100060', nameTh: 'ศักดิ์ ลินุกซ์', nameEn: 'Sak Linux', year: 2, gpa: 3.10, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6821100001', nameTh: 'ภัทร คลาวด์', nameEn: 'Phat Cloud', year: 1, gpa: 3.60, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6821100009', nameTh: 'กมล แมชชีนเลิร์น', nameEn: 'Kamol MachinLearn', year: 1, gpa: 3.45, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6821100017', nameTh: 'ดวงใจ ฟูลสแตค', nameEn: 'Duangjai Fullstack', year: 1, gpa: 3.80, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6821100025', nameTh: 'อรรถ บล็อกเชน', nameEn: 'Att Blockchain', year: 1, gpa: 2.90, status: 'กำลังศึกษา', advisor: 'ADV001' },
+    { studentId: '6821100033', nameTh: 'ปิยะ ดีพเลิร์น', nameEn: 'Piya DeepLearn', year: 1, gpa: 3.25, status: 'กำลังศึกษา', advisor: 'ADV002' },
+    { studentId: '6521100005', nameTh: 'ประสิทธิ์ คอมไพล์', nameEn: 'Prasit Compile', year: 4, gpa: 3.50, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Full-Stack Developer' },
+    { studentId: '6521100013', nameTh: 'สุรีย์ ดีบัก', nameEn: 'Suree Debug', year: 4, gpa: 3.72, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'Data Analyst' },
+    { studentId: '6521100021', nameTh: 'วรวุฒิ เซิร์ฟเวอร์', nameEn: 'Worawut Server', year: 4, gpa: 3.30, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'DevOps Engineer' },
+    { studentId: '6421100008', nameTh: 'พิชญา แอปพลิเคชั่น', nameEn: 'Pitchaya Application', year: 5, gpa: 3.15, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'Full-Stack Developer' },
+    { studentId: '6421100016', nameTh: 'ธนากร เทสต์เคส', nameEn: 'Thanakorn Testcase', year: 5, gpa: 2.95, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Full-Stack Developer' },
+    { studentId: '6421100024', nameTh: 'รัตนา อินเทอร์เฟส', nameEn: 'Rattana Interface', year: 5, gpa: 3.60, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'UX/UI Designer' },
+    { studentId: '6421100032', nameTh: 'สมพงษ์ เซคิวริตี้', nameEn: 'Sompong Security', year: 5, gpa: 3.40, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'Cybersecurity Analyst' },
+    { studentId: '6421100040', nameTh: 'กิติพงษ์ สตาร์ทอัพ', nameEn: 'Kitipong Startup', year: 5, gpa: 3.05, status: 'จบการศึกษา', advisor: 'ADV005', careerPath: 'เจ้าของธุรกิจ' },
+    { studentId: '6421100058', nameTh: 'อาริยา คลาวด์เนทีฟ', nameEn: 'Ariya CloudNative', year: 5, gpa: 3.82, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'DevOps Engineer' },
+    { studentId: '6421100066', nameTh: 'พิมลรัตน์ แมชชีนเลิร์นนิ่ง', nameEn: 'Pimonrat MLearning', year: 5, gpa: 3.55, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Data Analyst' },
+    { studentId: '6421100074', nameTh: 'ณัฐวุฒิ โนโค้ด', nameEn: 'Nattawut NoCode', year: 5, gpa: 2.45, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'ว่างงาน' },
+    { studentId: '6421100082', nameTh: 'ศิริลักษณ์ โมไบล์แอป', nameEn: 'Sirilak MobileApp', year: 5, gpa: 2.70, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'ว่างงาน' },
+    { studentId: '6321100001', nameTh: 'พงศกร คลาวด์อาร์คิเทค', nameEn: 'Pongsakorn CloudArch', year: 6, gpa: 3.65, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'Cloud Architect' },
+    { studentId: '6321100012', nameTh: 'กุลนันท์ ไอโอเอส', nameEn: 'Kulanan iOS', year: 6, gpa: 3.48, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Mobile Developer' },
+    { studentId: '6321100023', nameTh: 'อนันตชัย เอไอโมเดล', nameEn: 'Anantachai AIModel', year: 6, gpa: 3.92, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'AI/ML Engineer' },
+    { studentId: '6321100034', nameTh: 'ภาวินี ออโตเมชั่น', nameEn: 'Pawinee Automation', year: 6, gpa: 3.28, status: 'จบการศึกษา', advisor: 'ADV004', careerPath: 'QA Engineer' },
+    { studentId: '6321100045', nameTh: 'ชยุต ดีบีเอ', nameEn: 'Chayut DBA', year: 6, gpa: 3.10, status: 'จบการศึกษา', advisor: 'ADV005', careerPath: 'Database Administrator' },
+    { studentId: '6321100056', nameTh: 'ธนวัฒน์ ซิสแอดมิน', nameEn: 'Thanawat SysAdmin', year: 6, gpa: 3.00, status: 'จบการศึกษา', advisor: 'ADV001', careerPath: 'System Administrator' },
+    { studentId: '6321100067', nameTh: 'ธีรเดช เกมเอนจิน', nameEn: 'Teeradet GameEngine', year: 6, gpa: 3.35, status: 'จบการศึกษา', advisor: 'ADV002', careerPath: 'Game Developer' },
+    { studentId: '6321100078', nameTh: 'ศศิธร คอนซัลแตนท์', nameEn: 'Sasithorn Consultant', year: 6, gpa: 3.75, status: 'จบการศึกษา', advisor: 'ADV003', careerPath: 'IT Consultant' },
+    { studentId: '6621100074', nameTh: 'ชัยวัฒน์ โค้ดดิ้ง', nameEn: 'Chaiwat Coding', year: 3, gpa: 1.85, status: 'พ้นสภาพ', advisor: 'ADV001' },
+    { studentId: '6721100078', nameTh: 'ณัฐพล ไฟร์วอลล์', nameEn: 'Nuttapon Firewall', year: 2, gpa: 1.70, status: 'พ้นสภาพ', advisor: 'ADV004' },
+];
+
+// Year level follows the batch in the ID, so the mock list stays right as the calendar moves
+MOCK_STUDENTS_POOL.forEach(s => { if (s.status !== 'จบการศึกษา') s.year = yearLevelFromId(s.studentId, s.year); });
+
+export const MOCK_PETITIONS_LOG = [
+    {
+        id: 'PET-2567-001',
+        studentId: '6621100042',
+        studentName: 'สมชาย ใจดี',
+        type: 'ยื่นขอสอบหัวข้อโปรเจคจบ',
+        title: 'ระบบจัดการข้อมูลนักศึกษาด้วย AI Chatbot',
+        details: 'ขอยื่นสอบหัวข้อโปรเจคจบ สาขาวิทยาการคอมพิวเตอร์ ภาคเรียนที่ 2/2566 โดยมี ผศ.ดร.วิชัย เทคโนโลยี เป็นอาจารย์ที่ปรึกษา',
+        attachment: 'proposal_6621100042.pdf',
+        submittedAt: '15 ม.ค. 2567 10:30',
+        status: 'อนุมัติ',
+        adminComment: 'เอกสารครบถ้วน อนุมัติให้สอบหัวข้อได้',
+    },
+    {
+        id: 'PET-2567-002',
+        studentId: '6621100015',
+        studentName: 'สมหญิง รักเรียน',
+        type: 'ยื่นสอบจบปริญญานิพนธ์',
+        title: 'ระบบวิเคราะห์การทำนายแนวโน้มอาชีพด้วย Machine Learning',
+        details: 'ขอยื่นสอบจบปริญญานิพนธ์ พัฒนาระบบและทดสอบผลการทดลองเรียบร้อยแล้ว',
+        attachment: 'final_defense_somying.pdf',
+        submittedAt: '20 ม.ค. 2567 14:15',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+    {
+        id: 'PET-2567-003',
+        studentId: '6721100028',
+        studentName: 'ปริญญา ซอฟต์แวร์',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอเลื่อนสอบปลายภาควิชา CS2301',
+        details: 'เนื่องจากติดภารกิจแข่งขันวิชาการระดับชาติของมหาวิทยาลัย แนบหนังสือรับรอง',
+        attachment: 'exam_reschedule_doc.pdf',
+        submittedAt: '28 ก.พ. 2567 09:00',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+    {
+        id: 'PET-2567-004',
+        studentId: '6621100023',
+        studentName: 'วิชัย โปรแกรมเมอร์',
+        type: 'ยื่นขอสอบหัวข้อโปรเจคจบ',
+        title: 'แอปพลิเคชันจัดการขยะรีไซเคิลด้วยเทคโนโลยี Computer Vision',
+        details: 'ขอยื่นเสนอหัวข้อปริญญานิพนธ์ รอบที่ 2',
+        attachment: 'cv_garbage_proposal.pdf',
+        submittedAt: '05 มี.ค. 2567 11:20',
+        status: 'อนุมัติ',
+        adminComment: 'ผ่านการพิจารณาเบื้องต้น',
+    },
+    {
+        id: 'PET-2567-005',
+        studentId: '6721100036',
+        studentName: 'มานี ฐานข้อมูล',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอพักการศึกษา ภาคเรียนที่ 2/2566',
+        details: 'ขอพักการศึกษาเนื่องจากเหตุผลความจำเป็นทางครอบครัว',
+        attachment: 'leave_request_signed.pdf',
+        submittedAt: '12 มี.ค. 2567 16:45',
+        status: 'ปฏิเสธ',
+        adminComment: 'เอกสารลายเซ็นผู้ปกครองไม่ครบถ้วน กรุณายื่นเอกสารเพิ่มเติม',
+    },
+    {
+        id: 'PET-2567-006',
+        studentId: '6821100001',
+        studentName: 'ภัทร คลาวด์',
+        type: 'คำร้องทั่วไป',
+        title: 'ขอเทียบโอนรายวิชาหมวดศึกษาทั่วไป',
+        details: 'ขอยื่นเทียบโอนรายวิชา GE1101 จากสถาบันเดิม',
+        attachment: 'transcript_transfer.pdf',
+        submittedAt: '18 มี.ค. 2567 13:10',
+        status: 'รอดำเนินการ',
+        adminComment: '',
+    },
+];

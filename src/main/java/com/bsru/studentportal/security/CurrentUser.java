@@ -8,8 +8,8 @@ import java.util.Optional;
 /** Reads who is calling from the verified JWT authentication. */
 public final class CurrentUser {
 
-    /** The demo "student" login is student 6421100042 (same mapping as AuthController) */
-    public static final String DEMO_STUDENT_ID = "6421100042";
+    /** The demo "student" login is student 6621100042 (same mapping as AuthController) */
+    public static final String DEMO_STUDENT_ID = "6621100042";
 
     private CurrentUser() {}
 

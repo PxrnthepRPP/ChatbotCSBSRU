@@ -6,6 +6,27 @@ Branch ปัจจุบัน: `feat/new-work`
 
 ---
 
+## 2026-11-04 — รอบที่ 29: รวม main (PR #3–#13) เข้า feat/new-work
+
+`main` มีงานใหม่ 51 commit (แยกไฟล์ JS/CSS เป็นโมดูล, ย้าย Tools ไป package `ai`, แชทใช้ Gemini ตรง + ใส่ข้อมูล DB ใน prompt,
+ข้อมูลตัวอย่างย้ายไปเทอม 2/2569, แก้ a11y/E2E หลายจุด) ชนกับ branch นี้ 9 ไฟล์ แก้แล้วดังนี้
+
+| ไฟล์ | วิธีแก้ |
+|---|---|
+| `js/roles/{admin,advisor,student}.js` | ใช้ของ main (ไฟล์ประสานงาน) แล้วย้ายงานของเราไปไฟล์ย่อย: `admin/students.js` (คำนำหน้า+ชื่อ/นามสกุลแยกช่อง ใช้ validation แบบ inline ของ main, เลือก Sec แรกเข้าหลายคน, เรียงตามรหัส), `admin/advisors.js` (ที่ปรึกษาประจำรุ่น), `admin/enrollmentRequests.js` (คำขอรวมตามนักศึกษา), **ใหม่** `admin/grades.js` (วันส่งเกรด/ประกาศผล), `advisor/courses.js` (ปุ่ม 📝 ใส่เกรด เปิดใน modal), `advisor/advisees.js`, `advisor/risk.js`, `advisor/history.js`, `student/timetableView.js` (เลือก Sec เอง, แอดมินลงทะเบียนแทน), `student/profile.js` |
+| `js/utils.js` | เก็บทั้งฟังก์ชันชื่อ/คำนำหน้าของเรา และ `petitionStatus`/`yearLevelFromId` ของ main |
+| `ai/AdvisorTools.java`, `ai/StudentRecordTools.java` | รวม import ทั้งสองฝั่ง; GPA ใช้รายงานเกรดที่รวมเกรดที่อาจารย์ประกาศแล้ว |
+| `ai/TeachingTools.java` | ย้ายจาก `service` มา `ai` |
+| `controller/ChatController.java` | บัญชีทดลอง `advisor` ยังได้ `:all`; ใส่ข้อมูลรายวิชาที่สอน (TeachingTools) ลง prompt ของอาจารย์ เพราะ main ไม่ได้ใช้ tool calling แล้ว |
+| `service/TimetableService.java` | เก็บทั้งตรวจ Sec ของเรา + ตรวจวิชาบังคับก่อนของ main; constructor รับ repo เกรดแบบไม่บังคับ |
+| `sample/legacy-students.json` | รหัสใหม่ของ main + ชื่อมีคำนำหน้าของเรา |
+| `WORKLOG.md` | main ลบไป แต่เก็บไว้ใน branch นี้ |
+
+ผลทดสอบ: `mvnw test` ผ่าน 425/425 · `docker compose up -d --build` ขึ้นครบ · API `/grade-schedules`, `/cohort-advisors`, `/students` ตอบ 200
+
+⚠️ ฐานข้อมูลใน Docker volume ยังเป็นข้อมูลชุดเก่า (รหัส 64xxxx) บัญชีใหม่ตาม README ของ main (`student` = 6621100042) จึงล็อกอินไม่ได้
+ใช้ `6421100042` / `password` แทนไปก่อน หรือล้างฐานข้อมูลด้วย `docker compose down -v` แล้ว `up` ใหม่ (ข้อมูลที่กรอกเองจะหาย)
+
 ## 2026-10-07 — รอบที่ 28: คู่มือ AI + ข้อมูลทดสอบไปกับ Git
 
 | ไฟล์ | การเปลี่ยนแปลง |

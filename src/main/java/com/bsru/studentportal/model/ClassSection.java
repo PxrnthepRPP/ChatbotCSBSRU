@@ -86,5 +86,26 @@ public class ClassSection {
     @Column(name = "review_note")
     private String reviewNote;
 
+    /** Comma-separated prerequisite course codes, e.g. 'CS101,CS102' */
+    @Column(name = "prerequisite_course_codes")
+    private String prerequisiteCourseCodes;
+
+    public ClassSection(Long id, Integer academicYear, Integer term, String courseCode, String courseName,
+                        Integer credits, String sectionNo, Integer dayOfWeek, LocalTime startTime, LocalTime endTime,
+                        String room, Advisor instructor, Integer capacity, ApprovalStatus approvalStatus,
+                        String reviewNote) {
+        this(id, academicYear, term, courseCode, courseName, credits, sectionNo, dayOfWeek, startTime, endTime,
+                room, instructor, capacity, approvalStatus, reviewNote, null);
+    }
+
+    public String getPrerequisiteCourseCodes() {
+        return prerequisiteCourseCodes;
+    }
+
+    public void setPrerequisiteCourseCodes(String prerequisiteCourseCodes) {
+        this.prerequisiteCourseCodes = prerequisiteCourseCodes;
+    }
+
     public enum ApprovalStatus { PENDING, APPROVED, REJECTED }
 }
+

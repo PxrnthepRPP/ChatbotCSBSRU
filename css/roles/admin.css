@@ -49,14 +49,17 @@
 #mod-manage-advisors .data-table thead,
 #mod-manage-students .data-table thead,
 #mod-manage-petitions .data-table thead {
-    background: linear-gradient(135deg, var(--red-50), var(--brand-50));
+    background: #f8fafc;
+    border-bottom: 2px solid var(--g-200);
 }
 
 #mod-manage-advisors .data-table th,
 #mod-manage-students .data-table th,
 #mod-manage-petitions .data-table th {
-    color: var(--red-600);
-    border-bottom-color: var(--red-100);
+    color: var(--g-800, #1e293b);
+    font-weight: 700;
+    border-bottom: 2px solid var(--g-200);
+    letter-spacing: 0.01em;
 }
 
 /* ============================================================
@@ -117,4 +120,412 @@
     }
 }
 
+/* ============================================================
+   ADMIN TABLE PAGINATION STYLES
+   ============================================================ */
+.table-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* right padding keeps "ถัดไป" clear of the floating chat button (56px at right:24px) */
+    padding: 12px 64px 12px 20px;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 0 0 12px 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.88rem;
+    color: var(--text-muted, #6b7280);
+}
 
+.table-pagination-bar .pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.table-pagination-bar .pagination-info strong {
+    color: var(--text-primary, #1f2937);
+    font-weight: 600;
+}
+
+.table-pagination-bar .page-size-select {
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #1f2937);
+    font-size: 0.84rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--t-fast);
+}
+
+.table-pagination-bar .page-size-select:focus {
+    border-color: var(--red-500, #ef4444);
+}
+
+.table-pagination-bar .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.table-pagination-bar .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #374151);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.table-pagination-bar .pagination-btn:hover:not(:disabled) {
+    background: var(--red-50, #fef2f2);
+    border-color: var(--red-500, #ef4444);
+    color: var(--red-600, #dc2626);
+}
+
+.table-pagination-bar .pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--g-100, #f3f4f6);
+}
+
+.table-pagination-bar .pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.table-pagination-bar .pagination-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    border: 1px solid var(--g-300, #d1d5db);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #374151);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.table-pagination-bar .pagination-page-btn:hover {
+    border-color: var(--red-400, #f87171);
+    color: var(--red-600, #dc2626);
+    background: var(--red-50, #fef2f2);
+}
+
+.table-pagination-bar .pagination-page-btn.active {
+    background: linear-gradient(135deg, var(--red-500, #ef4444), var(--red-600, #dc2626));
+    border-color: var(--red-600, #dc2626);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.table-pagination-bar .pagination-ellipsis {
+    padding: 0 4px;
+    color: var(--g-400, #9ca3af);
+    user-select: none;
+}
+
+/* ── Admin Multi-Batch Filter Panel & Chips (Instant First Paint & High Contrast) ── */
+.batch-multi-panel {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--g-200, #e5e7eb);
+    border-left: 4px solid var(--brand-500, #1e3d72);
+    border-radius: var(--radius-md, 12px);
+    padding: 14px 18px;
+    margin-top: -10px;
+    margin-bottom: 22px;
+    box-shadow: var(--sh-sm);
+    animation: fadeInBatchPanel 0.2s ease-out;
+}
+
+@keyframes fadeInBatchPanel {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.batch-multi-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--g-100, #f3f4f6);
+}
+
+.batch-multi-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main, #1f2037);
+}
+
+.batch-multi-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.batch-multi-text {
+    letter-spacing: 0.01em;
+}
+
+.batch-multi-count-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 9999px;
+    background: var(--brand-50, #e8eef7);
+    color: var(--brand-600, #1b3a6b);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid var(--brand-100, #c5d5ec);
+    margin-left: 4px;
+}
+
+.batch-multi-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.batch-quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4.5px 11px;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--g-300, #cbd5e1);
+    background: var(--g-50, #f8fafc);
+    color: var(--g-700, #334155);
+    transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1.3;
+}
+
+.batch-quick-btn:hover {
+    background: var(--brand-50, #e8eef7);
+    border-color: var(--brand-400, #2a5ea8);
+    color: var(--brand-600, #1b3a6b);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(30, 61, 114, 0.1);
+}
+
+.batch-quick-btn-clear:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+.batch-preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.batch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--g-300, #cbd5e1);
+    background: var(--bg-card, #ffffff);
+    color: var(--text-main, #1e293b);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    white-space: nowrap;
+}
+
+.batch-chip .chip-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 1;
+    background: var(--g-200, #e2e8f0);
+    color: var(--g-600, #64748b);
+    transition: all 0.15s ease;
+}
+
+.batch-chip .chip-label {
+    letter-spacing: 0.01em;
+}
+
+.batch-chip .chip-count {
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 1.5px 7px;
+    border-radius: 12px;
+    background: var(--g-100, #f1f5f9);
+    color: var(--g-600, #475569);
+    transition: all 0.15s ease;
+}
+
+.batch-chip:hover {
+    border-color: var(--brand-400, #2a5ea8);
+    color: var(--brand-600, #1b3a6b);
+    background: var(--brand-50, #e8eef7);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(30, 61, 114, 0.12);
+}
+
+.batch-chip:hover .chip-indicator {
+    background: var(--brand-200, #8baad4);
+    color: var(--brand-700, #162f57);
+}
+
+.batch-chip.active {
+    background: linear-gradient(135deg, #1e3d72 0%, #2563eb 100%) !important;
+    border-color: #1e3d72 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(30, 61, 114, 0.28) !important;
+    transform: translateY(-1px);
+}
+
+.batch-chip.active .chip-indicator {
+    background: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+}
+
+.batch-chip.active .chip-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.batch-chip:focus-visible {
+    outline: 2px solid var(--blue-500, #3b82f6);
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .batch-multi-panel {
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+
+    .batch-multi-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .batch-multi-actions {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    .batch-preset-chips {
+        gap: 6px;
+    }
+
+    .batch-chip {
+        padding: 5px 11px;
+        font-size: 0.76rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .table-pagination-bar {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 12px;
+    }
+    .table-pagination-bar .pagination-info {
+        justify-content: center;
+    }
+    .table-pagination-bar .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* Labelled fields in the "create registration period" bar */
+.batch-filter-bar .reg-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+/* Wide admin tables scroll sideways: keep the action column (last) pinned so its buttons are never cut off */
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) th:last-child,
+#mod-admin-dashboard .table-wrap .data-table:not(.career-matrix-table) td:last-child,
+#mod-manage-petitions .table-wrap .data-table th:last-child,
+#mod-manage-petitions .table-wrap .data-table td:last-child,
+#mod-manage-students .table-wrap .data-table th:last-child,
+#mod-manage-students .table-wrap .data-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--bg-card, #fff);
+    box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.25);
+}
+
+/* Admin dashboard: 5 stat cards in one balanced grid instead of a 4 + 1 wrap */
+.stat-row.stat-row-5 {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.stat-row.stat-row-5 .stat-card {
+    min-width: 0;
+    padding: 16px;
+    gap: 12px;
+}
+
+@media (max-width: 1100px) {
+    .stat-row.stat-row-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    .stat-row.stat-row-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-row.stat-row-5 .stat-card:last-child { grid-column: 1 / -1; }
+}
+
+/* Row that was just added / edited */
+@keyframes rowHighlight {
+    from { background: var(--amber-100, #fef3c7); }
+    to { background: transparent; }
+}
+
+.data-table tr.row-highlight td {
+    animation: rowHighlight 2.5s ease-out;
+}

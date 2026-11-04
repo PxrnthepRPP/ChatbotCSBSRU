@@ -20,4 +20,9 @@ public class RegistrationCartRequest {
     private Integer term;
     private List<String> courseCodes;
     private Map<String, String> sections;
+
+    /** No Sec picked for any course: each gets the first Sec that fits */
+    public RegistrationCartRequest(Integer academicYear, Integer term, List<String> courseCodes) {
+        this(academicYear, term, courseCodes, null);
+    }
 }

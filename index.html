@@ -19,8 +19,9 @@
         // Apply the saved theme before the page paints, so dark mode never flashes white
         try { if (localStorage.getItem('bsru_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
     </script>
-    <link rel="stylesheet" href="css/main.css?v=3.0">
-    <link rel="stylesheet" href="css/theme-dark.css">
+    <link rel="stylesheet" href="css/main.css?v=3.1">
+    <link rel="stylesheet" href="css/theme-dark.css?v=3.1">
+    <link rel="stylesheet" href="css/components/notifications.css?v=3.0">
     <!-- Role-specific & component CSS are loaded dynamically by JS -->
     <script>
         function toggleMobileSidebar(e) {
@@ -63,7 +64,7 @@
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
-                ออกจากการจำลอง
+                ออกจากการเข้าใช้แทน
             </button>
         </div>
     </div>
@@ -91,14 +92,15 @@
                     <br>มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา
                 </p>
             </div>
-            <form id="loginForm" autocomplete="off">
+            <form id="loginForm">
                 <div class="form-group">
                     <label for="loginUsername">ชื่อผู้ใช้</label>
                     <div class="input-icon-wrap">
                         <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0H3z" />
                         </svg>
-                        <input type="text" id="loginUsername" placeholder="admin / advisor / student" required>
+                        <input type="text" id="loginUsername" name="username" autocomplete="username"
+                            placeholder="ชื่อผู้ใช้หรือรหัสนักศึกษา" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -109,18 +111,20 @@
                                 d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                                 clip-rule="evenodd" />
                         </svg>
-                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <input type="password" id="loginPassword" name="password" autocomplete="current-password"
+                            placeholder="••••••••" required>
                     </div>
                 </div>
 
-                <!-- Role hint cards -->
-                <div class="role-hints">
-                    <div class="role-hint"><span class="rh-badge rh-admin">ADMIN</span> พิมพ์ <code>admin</code></div>
-                    <div class="role-hint"><span class="rh-badge rh-advisor">ADVISOR</span> พิมพ์ <code>advisor</code>
+                <!-- Demo-account shortcuts: shown only when the backend says so (dev profile) -->
+                <div id="demoAccounts" hidden>
+                    <div class="role-hints" role="group" aria-label="บัญชีทดลอง">
+                        <button type="button" class="role-hint" data-demo-user="admin"><span class="rh-badge rh-admin">ADMIN</span> <code>admin</code></button>
+                        <button type="button" class="role-hint" data-demo-user="advisor"><span class="rh-badge rh-advisor">ADVISOR</span> <code>advisor</code></button>
+                        <button type="button" class="role-hint" data-demo-user="student"><span class="rh-badge rh-student">STUDENT</span> <code>student</code></button>
                     </div>
-                    <div class="role-hint"><span class="rh-badge rh-student">STUDENT</span> พิมพ์ <code>student</code> หรือรหัสนักศึกษา</div>
+                    <p class="role-hint-note" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">บัญชีทดลองสำหรับโหมดพัฒนา: กดที่ป้ายเพื่อกรอกให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
                 </div>
-                <p class="role-hint-note" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">กดที่ป้ายเพื่อกรอกบัญชีทดลองให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
 
                 <button type="submit" class="login-btn" id="loginBtn">
                     <span>เข้าสู่ระบบ</span>
@@ -188,19 +192,50 @@
             </div>
         </aside>
 
-        <!-- Mobile topbar -->
+        <!-- Unified Application Topbar -->
         <header class="topbar" id="topbar">
             <button class="hamburger" id="hamburgerBtn" aria-label="เปิดเมนู" onclick="window.toggleMobileSidebar(event)">
                 <span></span><span></span><span></span>
             </button>
-            <h2 class="topbar-title" id="topbarTitle">Dashboard</h2>
-            <div class="topbar-user" id="topbarUser">
-                <span class="topbar-user-name" id="topbarUserName"></span>
-                <div class="topbar-avatar" id="topbarAvatar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                    </svg>
+            <div class="topbar-title" id="topbarTitle" aria-hidden="true">Dashboard</div>
+            <div class="topbar-actions">
+                <!-- Notification Center Bell -->
+                <div class="notif-container" id="notifContainer">
+                    <button class="notif-bell-btn" id="notifBellBtn" type="button" aria-label="การแจ้งเตือน" aria-haspopup="true" aria-expanded="false" title="การแจ้งเตือน">
+                        <svg class="notif-bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notif-badge" id="notifBadge" style="display:none;" aria-live="polite">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none;" role="region" aria-label="ศูนย์การแจ้งเตือน">
+                        <div class="notif-dropdown-header">
+                            <div class="notif-header-title">
+                                <span>การแจ้งเตือน</span>
+                                <span class="notif-header-unread-count" id="notifHeaderUnreadCount"></span>
+                            </div>
+                            <button type="button" class="notif-mark-all-btn notif-read-all-btn" id="notifReadAllBtn" title="ทำเครื่องหมายว่าอ่านทั้งหมด">
+                                ทำเครื่องหมายอ่านทั้งหมด
+                            </button>
+                        </div>
+                        <div class="notif-dropdown-body" id="notifList" role="list">
+                            <!-- Injected by notifications.js -->
+                        </div>
+                        <div class="notif-dropdown-footer">
+                            <span class="notif-footer-hint">คลิกที่รายการเพื่อไปยังเมนูที่เกี่ยวข้อง</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="topbar-user" id="topbarUser">
+                    <span class="topbar-user-name" id="topbarUserName"></span>
+                    <div class="topbar-avatar" id="topbarAvatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                    </div>
                 </div>
             </div>
         </header>
@@ -214,50 +249,57 @@
             <!-- ======================== ADMIN MODULES ======================== -->
             <section class="module" id="mod-admin-dashboard" style="display:none;">
                 <div class="module-header">
-                    <h2>📊 แดชบอร์ดผู้ดูแลระบบ <span class="header-en">Admin Dashboard</span></h2>
+                    <h1>📊 แดชบอร์ดผู้ดูแลระบบ <span class="header-en">Admin Dashboard</span></h1>
                 </div>
                 <div id="adminDashboardContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-advisors" style="display:none;">
                 <div class="module-header">
-                    <h2>👩‍🏫 จัดการอาจารย์ที่ปรึกษา <span class="header-en">Manage Advisors</span></h2>
+                    <h1>👩‍🏫 จัดการอาจารย์ที่ปรึกษา <span class="header-en">Manage Advisors</span></h1>
                 </div>
                 <div id="manageAdvisorsContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-students" style="display:none;">
                 <div class="module-header">
-                    <h2>👨‍🎓 จัดการนักศึกษา <span class="header-en">Manage Students</span></h2>
+                    <h1>👨‍🎓 จัดการนักศึกษา <span class="header-en">Manage Students</span></h1>
                 </div>
                 <div id="manageStudentsContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-manage-petitions" style="display:none;">
                 <div class="module-header">
-                    <h2>📑 รายการคำร้องวิชาการ <span class="header-en">Petition Logs</span></h2>
+                    <h1>📑 รายการคำร้องวิชาการ <span class="header-en">Petition Logs</span></h1>
                 </div>
                 <div id="managePetitionsContent" class="module-body"></div>
+            </section>
+
+            <section class="module" id="mod-manage-knowledge" style="display:none;">
+                <div class="module-header">
+                    <h1>🧠 จัดการคลังความรู้ AI (RAG) <span class="header-en">Knowledge Base Management</span></h1>
+                </div>
+                <div id="manageKnowledgeContent" class="module-body"></div>
             </section>
 
             <!-- ======================== ADVISOR MODULES ======================== -->
             <section class="module" id="mod-advisor-dashboard" style="display:none;">
                 <div class="module-header">
-                    <h2>📋 แดชบอร์ดอาจารย์ที่ปรึกษา <span class="header-en">Advisor Dashboard</span></h2>
+                    <h1>📋 แดชบอร์ดอาจารย์ที่ปรึกษา <span class="header-en">Advisor Dashboard</span></h1>
                 </div>
                 <div id="advisorDashboardContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-my-advisees" style="display:none;">
                 <div class="module-header">
-                    <h2>👥 นักศึกษาในที่ปรึกษา <span class="header-en">My Advisees</span></h2>
+                    <h1>👥 นักศึกษาในที่ปรึกษา <span class="header-en">My Advisees</span></h1>
                 </div>
                 <div id="myAdviseesContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-advisor-courses" style="display:none;">
                 <div class="module-header">
-                    <h2>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam Announcements</span></h2>
+                    <h1>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam Announcements</span></h1>
                 </div>
                 <div id="advisorCoursesContent" class="module-body"></div>
             </section>
@@ -265,49 +307,49 @@
             <!-- ======================== STUDENT MODULES ======================== -->
             <section class="module" id="mod-bibliography" style="display:none;">
                 <div class="module-header">
-                    <h2>📋 ประวัตินักศึกษา <span class="header-en">Bibliography</span></h2>
+                    <h1>📋 ประวัตินักศึกษา <span class="header-en">Student Profile</span></h1>
                 </div>
                 <div id="bibliographyContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-timetable" style="display:none;">
                 <div class="module-header">
-                    <h2>📅 ตารางเรียน/สอบ <span class="header-en">Study & Exams Timetable</span></h2>
+                    <h1>📅 ตารางเรียน/สอบ <span class="header-en">Study & Exams Timetable</span></h1>
                 </div>
                 <div id="timetableContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-finance" style="display:none;">
                 <div class="module-header">
-                    <h2>💰 การเงิน/ทุนการศึกษา <span class="header-en">Debt & Scholarship</span></h2>
+                    <h1>💰 การเงิน/ทุนการศึกษา <span class="header-en">Debt & Scholarship</span></h1>
                 </div>
                 <div id="financeContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-grades" style="display:none;">
                 <div class="module-header">
-                    <h2>📊 ผลการเรียน <span class="header-en">Studied Result</span></h2>
+                    <h1>📊 ผลการเรียน <span class="header-en">Studied Result</span></h1>
                 </div>
                 <div id="gradesContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-graduation" style="display:none;">
                 <div class="module-header">
-                    <h2>🎓 ตรวจสอบจบ <span class="header-en">Graduation Check</span></h2>
+                    <h1>🎓 ตรวจสอบจบ <span class="header-en">Graduation Check</span></h1>
                 </div>
                 <div id="graduationContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-activity" style="display:none;">
                 <div class="module-header">
-                    <h2>⚡ กิจกรรม <span class="header-en">Activity Check</span></h2>
+                    <h1>⚡ กิจกรรม <span class="header-en">Activity Check</span></h1>
                 </div>
                 <div id="activityContent" class="module-body"></div>
             </section>
 
             <section class="module" id="mod-petitions" style="display:none;">
                 <div class="module-header">
-                    <h2>📝 ยื่นคำร้องวิชาการ <span class="header-en">Academic Petitions</span></h2>
+                    <h1>📝 ยื่นคำร้องวิชาการ <span class="header-en">Academic Petitions</span></h1>
                 </div>
                 <div id="petitionsContent" class="module-body"></div>
             </section>
@@ -345,6 +387,15 @@
                     </div>
                 </div>
                 <div class="cw-header-actions">
+                    <!-- Clear Chat button -->
+                    <button class="cw-clear-btn" id="cwClearBtn" title="ล้างประวัติการสนทนา" aria-label="ล้างแชท">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
                     <!-- Expand / Collapse button -->
                     <button class="cw-expand-btn" id="cwExpandBtn" title="ขยายหน้าต่าง" aria-label="ขยายหน้าต่าง">
                         <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

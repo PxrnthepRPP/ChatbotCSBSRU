@@ -1,5 +1,6 @@
 package com.bsru.studentportal.config;
 
+import com.bsru.studentportal.ai.FreshToolDataChatMemoryStore;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -26,7 +27,7 @@ public class AiConfig {
     @Value("${gemini.api.key:demo-api-key}")
     private String geminiApiKey;
 
-    @Value("${gemini.model-name:gemini-3.7-flash}")
+    @Value("${gemini.model-name:gemini-3.5-flash-lite}")
     private String modelName;
 
     @Value("${gemini.embedding-model-name:gemini-embedding-001}")
@@ -42,7 +43,7 @@ public class AiConfig {
     @Value("${spring.datasource.username:bsru_admin}")
     private String dbUser;
 
-    @Value("${spring.datasource.password:bsru_password}")
+    @Value("${spring.datasource.password}")
     private String dbPassword;
 
     @Bean

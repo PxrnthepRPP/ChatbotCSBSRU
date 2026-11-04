@@ -222,3 +222,52 @@
     }
 }
 
+
+/* ── Grades: cards on narrow screens (the table needs sideways scrolling to show the grade) ── */
+.grades-cards {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .grades-table-wrap {
+        display: none;
+    }
+
+    .grades-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .grade-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--g-200);
+        border-radius: var(--radius-md);
+    }
+
+    .grade-card-main {
+        min-width: 0;
+    }
+
+    .grade-card-code {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .grade-card-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-main);
+        line-height: 1.35;
+    }
+
+    .grade-card .grade {
+        flex-shrink: 0;
+    }
+}

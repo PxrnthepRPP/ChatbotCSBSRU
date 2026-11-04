@@ -12,13 +12,14 @@ import com.bsru.studentportal.model.RegistrationPeriod;
 import com.bsru.studentportal.model.SectionEnrollment;
 import com.bsru.studentportal.model.SectionEnrollment.EnrollmentStatus;
 import com.bsru.studentportal.model.Student;
+import com.bsru.studentportal.model.CourseGrade;
 import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.ClassSectionRepository;
+import com.bsru.studentportal.repository.CourseGradeRepository;
 import com.bsru.studentportal.repository.RegistrationPeriodRepository;
 import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +53,6 @@ import java.util.stream.Collectors;
  * teacher registering for a student confirms directly.
  */
 @Service
-@RequiredArgsConstructor
 public class TimetableService {
 
     public static final String[] DAY_NAMES_TH = {"จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"};
@@ -99,14 +99,27 @@ public class TimetableService {
                            List<SessionView> choices) {}
 
     public record RegistrationCheck(String studentSection, int academicYear, int term, List<CartItem> items,
-                                    int totalCredits, boolean ok) {}
+                                    int totalCredits, boolean ok) {
+        @com.fasterxml.jackson.annotation.JsonProperty("valid")
+        public boolean valid() {
+            return ok;
+        }
+
+        public List<String> getErrors() {
+            if (items == null) return List.of();
+            return items.stream()
+                    .filter(i -> i.problems() != null)
+                    .flatMap(i -> i.problems().stream())
+                    .toList();
+        }
+    }
 
     /** A pending registration request, as listed for the admin */
     public record EnrollmentRequestView(Long enrollmentId, String studentId, String studentName, String studentSection,
                                         SessionView section, EnrollmentStatus status, LocalDateTime requestedAt) {}
 
     @Getter
-    public static class TimetableException extends RuntimeException {
+    public static class TimetableException extends IllegalArgumentException {
         private final HttpStatus status;
         /** Optional extra payload for the client, e.g. the failed cart check */
         private final Object details;
@@ -122,6 +135,8 @@ public class TimetableService {
         }
     }
 
+    private static final Set<String> NON_PASSING_GRADES = Set.of("F", "W", "I", "U", "ยังไม่ออกผล");
+
     private final ClassSectionRepository sectionRepository;
     private final com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository;
     private final com.bsru.studentportal.repository.SectionGradeSubmissionRepository gradeSubmissionRepository;
@@ -129,6 +144,49 @@ public class TimetableService {
     private final RegistrationPeriodRepository periodRepository;
     private final StudentRepository studentRepository;
     private final AdvisorRepository advisorRepository;
+    private final NotificationService notificationService;
+    private final CourseGradeRepository courseGradeRepository;
+
+    public TimetableService(ClassSectionRepository sectionRepository,
+                            SectionEnrollmentRepository enrollmentRepository,
+                            RegistrationPeriodRepository periodRepository,
+                            StudentRepository studentRepository,
+                            AdvisorRepository advisorRepository,
+                            NotificationService notificationService) {
+        this(sectionRepository, enrollmentRepository, periodRepository, studentRepository, advisorRepository, notificationService, null);
+    }
+
+    public TimetableService(ClassSectionRepository sectionRepository,
+                            SectionEnrollmentRepository enrollmentRepository,
+                            RegistrationPeriodRepository periodRepository,
+                            StudentRepository studentRepository,
+                            AdvisorRepository advisorRepository,
+                            NotificationService notificationService,
+                            CourseGradeRepository courseGradeRepository) {
+        this(sectionRepository, enrollmentRepository, periodRepository, studentRepository, advisorRepository,
+                notificationService, courseGradeRepository, null, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public TimetableService(ClassSectionRepository sectionRepository,
+                            SectionEnrollmentRepository enrollmentRepository,
+                            RegistrationPeriodRepository periodRepository,
+                            StudentRepository studentRepository,
+                            AdvisorRepository advisorRepository,
+                            NotificationService notificationService,
+                            @org.springframework.beans.factory.annotation.Autowired(required = false) CourseGradeRepository courseGradeRepository,
+                            @org.springframework.beans.factory.annotation.Autowired(required = false) com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository,
+                            @org.springframework.beans.factory.annotation.Autowired(required = false) com.bsru.studentportal.repository.SectionGradeSubmissionRepository gradeSubmissionRepository) {
+        this.instructorGradeRepository = instructorGradeRepository;
+        this.gradeSubmissionRepository = gradeSubmissionRepository;
+        this.sectionRepository = sectionRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.periodRepository = periodRepository;
+        this.studentRepository = studentRepository;
+        this.advisorRepository = advisorRepository;
+        this.notificationService = notificationService;
+        this.courseGradeRepository = courseGradeRepository;
+    }
 
     // ------------------------------------------------------------------ reading
 
@@ -223,8 +281,20 @@ public class TimetableService {
         ClassSection section = findSection(sectionId);
         requireCanManage(actor, section);
         return enrollmentRepository.findBySectionIdAndStatusIn(sectionId, ACTIVE).stream()
-                .map(e -> Map.of("studentId", e.getStudent().getStudentId(), "nameTh", e.getStudent().getNameTh(),
-                        "status", e.getStatus().name()))
+                .sorted(Comparator.comparing(e -> e.getStudent().getStudentId()))
+                .map(e -> {
+                    Student st = e.getStudent();
+                    Map<String, String> row = new LinkedHashMap<>();
+                    row.put("studentId", st.getStudentId() != null ? st.getStudentId() : "");
+                    row.put("nameTh", st.getNameTh() != null ? st.getNameTh() : "");
+                    row.put("nameEn", st.getNameEn() != null ? st.getNameEn() : "");
+                    row.put("year", st.getYear() != null ? String.valueOf(st.getYear()) : "");
+                    row.put("studentSection", st.getStudentSection() != null ? st.getStudentSection() : "");
+                    row.put("email", st.getEmail() != null ? st.getEmail() : "");
+                    row.put("phone", st.getPhone() != null ? st.getPhone() : "");
+                    row.put("status", e.getStatus().name());
+                    return row;
+                })
                 .toList();
     }
 
@@ -314,6 +384,34 @@ public class TimetableService {
                 }
             }
             problems.addAll(sectionProblems);
+
+            // Academic Prerequisite Validation
+            if (s.getPrerequisiteCourseCodes() != null && !s.getPrerequisiteCourseCodes().trim().isEmpty()) {
+                String[] reqCodes = s.getPrerequisiteCourseCodes().split("[,;\\s]+");
+                List<String> missing = new ArrayList<>();
+                List<CourseGrade> grades = courseGradeRepository != null
+                        ? courseGradeRepository.findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId)
+                        : List.of();
+
+                for (String rc : reqCodes) {
+                    String clean = rc.trim().toUpperCase();
+                    if (clean.isEmpty()) continue;
+                    boolean passed = grades.stream().anyMatch(g ->
+                            g.getCourseCode() != null
+                            && g.getCourseCode().trim().equalsIgnoreCase(clean)
+                            && g.getGrade() != null
+                            && !g.getGrade().trim().isEmpty()
+                            && !NON_PASSING_GRADES.contains(g.getGrade().trim().toUpperCase())
+                    );
+                    if (!passed) {
+                        missing.add(clean);
+                    }
+                }
+                if (!missing.isEmpty()) {
+                    problems.add("ไม่ผ่านวิชาบังคับก่อน: " + String.join(", ", missing));
+                }
+            }
+
             picked.add(s);
             items.add(new CartItem(code, toView(s), seatsLeft(s), problems, choices));
         }
@@ -359,7 +457,14 @@ public class TimetableService {
             throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณาเลือกวิชาอย่างน้อย 1 วิชา");
         }
         if (!check.ok()) {
-            throw new TimetableException(HttpStatus.CONFLICT, "ยังลงทะเบียนไม่ได้ กรุณาแก้รายการที่มีปัญหาก่อน", check);
+            String firstPrereqProblem = check.items().stream()
+                    .filter(i -> i.problems() != null)
+                    .flatMap(i -> i.problems().stream())
+                    .filter(p -> p.startsWith("ไม่ผ่านวิชาบังคับก่อน"))
+                    .findFirst()
+                    .orElse(null);
+            String errorMsg = firstPrereqProblem != null ? firstPrereqProblem : "ยังลงทะเบียนไม่ได้ กรุณาแก้รายการที่มีปัญหาก่อน";
+            throw new TimetableException(HttpStatus.CONFLICT, errorMsg, check);
         }
         Student student = findStudent(studentId);
         EnrollmentStatus status = actor.kind() == Actor.Kind.STUDENT ? EnrollmentStatus.PENDING : EnrollmentStatus.CONFIRMED;
@@ -460,6 +565,31 @@ public class TimetableService {
             }
             e.setStatus(decision);
             e.setReviewNote(decision == EnrollmentStatus.REJECTED ? req.getNote().trim() : null);
+
+            if (e.getStudent() != null && e.getStudent().getStudentId() != null) {
+                String studentId = e.getStudent().getStudentId();
+                String courseInfo = e.getSection() != null
+                        ? e.getSection().getCourseCode() + " " + e.getSection().getCourseName()
+                        : "รายวิชา";
+                if (decision == EnrollmentStatus.CONFIRMED) {
+                    notificationService.notifyUser(
+                            studentId,
+                            "ผลการลงทะเบียนเรียนได้รับการอนุมัติ",
+                            "การลงทะเบียน " + courseInfo + " ได้รับการอนุมัติเรียบร้อยแล้ว",
+                            "timetable",
+                            "REGISTRATION"
+                    );
+                } else if (decision == EnrollmentStatus.REJECTED) {
+                    String reason = req.getNote() != null && !req.getNote().isBlank() ? " เนื่องจาก: " + req.getNote().trim() : "";
+                    notificationService.notifyUser(
+                            studentId,
+                            "ผลการลงทะเบียนเรียนไม่ผ่านการอนุมัติ",
+                            "การลงทะเบียน " + courseInfo + " ไม่ได้รับการอนุมัติ" + reason,
+                            "timetable",
+                            "REGISTRATION"
+                    );
+                }
+            }
         }
         enrollmentRepository.saveAll(enrollments);
         return enrollments.size();
@@ -543,8 +673,9 @@ public class TimetableService {
                     "กลุ่มเรียนนี้มีนักศึกษาลงทะเบียนแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อปิดกลุ่มเรียน");
         }
         enrollmentRepository.deleteBySectionId(sectionId);
-        instructorGradeRepository.deleteBySectionId(sectionId);
-        gradeSubmissionRepository.findById(sectionId).ifPresent(gradeSubmissionRepository::delete);
+        if (instructorGradeRepository != null) instructorGradeRepository.deleteBySectionId(sectionId);
+        if (gradeSubmissionRepository != null)
+            gradeSubmissionRepository.findById(sectionId).ifPresent(gradeSubmissionRepository::delete);
         sectionRepository.delete(s);
     }
 

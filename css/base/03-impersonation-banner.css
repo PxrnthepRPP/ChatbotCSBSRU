@@ -1,0 +1,106 @@
+/* main.css part — impersonation banner. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   IMPERSONATION BANNER
+   ============================================================ */
+.impersonation-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9000;
+    height: var(--imp-banner-h);
+    background: linear-gradient(135deg, #dc2626, #ea580c);
+    color: #fff;
+    display: none;
+    /* shown via JS */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+    animation: bannerSlideDown 0.35s var(--ease) both;
+}
+
+.impersonation-banner.visible {
+    display: flex
+}
+
+@keyframes bannerSlideDown {
+    from {
+        transform: translateY(-100%)
+    }
+
+    to {
+        transform: translateY(0)
+    }
+}
+
+.imp-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+    max-width: 1200px;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.imp-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0
+}
+
+.imp-text {
+    font-size: 0.85rem;
+    font-weight: 500
+}
+
+.imp-text strong {
+    font-weight: 700
+}
+
+.imp-exit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    transition: all var(--t-fast);
+    white-space: nowrap;
+}
+
+.imp-exit-btn svg {
+    width: 16px;
+    height: 16px
+}
+
+.imp-exit-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px)
+}
+
+/* Shift dashboard down when banner is shown */
+body.impersonating .dashboard {
+    padding-top: var(--imp-banner-h)
+}
+
+body.impersonating .sidebar {
+    top: var(--imp-banner-h);
+    height: calc(100vh - var(--imp-banner-h))
+}
+
+body.impersonating .topbar {
+    top: var(--imp-banner-h)
+}
+
+body.impersonating .chatbot-fab {
+    bottom: 24px
+}
+
+

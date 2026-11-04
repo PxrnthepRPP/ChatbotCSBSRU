@@ -2,6 +2,11 @@
    BSRU Student Portal — Utilities
    ================================================================ */
 
+import { viewPdfAttachmentAPI } from './api.js';
+if (typeof window !== 'undefined') {
+    window.viewPdfAttachment = viewPdfAttachmentAPI;
+}
+
 export function esc(str) { 
     const d = document.createElement('div'); 
     d.textContent = str; 
@@ -22,15 +27,10 @@ export function gradeClass(g) {
 
 export function statusBadge(s) {
     if (s === 'ผ่าน' || s === 'ชำระแล้ว' || s === 'กำลังศึกษา' || s === 'อนุมัติ') return 'badge-green';
-    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ') return 'badge-amber';
-    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ') return 'badge-red';
-    if (s === 'จบการศึกษา') return 'badge-blue';
-    if (s === 'พ้นสภาพ') return 'badge-red';
+    if (s === 'รอตรวจสอบ' || s === 'ลงทะเบียนแล้ว' || s === 'รอดำเนินการ' || s === 'รออาจารย์ที่ปรึกษาพิจารณา') return 'badge-amber';
+    if (s === 'รอผู้ดูแลระบบอนุมัติ' || s === 'จบการศึกษา') return 'badge-blue';
+    if (s === 'ค้างชำระ' || s === 'พักการศึกษา' || s === 'ปฏิเสธ' || s === 'ไม่อนุมัติ' || s === 'พ้นสภาพ') return 'badge-red';
     return 'badge-purple';
-}
-
-export function getBatch(studentId) {
-    return studentId ? studentId.substring(0, 2) : '';
 }
 
 /** Name titles; "นางสาว" is listed before "นาง" so it is matched first */
@@ -69,6 +69,45 @@ export function withNamePrefix(prefixTh, nameTh, nameEn) {
 }
 
 /**
+ * Petition status as shown to users. The backend stores Thai labels; old seed rows used
+ * English codes (APPROVED, PENDING, IN_REVIEW, REJECTED). Map those, and show anything
+ * unreadable (e.g. "??????" from a client that sent non-UTF-8) as an explicit unknown.
+ */
+const LEGACY_PETITION_STATUS = {
+    APPROVED: 'อนุมัติ',
+    PENDING: 'รออาจารย์ที่ปรึกษาพิจารณา',
+    IN_REVIEW: 'รอผู้ดูแลระบบอนุมัติ',
+    REJECTED: 'ไม่อนุมัติ',
+};
+export function petitionStatus(s) {
+    const v = (s ?? '').toString().trim();
+    if (!v || /^\?+$/.test(v)) return 'ไม่ทราบสถานะ';
+    return LEGACY_PETITION_STATUS[v.toUpperCase()] || v;
+}
+
+/** Academic year in B.E.; a new academic year starts in June (same rule as the backend DataSeeder) */
+export function currentAcademicYearBE(today = new Date()) {
+    return today.getFullYear() + 543 - (today.getMonth() < 5 ? 1 : 0);
+}
+
+/** B.E. admission year from the 2-digit batch prefix of a student ID ("6621100042" → 2566) */
+export function admissionYearFromId(studentId) {
+    const batch = parseInt(String(studentId || '').slice(0, 2), 10);
+    return Number.isFinite(batch) ? 2500 + batch : null;
+}
+
+/** Year level 1–8 for a student still enrolled, derived from the ID */
+export function yearLevelFromId(studentId, fallback = 1) {
+    const admitted = admissionYearFromId(studentId);
+    if (!admitted) return fallback;
+    return Math.max(1, Math.min(8, currentAcademicYearBE() - admitted + 1));
+}
+
+export function getBatch(studentId) {
+    return studentId ? studentId.substring(0, 2) : ''; 
+}
+
+/**
  * Creates a debounced function that delays invoking `func` until after `delay` milliseconds
  * have elapsed since the last time the debounced function was invoked.
  * 
@@ -94,7 +133,8 @@ export function debounce(func, delay) {
  * @param {'success'|'error'|'info'} type 
  * @param {string} message 
  */
-export function showToast(type, message) {
+/** @param {{label: string, onClick: () => void}} [action] optional button in the toast, e.g. undo */
+export function showToast(type, message, action) {
     const existing = document.querySelector('.petition-toast');
     if (existing) existing.remove();
 
@@ -127,7 +167,23 @@ export function showToast(type, message) {
             toast.classList.remove('visible');
             setTimeout(() => toast.remove(), 300);
         }
-    }, 4500);
+    }, action ? 8000 : 4500);   // an undo needs time to be noticed
+
+    if (action) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'petition-toast-action';
+        btn.textContent = action.label;
+        btn.style.cssText = 'margin-left:8px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer';
+        btn.addEventListener('click', () => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 300);
+            action.onClick();
+        });
+        toast.querySelector('.petition-toast-close').before(btn);
+    }
+    return toast;
 }
 
-export { fetchAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
+export { fetchAPI, uploadFileAPI, viewPdfAttachmentAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
+

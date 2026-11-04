@@ -1,0 +1,260 @@
+/* main.css part — buttons, action groups, toolbar, advisee cards. Loaded via @import from css/main.css; the import order there is the cascade order. */
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all var(--t-fast);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(31, 71, 133, 0.25)
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(31, 71, 133, 0.35)
+}
+
+.btn-success {
+    background: var(--green-500);
+    color: #fff
+}
+
+.btn-success:hover {
+    background: var(--green-600);
+    transform: translateY(-1px)
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: #1e293b; /* WCAG AAA high-contrast dark text on amber */
+    font-weight: 700;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--red-500);
+    color: #fff
+}
+
+.btn-danger:hover {
+    background: var(--red-600);
+    transform: translateY(-1px)
+}
+
+.btn-ghost {
+    background: var(--g-100);
+    color: var(--g-600)
+}
+
+.btn-ghost:hover {
+    background: var(--g-200)
+}
+
+.btn-info {
+    background: var(--blue-500);
+    color: #fff
+}
+
+.btn-info:hover {
+    background: var(--blue-600);
+    transform: translateY(-1px)
+}
+
+.btn-orange {
+    background: var(--orange-500);
+    color: #fff
+}
+
+.btn-orange:hover {
+    background: var(--orange-600);
+    transform: translateY(-1px)
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 0.76rem;
+    border-radius: var(--radius-sm)
+}
+
+
+/* Action button group in tables */
+.action-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap
+}
+
+/* Toolbar */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px
+}
+
+.toolbar-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--g-50);
+    border: 1.5px solid var(--g-200);
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
+    /* never shrink below a usable width; the toolbar wraps instead */
+    flex: 1 1 240px;
+    min-width: 240px;
+    max-width: 320px;
+}
+
+.toolbar-search svg {
+    width: 18px;
+    height: 18px;
+    color: var(--g-400);
+    flex-shrink: 0
+}
+
+.toolbar-search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.84rem;
+    color: var(--text-main);
+    width: 100%
+}
+
+.toolbar-search input::placeholder {
+    color: var(--g-400)
+}
+
+/* Advisee cards */
+.advisee-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--g-100);
+    box-shadow: var(--sh-sm);
+    margin-bottom: 12px;
+    transition: all var(--t-fast);
+}
+
+.advisee-card:hover {
+    box-shadow: var(--sh-md);
+    transform: translateY(-1px)
+}
+
+.advisee-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--brand-200), var(--brand-100));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.advisee-avatar svg {
+    width: 24px;
+    height: 24px;
+    color: var(--brand-500)
+}
+
+.advisee-info {
+    flex: 1;
+    min-width: 0
+}
+
+.advisee-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--g-800)
+}
+
+.advisee-detail {
+    font-size: 0.78rem;
+    color: var(--text-muted)
+}
+
+.advisee-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap
+}
+
+
+
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.btn-icon svg {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+}
+
+/* Table Action Buttons Hover Colors */
+.adv-sec-students:hover {
+    color: var(--brand-600) !important;
+    background: var(--brand-50) !important;
+}
+
+.adv-sec-edit:hover {
+    color: var(--blue-600) !important;
+    background: var(--blue-50) !important;
+}
+
+.adv-sec-delete:hover,
+.sec-delete:hover,
+.adv-del-exam:hover {
+    color: var(--red-600) !important;
+    background: var(--red-50) !important;
+}
+
+/* Touch screens: icon buttons get the recommended 44px target */
+@media (pointer: coarse) {
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+}
