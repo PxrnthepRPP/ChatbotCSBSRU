@@ -18,6 +18,7 @@ import { getAuthState } from '../auth.js';
 import { fetchAPI, API_BASE_URL } from '../api.js';
 import { loadComponentCSS } from '../css-loader.js';
 import { showToast } from '../utils.js';
+import { initSatisfaction, resetSatisfaction, noteUserMessage, noteActivity, noteChatClosed } from './satisfaction.js';
 
 let _chatbotInitialized = false;
 
@@ -419,13 +420,15 @@ export function renderSafeMarkdown(text) {
    and the panel is emptied. */
 let resetChatView = () => {};
 
-/** Delete the signed-in user's chat history + AI memory and empty the panel. Never throws. */
+/** Delete the signed-in user's chat history + AI memory and empty the panel. Never throws.
+ *  (The admin's permanent archive is kept; the AI still recalls the person's earlier chats from it.) */
 export async function resetChatSession() {
     try {
         await fetchAPI('/chat/history', 'DELETE', null, 5000);
     } catch (e) {
         console.warn('⚠️ [Chatbot] Could not clear chat history:', e.message);
     }
+    resetSatisfaction();
     resetChatView();
 }
 
@@ -455,8 +458,80 @@ export function initChatbot() {
         cwMessages.innerHTML = '';
         historyLoaded = false;
         welcomeShown = false;
-        if (chatbotOpen) loadChatHistory();   // shows the welcome message for the empty history
+        archiveAccessChecked = false;
+        closeArchiveView();
+        if (chatbotOpen) {
+            loadChatHistory();   // shows the welcome message for the empty history
+            refreshArchiveButton();
+        }
     };
+
+    /* ── Own earlier chats (only when the admin allowed it; never anyone else's) ── */
+    let archiveAccessChecked = false;
+    const cwArchiveBtn = document.createElement('button');
+    cwArchiveBtn.type = 'button';
+    cwArchiveBtn.className = 'cw-clear-btn cw-archive-btn';
+    cwArchiveBtn.id = 'cwArchiveBtn';
+    cwArchiveBtn.title = 'ดูประวัติแชทย้อนหลังของฉัน';
+    cwArchiveBtn.setAttribute('aria-label', 'ดูประวัติแชทย้อนหลังของฉัน');
+    cwArchiveBtn.hidden = true;
+    cwArchiveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 14"/></svg>';
+    cwClearBtn?.parentNode?.insertBefore(cwArchiveBtn, cwClearBtn);
+
+    async function refreshArchiveButton() {
+        if (archiveAccessChecked) return;
+        archiveAccessChecked = true;
+        try {
+            const sid = getSessionId();
+            const res = await fetchAPI(sid ? `/chat/archive/access?sessionId=${encodeURIComponent(sid)}` : '/chat/archive/access', 'GET', null, 5000);
+            cwArchiveBtn.hidden = !res?.allowed;
+        } catch (e) {
+            cwArchiveBtn.hidden = true;
+        }
+    }
+
+    function closeArchiveView() {
+        chatbotWindow?.querySelector('.cw-archive')?.remove();
+    }
+
+    cwArchiveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (chatbotWindow.querySelector('.cw-archive')) { closeArchiveView(); return; }
+        const view = document.createElement('div');
+        view.className = 'cw-archive';
+        view.innerHTML = `
+            <div class="cw-archive-head">
+                <strong>ประวัติแชทย้อนหลังของฉัน</strong>
+                <button type="button" class="btn btn-sm btn-ghost cw-archive-back">← กลับไปแชท</button>
+            </div>
+            <div class="cw-archive-body"><div class="cw-archive-empty">กำลังโหลด...</div></div>`;
+        cwMessages.parentNode.insertBefore(view, cwMessages);
+        view.querySelector('.cw-archive-back').addEventListener('click', closeArchiveView);
+        const body = view.querySelector('.cw-archive-body');
+        try {
+            const sid = getSessionId();
+            const list = await fetchAPI(sid ? `/chat/archive?sessionId=${encodeURIComponent(sid)}` : '/chat/archive', 'GET', null, 10000);
+            if (!Array.isArray(list) || list.length === 0) {
+                body.innerHTML = '<div class="cw-archive-empty">ยังไม่มีประวัติแชท</div>';
+                return;
+            }
+            const dateFmt = new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' });
+            const timeFmt = new Intl.DateTimeFormat('th-TH', { timeStyle: 'short' });
+            let lastDay = '';
+            body.innerHTML = list.map(m => {
+                const d = new Date(m.createdAt);
+                const day = dateFmt.format(d);
+                const head = day !== lastDay ? `<div class="cw-archive-day">${escapeHtml(day)}</div>` : '';
+                lastDay = day;
+                const who = m.sender === 'USER' ? 'user' : 'bot';
+                const content = who === 'bot' ? renderSafeMarkdown(m.message) : escapeHtml(m.message);
+                return `${head}<div class="cw-msg ${who} cw-archive-msg">${content}<div class="cw-archive-time">${escapeHtml(timeFmt.format(d))}</div></div>`;
+            }).join('');
+            body.scrollTop = body.scrollHeight;
+        } catch (err) {
+            body.innerHTML = `<div class="cw-archive-empty">${escapeHtml(err.message || 'โหลดประวัติไม่สำเร็จ')}</div>`;
+        }
+    });
 
     const GUEST_SESSION_STORAGE_KEY = 'bsru_chat_guest_id';
 
@@ -533,13 +608,17 @@ export function initChatbot() {
     chatbotFab.addEventListener('click', toggleChatbot);
     if (cwCloseBtn) cwCloseBtn.addEventListener('click', toggleChatbot);
 
+    initSatisfaction({ getSessionId });
+
     function toggleChatbot() {
         chatbotOpen = !chatbotOpen;
         chatbotWindow.classList.toggle('open', chatbotOpen);
         chatbotFab.classList.toggle('open', chatbotOpen);
+        if (!chatbotOpen) noteChatClosed();
         if (chatbotOpen) {
             if (fabBadge) fabBadge.classList.add('hidden');
             cwInput.focus();
+            refreshArchiveButton();
             if (!historyLoaded) {
                 loadChatHistory();
             } else if (!welcomeShown && !cwMessages.children.length) {
@@ -713,7 +792,7 @@ export function initChatbot() {
 
     cwSendBtn.addEventListener('click', handleCwSend);
     cwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleCwSend(); } });
-    cwInput.addEventListener('input', () => { cwSendBtn.disabled = !cwInput.value.trim() || cwWaiting; });
+    cwInput.addEventListener('input', () => { cwSendBtn.disabled = !cwInput.value.trim() || cwWaiting; noteActivity(); });
 
     function getSmartOfflineReply(query, matchedForms = []) {
         if (matchedForms.length > 0) {
@@ -754,6 +833,7 @@ export function initChatbot() {
         if (!text || cwWaiting) return;
 
         addCwMsg('user', text);
+        noteUserMessage();
         cwInput.value = '';
         cwSendBtn.disabled = true;
         cwWaiting = true;

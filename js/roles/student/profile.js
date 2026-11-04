@@ -210,6 +210,7 @@ export function applyDbProfile(target, db, audit, timetable) {
         faculty: db.faculty || target.faculty,
         department: db.department || target.department,
         admitYear: db.admissionYear || target.admitYear,
+        studentSection: db.studentSection || null,
         email: db.email || '-',
         phone: db.phone || '-',
         birthDate: db.birthDate ? isoToThaiDate(db.birthDate) : '-',
@@ -326,6 +327,7 @@ export function renderBibliography(s) {
                         <span class="badge badge-green"><span class="badge-dot"></span>${esc(s.status)}</span>
                         <span class="profile-chip">ชั้นปีที่ ${s.year}</span>
                         <span class="profile-chip">เข้าศึกษาปี ${s.admitYear}</span>
+                        ${s.studentSection ? `<span class="profile-chip" title="Sec ตอนแรกเข้า ใช้อ้างอิงเท่านั้น Sec ของแต่ละวิชาดูในตารางเรียน">Sec แรกเข้า ${esc(s.studentSection)}</span>` : ''}
                     </div>
                     <button class="btn btn-sm btn-orange profile-edit-btn" id="bioEditBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>

@@ -174,7 +174,7 @@ async function openAdviseeHistory(studentId) {
     const overlay = showAdvisorModal(`ประวัติ ${r.studentId} ${r.nameTh}`, `
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:flex-start">
             <div>
-                <div style="font-size:0.9rem">${esc(p.nameEn || '')} · ชั้นปี ${p.year} · Sec ${esc(p.studentSection || '-')} · <span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></div>
+                <div style="font-size:0.9rem">${esc(p.nameEn || '')} · ชั้นปี ${p.year} · Sec แรกเข้า ${esc(p.studentSection || '-')} · <span class="badge ${statusBadge(p.status)}">${esc(p.status)}</span></div>
                 <div style="font-size:1.4rem;font-weight:800;margin-top:4px">GPA ${r.gpa != null ? Number(r.gpa).toFixed(2) : '-'} <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">(${esc(r.gpaSource)})</span></div>
                 <div style="margin-top:4px">${riskBadge(r)} ${riskChips(r)}</div>
             </div>

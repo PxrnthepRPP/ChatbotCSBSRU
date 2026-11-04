@@ -298,10 +298,10 @@ public class StudentRecordTools {
      * same as the web pages
      */
     private Double currentGpa(Student s) {
-        Optional<AuditResult> audit = graduationAudits.auditOf(s.getStudentId());
-        if (audit.isPresent())
-            return audit.get().audit().path("summary").path("currentGpa").asDouble();
+        // The grades report already uses the audit when there is one, plus released teacher grades
         Double fromGrades = academicRecords.gradesOf(s.getStudentId()).gpa();
+        Optional<AuditResult> audit = graduationAudits.auditOf(s.getStudentId());
+        if (fromGrades == null && audit.isPresent()) return audit.get().audit().path("summary").path("currentGpa").asDouble();
         return fromGrades != null ? fromGrades : s.getGpa();
     }
 

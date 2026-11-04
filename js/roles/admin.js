@@ -13,9 +13,14 @@
      graduationAudit.js     graduation audit JSON download/upload
      petitions.js           petition log & review modal
      knowledge.js           RAG knowledge base management
+     faq.js                 frequently asked questions (CRUD, CSV, matching test)
+     chatInsights.js        chat usage statistics, satisfaction, per-person history and access
    ============================================================ */
 
 import { fetchAPI } from '../api.js';
+import { subscribe, getState } from '../state.js';
+import { renderFaqManagement } from './admin/faq.js';
+import { renderChatInsights } from './admin/chatInsights.js';
 import { petitionStatus } from '../utils.js';
 import { MOCK_ADVISORS, MOCK_STUDENTS_POOL, MOCK_PETITIONS_LOG } from './admin/mockData.js';
 import { renderAdminDashboard } from './admin/dashboard.js';
@@ -24,6 +29,8 @@ import { renderManageStudents, toPoolStudent, setStudentsFromDb } from './admin/
 import { renderManagePetitions } from './admin/petitions.js';
 import { renderKnowledgeManagement } from './admin/knowledge.js';
 
+let adminModuleWatch = null;
+
 export async function initAdminDashboard() {
     // 1. Initial render with local/fallback data
     renderAdminDashboard();
@@ -31,6 +38,14 @@ export async function initAdminDashboard() {
     renderManageStudents();
     renderManagePetitions();
     renderKnowledgeManagement();
+    renderFaqManagement();
+    // Statistics are loaded when the page is opened, so they are always current
+    if (!adminModuleWatch) {
+        adminModuleWatch = subscribe('activeModule', modId => {
+            if (modId === 'chat-insights') renderChatInsights();
+        });
+    }
+    if (getState().activeModule === 'chat-insights') renderChatInsights();
 
     // 2. Fetch live data from Spring Boot REST API
     try {

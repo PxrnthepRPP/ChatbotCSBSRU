@@ -73,7 +73,7 @@
 ```powershell
 git clone https://github.com/PxrnthepRPP/ChatbotCSBSRU.git
 cd ChatbotCSBSRU
-git checkout feat/chatbot-student-grades   # ถ้ายังไม่ได้รวมเข้า main
+git checkout feat/new-work   # ถ้ายังไม่ได้รวมเข้า main
 docker compose up -d --build
 ```
 ครั้งแรกใช้เวลาหลายนาที (ดาวน์โหลด image + build) จากนั้นเปิด **http://localhost:3000** แล้วเข้าสู่ระบบด้วย `admin`, `advisor` หรือ `student` (รหัสผ่าน `password` ดูตาราง "ข้อมูลบัญชีสำหรับทดสอบระบบ" ด้านล่าง)
@@ -83,6 +83,7 @@ docker compose up -d --build
   1. `copy .env.example .env`
   2. ใส่ `GEMINI_API_KEY=...` (ขอฟรีที่ [Google AI Studio](https://aistudio.google.com/apikey) หรือขอจากเจ้าของโปรเจกต์ทางแชทส่วนตัว — **ห้าม commit ไฟล์ `.env`**)
   3. `docker compose up -d backend`
+- 📘 **ตั้งค่า AI (Gemini), ฐานความรู้ RAG, บัญชีทดลอง และข้อมูลทดสอบ ดูที่ [AI_SETUP.md](AI_SETUP.md)**
 - พอร์ตที่ใช้: 3000 (เว็บ), 8080 (backend), 5432 (ฐานข้อมูล) — ถ้ามีโปรแกรมอื่นใช้อยู่ต้องปิดก่อน
 - หยุดระบบ: `docker compose down` · ล้างฐานข้อมูลเริ่มใหม่: `docker compose down -v`
 

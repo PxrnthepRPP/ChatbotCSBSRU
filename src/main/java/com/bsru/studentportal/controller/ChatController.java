@@ -2,6 +2,7 @@ package com.bsru.studentportal.controller;
 
 import com.bsru.studentportal.ai.AdvisorTools;
 import com.bsru.studentportal.ai.StudentRecordTools;
+import com.bsru.studentportal.ai.TeachingTools;
 import com.bsru.studentportal.dto.ChatRequest;
 import com.bsru.studentportal.dto.ChatResponse;
 import com.bsru.studentportal.dto.FormAttachmentDto;
@@ -10,7 +11,12 @@ import com.bsru.studentportal.repository.ChatHistoryRepository;
 import com.bsru.studentportal.security.CurrentUser;
 import com.bsru.studentportal.service.AcademicFormCatalogService;
 import com.bsru.studentportal.service.AcademicFormCatalogService.AcademicFormInfo;
+import com.bsru.studentportal.model.ChatLogEntry;
+import com.bsru.studentportal.service.ChatLogService;
+import com.bsru.studentportal.service.FaqService;
 import com.bsru.studentportal.service.GeminiDirectService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -50,6 +56,9 @@ public class ChatController {
     private final GeminiDirectService geminiDirectService;
     private final StudentRecordTools studentRecordTools;
     private final AdvisorTools advisorTools;
+    private final TeachingTools teachingTools;
+    private final FaqService faqService;
+    private final ChatLogService chatLogService;
     private final ChatMemoryStore chatMemoryStore;
     private final ContentRetriever contentRetriever;
     private final ChatHistoryRepository chatHistoryRepository;
@@ -109,62 +118,123 @@ public class ChatController {
         // ไม่ log ข้อความของผู้ใช้ (อาจมีข้อมูลส่วนตัว) — เก็บแค่ key และความยาวข้อความ
         log.info("Incoming chat request from key: {}, message length: {}", chatKey, userMessage.length());
 
-        // 1. Persist user message to PostgreSQL
-        saveChatHistoryEntry(chatKey, "USER", userMessage, null);
+        // AI recall of earlier conversations: read before this message joins the current conversation
+        String earlierChats = chatLogService != null ? chatLogService.recallForAi(chatKey) : "";
 
-        RagRetrieval rag = retrieveRelevantKnowledge(userMessage);
+        // 1. Persist user message to PostgreSQL (panel history + permanent archive)
+        saveChatHistoryEntry(chatKey, "USER", userMessage, null);
+        ChatLogEntry archivedQuestion = chatLogService != null
+                ? chatLogService.record(chatKey, ChatLogEntry.USER, userMessage, null, null) : null;
+
         List<AcademicFormInfo> matchedForms = formCatalog().findMatchingForms(userMessage);
         List<FormAttachmentDto> attachments = matchedForms.stream()
                 .map(AcademicFormInfo::toAttachmentDto)
                 .toList();
 
+        // 2. FAQ set by the admin: a close match marked "answer exactly" is sent as written
+        List<FaqService.Match> faqMatches = faqService != null ? faqService.matches(userMessage, 3) : List.of();
+        FaqService.Match bestFaq = faqMatches.isEmpty() ? null : faqMatches.get(0);
+        if (bestFaq != null && bestFaq.answersExactly()) {
+            String reply = bestFaq.entry().getAnswer();
+            return reply(identity, chatKey, userMessage, reply, List.of(), attachments,
+                    archivedQuestion, ChatLogEntry.Source.FAQ_EXACT, bestFaq.entry().getId());
+        }
+
+        RagRetrieval rag = retrieveRelevantKnowledge(userMessage);
+        Long faqId = bestFaq != null ? bestFaq.entry().getId() : null;
+
         // หากยังไม่ได้ใส่ Gemini API Key จริง ให้ตอบด้วยระบบผู้ช่วยจำลองทันที
         if (geminiApiKey == null || geminiApiKey.isBlank() || geminiApiKey.equals("demo-api-key")
                 || geminiApiKey.startsWith("your-") || geminiApiKey.length() < 25) {
             log.info("Gemini API key not configured with a valid key. Returning instant assistant fallback.");
-            String fallbackReply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
-
-            // Persist fallback reply and update memory
-            saveChatHistoryEntry(chatKey, "BOT", fallbackReply, rag.sources());
-            updateMemoryStore(chatKey, userMessage, fallbackReply);
-
-            return ResponseEntity.ok(ChatResponse.builder()
-                    .reply(fallbackReply)
-                    .sessionId(identity.clientSessionId())
-                    .sources(rag.sources())
-                    .attachments(attachments)
-                    .build());
+            return fallbackReply(identity, chatKey, userMessage, rag, matchedForms, attachments, archivedQuestion, bestFaq);
         }
 
         try {
-            String aiReply = askAiWithContext(chatKey, userMessage, rag, matchedForms);
-
-            // Persist AI reply and update memory
-            saveChatHistoryEntry(chatKey, "BOT", aiReply, rag.sources());
-            updateMemoryStore(chatKey, userMessage, aiReply);
-
-            return ResponseEntity.ok(ChatResponse.builder()
-                    .reply(aiReply)
-                    .sessionId(identity.clientSessionId())
-                    .sources(rag.sources())
-                    .attachments(attachments)
-                    .build());
+            String aiReply = askAiWithContext(chatKey, userMessage, rag, matchedForms,
+                    faqService != null ? faqService.promptContext(faqMatches) : "", earlierChats);
+            ChatLogEntry.Source source = faqId != null ? ChatLogEntry.Source.FAQ_SUGGESTED
+                    : aiSaysItDoesNotKnow(aiReply) ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.AI;
+            return reply(identity, chatKey, userMessage, aiReply, rag.sources(), attachments, archivedQuestion, source, faqId);
         } catch (Exception e) {
             log.error("Gemini API call encountered an issue: ", e);
-
-            String fallbackReply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
-
-            // Persist fallback reply and update memory
-            saveChatHistoryEntry(chatKey, "BOT", fallbackReply, rag.sources());
-            updateMemoryStore(chatKey, userMessage, fallbackReply);
-
-            return ResponseEntity.ok(ChatResponse.builder()
-                    .reply(fallbackReply)
-                    .sessionId(identity.clientSessionId())
-                    .sources(rag.sources())
-                    .attachments(attachments)
-                    .build());
+            return fallbackReply(identity, chatKey, userMessage, rag, matchedForms, attachments, archivedQuestion, bestFaq);
         }
+    }
+
+    /** Answer without the AI: the closest FAQ if there is one, else the rule-based reply */
+    private ResponseEntity<?> fallbackReply(ChatIdentity identity, String chatKey, String userMessage, RagRetrieval rag,
+                                            List<AcademicFormInfo> matchedForms, List<FormAttachmentDto> attachments,
+                                            ChatLogEntry archivedQuestion, FaqService.Match bestFaq) {
+        if (bestFaq != null) {
+            String reply = "คำตอบจากคำถามที่พบบ่อยที่ใกล้เคียงที่สุด (\"" + bestFaq.entry().getQuestion() + "\"):\n\n"
+                    + bestFaq.entry().getAnswer();
+            return reply(identity, chatKey, userMessage, reply, List.of(), attachments, archivedQuestion,
+                    ChatLogEntry.Source.FAQ_SUGGESTED, bestFaq.entry().getId());
+        }
+        String reply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
+        ChatLogEntry.Source source = DEFAULT_FALLBACK_REPLY.equals(reply) ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.FALLBACK;
+        return reply(identity, chatKey, userMessage, reply, rag.sources(), attachments, archivedQuestion, source, null);
+    }
+
+    /** Saves the answer (panel history, AI memory, archive, FAQ hit count) and sends it */
+    private ResponseEntity<?> reply(ChatIdentity identity, String chatKey, String userMessage, String reply,
+                                    List<String> sources, List<FormAttachmentDto> attachments,
+                                    ChatLogEntry archivedQuestion, ChatLogEntry.Source source, Long faqId) {
+        saveChatHistoryEntry(chatKey, "BOT", reply, sources);
+        updateMemoryStore(chatKey, userMessage, reply);
+        if (chatLogService != null) {
+            chatLogService.markAnswered(archivedQuestion, source, faqId);
+            chatLogService.record(chatKey, ChatLogEntry.BOT, reply, source, faqId);
+        }
+        if (faqService != null && faqId != null) {
+            try { faqService.recordHit(faqId); } catch (Exception e) { log.warn("Could not count FAQ hit: {}", e.getMessage()); }
+        }
+        return ResponseEntity.ok(ChatResponse.builder()
+                .reply(reply)
+                .sessionId(identity.clientSessionId())
+                .sources(sources)
+                .attachments(attachments)
+                .build());
+    }
+
+    // ------------------------------------------------------------------ own past chats + satisfaction
+
+    /** Whether the caller may open their own earlier chats (the admin decides, per role or per person) */
+    @GetMapping("/chat/archive/access")
+    public ResponseEntity<?> archiveAccess(@RequestParam(required = false) String sessionId, Authentication authentication) {
+        ChatIdentity identity = resolveChatIdentity(sessionId, authentication, false);
+        boolean allowed = identity != null && chatLogService != null && chatLogService.canSeeOwnHistory(identity.key());
+        return ResponseEntity.ok(Map.of("allowed", allowed));
+    }
+
+    /** The caller's own earlier chats, only when allowed; never anyone else's */
+    @GetMapping("/chat/archive")
+    public ResponseEntity<?> ownArchive(@RequestParam(required = false) String sessionId, Authentication authentication) {
+        ChatIdentity identity = resolveChatIdentity(sessionId, authentication, false);
+        if (identity == null || chatLogService == null) return ResponseEntity.ok(List.of());
+        try {
+            return ResponseEntity.ok(chatLogService.ownArchive(identity.key()).stream()
+                    .map(e -> Map.of("sender", e.getSender(), "message", e.getMessage(), "createdAt", e.getCreatedAt()))
+                    .toList());
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", String.valueOf(e.getReason())));
+        }
+    }
+
+    /** Body: {"level": 1|2|3, "trigger": "IDLE"|"CLOSE", "sessionId": "<guest id>"} */
+    @PostMapping("/chat/satisfaction")
+    public ResponseEntity<?> rate(@RequestBody Map<String, Object> body, Authentication authentication) {
+        Object sid = body.get("sessionId");
+        ChatIdentity identity = resolveChatIdentity(sid instanceof String s ? s : null, authentication, true);
+        if (chatLogService == null) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        int level = body.get("level") instanceof Number n ? n.intValue() : 0;
+        try {
+            chatLogService.rate(identity.key(), level, body.get("trigger") instanceof String t ? t : null);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", String.valueOf(e.getReason())));
+        }
+        return ResponseEntity.ok(Map.of("status", "saved"));
     }
 
     /**
@@ -301,9 +371,14 @@ public class ChatController {
     /**
      * ดึงข้อมูลจริงจาก PostgreSQL ตามสิทธิ์ของผู้ใช้ แล้วส่งให้ Gemini ประมวลผลและวิเคราะห์คำตอบ
      */
-    private String askAiWithContext(String chatKey, String userMessage,
-                                    RagRetrieval rag, List<AcademicFormInfo> matchedForms) throws Exception {
+    private String askAiWithContext(String chatKey, String userMessage, RagRetrieval rag, List<AcademicFormInfo> matchedForms,
+                                    String faqContext, String earlierChats) throws Exception {
         String systemPrompt = buildSystemPromptWithDatabaseContext(chatKey, userMessage, rag, matchedForms);
+        if (faqContext != null && !faqContext.isBlank()) systemPrompt += faqContext;
+        if (earlierChats != null && !earlierChats.isBlank()) {
+            systemPrompt += "\n[บทสนทนาครั้งก่อน ๆ ของผู้ใช้คนนี้ (เฉพาะของเขาเอง ใช้อ้างอิงเมื่อผู้ใช้ถามถึงเรื่องที่เคยคุย"
+                    + " ห้ามนำไปบอกผู้อื่น และข้อมูลเกรด/ตารางให้ยึดข้อมูลจริงจากฐานข้อมูลด้านบนเป็นหลัก)]:\n" + earlierChats;
+        }
 
         StringBuilder conversationContext = new StringBuilder();
         try {
@@ -443,11 +518,34 @@ public class ChatController {
                           .append(detail).append("\n");
                     }
                 } catch (Exception ignored) {}
+                // Not an advisee? The teacher may still see this student's data in courses they teach
+                try {
+                    String inCourses = teachingTools.getStudentInMyCourses(contextSessionId, targetStudentId);
+                    if (inCourses != null && !inCourses.isBlank()) {
+                        sb.append("--- ข้อมูลของนักศึกษารหัส ").append(targetStudentId)
+                          .append(" เฉพาะในรายวิชาที่อาจารย์สอน ---\n").append(inCourses).append("\n");
+                    }
+                } catch (Exception ignored) {}
             } else {
                 try {
                     String risks = advisorTools.getMyAdviseesRiskOverview(contextSessionId);
                     if (risks != null && !risks.isBlank()) {
                         sb.append("--- ข้อมูลภาพรวมความเสี่ยงของนักศึกษาในความดูแล ---\n").append(risks).append("\n");
+                    }
+                } catch (Exception ignored) {}
+            }
+            // Courses the teacher teaches (every year/term): only that course's enrollment and grades
+            if (q.contains("วิชา") || q.contains("สอน") || q.contains("sec") || q.contains("กลุ่มเรียน")) {
+                Matcher course = Pattern.compile("\\b([A-Za-z]{2,4}\\s?\\d{3,4})\\b").matcher(userMessage);
+                String courseCode = course.find() ? course.group(1).replace(" ", "").toUpperCase() : null;
+                try {
+                    String courses = teachingTools.getMyTeachingCourses(contextSessionId);
+                    if (courses != null && !courses.isBlank()) {
+                        sb.append("--- รายวิชาและ Sec ที่อาจารย์สอน ---\n").append(courses).append("\n");
+                    }
+                    String roster = teachingTools.getStudentsInMyCourse(contextSessionId, courseCode, null, null);
+                    if (roster != null && !roster.isBlank()) {
+                        sb.append("--- นักศึกษาและเกรดในรายวิชาที่สอน ---\n").append(roster).append("\n");
                     }
                 } catch (Exception ignored) {}
             }
@@ -490,7 +588,8 @@ public class ChatController {
         if (CurrentUser.isLoggedIn(authentication)) {
             String key = CurrentUser.studentId(authentication)
                     .map(id -> StudentRecordTools.STUDENT_MEMORY_PREFIX + id)
-                    .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id))
+                    .or(() -> CurrentUser.advisorId(authentication).map(id -> AdvisorTools.ADVISOR_MEMORY_PREFIX + id
+                            + (CurrentUser.isDemoAdvisor(authentication) ? AdvisorTools.SEES_ALL_SUFFIX : "")))
                     .orElse(STAFF_MEMORY_PREFIX + authentication.getName());
             return new ChatIdentity(key, key);
         }
@@ -562,7 +661,20 @@ public class ChatController {
         } else if (q.contains("สวัสดี") || q.contains("hello") || q.contains("hi")) {
             return "สวัสดีครับ! ผมคือ **BSRU CS AI Assistant** ยินดีให้คำแนะนำและตอบคำถามเกี่ยวกับระบบสารสนเทศนักศึกษา การลงทะเบียนเรียน ตารางเรียน ผลการเรียน สถิติสายอาชีพ และการยื่นคำร้องวิชาการครับ มีอะไรให้ผมช่วยเหลือไหมครับ?";
         } else {
-            return "ขอบคุณสำหรับคำถามครับ! หากมีข้อสงสัยเกี่ยวกับระบบสารสนเทศนักศึกษา สาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU) เช่น การยื่นคำร้องวิชาการ, ตารางเรียน, การตรวจสอบจบ หรือการติดต่ออาจารย์ที่ปรึกษา สามารถสอบถามผมได้ตลอดเวลาเลยนะครับ!";
+            return DEFAULT_FALLBACK_REPLY;
         }
     }
+
+    private static final List<String> NO_INFO_PHRASES = List.of(
+            "ไม่มีข้อมูล", "ไม่พบข้อมูล", "ไม่สามารถตอบ", "ไม่สามารถให้ข้อมูล", "ไม่ทราบข้อมูล", "ยังไม่มีข้อมูลเกี่ยวกับ");
+
+    /** The AI said it had no information: counted as "ตอบไม่ได้" so the admin can add a FAQ */
+    static boolean aiSaysItDoesNotKnow(String reply) {
+        if (reply == null) return true;
+        String head = reply.length() > 300 ? reply.substring(0, 300) : reply;
+        return NO_INFO_PHRASES.stream().anyMatch(head::contains);
+    }
+
+    /** The reply when nothing matched; counted as "ตอบไม่ได้" in the admin's statistics */
+    static final String DEFAULT_FALLBACK_REPLY = "ขอบคุณสำหรับคำถามครับ! หากมีข้อสงสัยเกี่ยวกับระบบสารสนเทศนักศึกษา สาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU) เช่น การยื่นคำร้องวิชาการ, ตารางเรียน, การตรวจสอบจบ หรือการติดต่ออาจารย์ที่ปรึกษา สามารถสอบถามผมได้ตลอดเวลาเลยนะครับ!";
 }

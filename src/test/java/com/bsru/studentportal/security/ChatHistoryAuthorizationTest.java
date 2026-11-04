@@ -82,6 +82,9 @@ class ChatHistoryAuthorizationTest {
     @MockBean private GeminiDirectService geminiDirectService;
     @MockBean private StudentRecordTools studentRecordTools;
     @MockBean private AdvisorTools advisorTools;
+    @MockBean private com.bsru.studentportal.ai.TeachingTools teachingTools;
+    @MockBean private com.bsru.studentportal.service.FaqService faqService;
+    @MockBean private com.bsru.studentportal.service.ChatLogService chatLogService;
     @MockBean private ContentRetriever contentRetriever;
     @MockBean private AcademicFormCatalogService academicFormCatalogService;
 

@@ -5,6 +5,7 @@
 import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
+import { getAuthState } from '../../auth.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from '../advisor.js';
 import { showPetitionToast } from './petitionsView.js';
 
@@ -343,20 +344,22 @@ export function renderTimetable(studentId) {
     // Show the offline sample first, then replace it with the database timetable when the backend answers
     let semesters = MOCK_TIMETABLE_SEMESTERS.map(s => ({ ...s, offline: true }));
     let currentIdx = 0;
-    let studentSection = null;   // Sec D1 / D2, set by the admin
     let cartOpen = false;
     const carts = {};            // "year/term" -> course codes picked but not sent yet
+    const cartSecs = {};         // "year/term" -> { course code: Sec the student picked }
+    // An admin opening this page as the student registers for them (e.g. the first semester after
+    // admission): confirmed straight away and allowed while registration is closed
+    const auth = getAuthState();
+    const staffRegistering = auth.isImpersonating && auth.role === 'ADMIN';
 
     async function load(keepSelection) {
         const selected = semesters[currentIdx];
         try {
-            const [terms, periods, profile] = await Promise.all([
+            const [terms, periods] = await Promise.all([
                 fetchAPI(`/students/${encodeURIComponent(studentId)}/timetable`),
                 fetchAPI('/registration-periods'),
-                fetchAPI(`/students/${encodeURIComponent(studentId)}`).catch(() => null),
             ]);
             semesters = timetableFromApi(terms, periods);
-            studentSection = profile?.studentSection || null;
             if (keepSelection && selected) {
                 currentIdx = Math.max(0, semesters.findIndex(s =>
                     s.academicYear === selected.academicYear && s.term === selected.term));
@@ -377,7 +380,7 @@ export function renderTimetable(studentId) {
             return;
         }
         const sem = semesters[idx];
-        const canEdit = !sem.offline && !!sem.registration?.open;
+        const canEdit = !sem.offline && (staffRegistering ? !!sem.registration : !!sem.registration?.open);
         const credits = sem.totalCredits ?? sem.schedule.reduce((a, e) => a + (e.credits || 0), 0);
         const conflictBox = sem.conflicts?.length
             ? `<div class="tt-reg-banner warn">⚠️ มีวิชาเวลาเรียนชนกัน: ${esc(sem.conflicts.join(', '))}</div>`
@@ -412,9 +415,12 @@ export function renderTimetable(studentId) {
                         <div>
                             <div class="app-form-title">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                ลงทะเบียนเรียน (${esc(sem.label)})${studentSection ? ` · Sec ${esc(studentSection)}` : ''}
+                                ลงทะเบียนเรียน (${esc(sem.label)})
                             </div>
-                            <div class="app-form-subtitle">พิมพ์รหัสวิชาแล้วกด "เพิ่มลงรายการ" ได้หลายวิชา ระบบเลือกกลุ่มเรียนตาม Sec ของคุณ และตรวจที่นั่งกับเวลาชนให้ เมื่อครบแล้วกด "ยืนยันลงทะเบียน" คำขอจะรอผู้ดูแลระบบยืนยัน</div>
+                            <div class="app-form-subtitle">${staffRegistering
+                                ? 'ผู้ดูแลระบบลงทะเบียนให้นักศึกษา: ใส่รหัสวิชาและเลือก Sec ของแต่ละวิชา (ตั้งต้นเป็น Sec แรกเข้าถ้าวิชานั้นมี) เมื่อกด "ยืนยันลงทะเบียน" จะลงทะเบียนสำเร็จทันที'
+                                : 'พิมพ์รหัสวิชาแล้วกด "เพิ่มลงรายการ" ได้หลายวิชา เลือก Sec ของแต่ละวิชาได้เอง (Sec ไหนก็ได้) ระบบตรวจที่นั่งกับเวลาชนให้ เมื่อครบแล้วกด "ยืนยันลงทะเบียน" คำขอจะรอผู้ดูแลระบบยืนยัน'}</div>
+                            <div class="app-form-subtitle" id="ttCartHomeSec"></div>
                         </div>
                         <button type="button" class="btn btn-sm btn-ghost" id="ttCloseFormBtn" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                     </div>
@@ -473,6 +479,7 @@ export function renderTimetable(studentId) {
         // ── Registration cart ──
         const cartKey = `${sem.academicYear}/${sem.term}`;
         const cart = carts[cartKey] || (carts[cartKey] = []);
+        const secs = cartSecs[cartKey] || (cartSecs[cartKey] = {});
         const panel = document.getElementById('ttCartPanel');
         const submitBtn = document.getElementById('ttCartSubmitBtn');
 
@@ -499,22 +506,32 @@ export function renderTimetable(studentId) {
             let check;
             try {
                 check = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration/check`, 'POST', {
-                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart,
+                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart, sections: secs,
                 }, 8000);
             } catch (err) {
                 list.innerHTML = `<div class="tt-cart-problem">${esc(apiErrorMessage(err))}</div>`;
                 return;
             }
+            const homeSec = document.getElementById('ttCartHomeSec');
+            if (homeSec) homeSec.textContent = check.studentSection ? `Sec แรกเข้า: ${check.studentSection} (ใช้อ้างอิงเท่านั้น ไม่จำกัดการเลือก Sec)` : '';
             const rows = check.items.map((item, i) => {
                 const s = item.section;
                 const seats = !s ? '-' : item.seatsLeft === null ? 'ไม่จำกัด' : `เหลือ ${item.seatsLeft}`;
                 const state = item.problems.length
                     ? item.problems.map(p => `<div class="tt-cart-problem">⚠️ ${esc(p)}</div>`).join('')
                     : '<span class="badge badge-green">พร้อมลงทะเบียน</span>';
+                // Any approved Sec of the course can be picked; each option shows its time and seats
+                const choices = item.choices || [];
+                const secCell = choices.length > 0
+                    ? `<select class="batch-select tt-cart-sec" data-code="${esc(item.courseCode)}">${choices.map(c => {
+                        const left = c.capacity == null ? 'ไม่จำกัด' : `เหลือ ${Math.max(0, c.capacity - c.enrolledCount)}`;
+                        return `<option value="${esc(c.sectionNo)}" ${s && s.sectionNo === c.sectionNo ? 'selected' : ''}>${esc(c.sectionNo)} · ${esc(c.dayName)} ${esc(c.startTime)}–${esc(c.endTime)} · ${left}</option>`;
+                    }).join('')}</select>`
+                    : (s ? esc(s.sectionNo) : '-');
                 return `
                     <tr>
                         <td><span class="badge badge-blue">${esc(item.courseCode)}</span>${s ? `<div style="font-size:0.82rem">${esc(s.courseName)}</div>` : ''}</td>
-                        <td>${s ? esc(s.sectionNo) : '-'}</td>
+                        <td>${secCell}</td>
                         <td>${s ? `${esc(s.dayName)} ${esc(s.startTime)}–${esc(s.endTime)}` : '-'}</td>
                         <td class="hide-mobile">${s ? s.credits : '-'}</td>
                         <td>${seats}</td>
@@ -531,7 +548,12 @@ export function renderTimetable(studentId) {
                 </div>
                 <div style="font-size:0.85rem;margin-top:8px">รวม <strong>${check.items.length}</strong> วิชา · <strong>${check.totalCredits}</strong> หน่วยกิต</div>`;
             list.querySelectorAll('.tt-cart-remove').forEach(btn => btn.addEventListener('click', () => {
-                cart.splice(parseInt(btn.dataset.idx, 10), 1);
+                const [code] = cart.splice(parseInt(btn.dataset.idx, 10), 1);
+                delete secs[code];
+                refreshCart();
+            }));
+            list.querySelectorAll('.tt-cart-sec').forEach(sel => sel.addEventListener('change', () => {
+                secs[sel.dataset.code] = sel.value;
                 refreshCart();
             }));
             submitBtn.disabled = !check.ok;
@@ -560,6 +582,7 @@ export function renderTimetable(studentId) {
         document.getElementById('ttCartCode').addEventListener('input', (e) => e.target.classList.remove('is-invalid'));
         document.getElementById('ttCartClearBtn').addEventListener('click', () => {
             cart.splice(0, cart.length);
+            Object.keys(secs).forEach(k => delete secs[k]);
             refreshCart();
         });
 
@@ -567,10 +590,13 @@ export function renderTimetable(studentId) {
             submitBtn.disabled = true;
             try {
                 const result = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration`, 'POST', {
-                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart,
+                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart, sections: secs,
                 }, 10000);
-                showPetitionToast('success', `ส่งคำขอลงทะเบียน ${result.items.length} วิชาแล้ว รอผู้ดูแลระบบยืนยัน ✅`);
+                showPetitionToast('success', staffRegistering
+                    ? `ลงทะเบียนให้นักศึกษา ${result.items.length} วิชาแล้ว ✅`
+                    : `ส่งคำขอลงทะเบียน ${result.items.length} วิชาแล้ว รอผู้ดูแลระบบยืนยัน ✅`);
                 cart.splice(0, cart.length);
+                Object.keys(secs).forEach(k => delete secs[k]);
                 cartOpen = false;
                 await load(true);
             } catch (err) {

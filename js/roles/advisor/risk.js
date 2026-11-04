@@ -28,9 +28,10 @@ export function currentAdvisees() {
         return liveAdvisees.map(r => ({
             studentId: r.studentId, nameTh: r.nameTh, nameEn: r.nameEn || '', year: r.year,
             gpa: r.gpa ?? 0, status: r.status, risk: r,
-        }));
+        })).sort((a, b) => a.studentId.localeCompare(b.studentId));
     }
-    return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001');
+    return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001')
+        .sort((a, b) => a.studentId.localeCompare(b.studentId));
 }
 
 export function riskBadge(r) {

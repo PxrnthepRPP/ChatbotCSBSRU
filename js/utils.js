@@ -33,6 +33,41 @@ export function statusBadge(s) {
     return 'badge-purple';
 }
 
+/** Name titles; "นางสาว" is listed before "นาง" so it is matched first */
+export const NAME_PREFIXES = [
+    { th: 'นาย', en: 'Mr.' },
+    { th: 'นางสาว', en: 'Miss' },
+    { th: 'นาง', en: 'Mrs.' },
+];
+
+/** Splits "นายสมชาย ใจดี" into { prefix: 'นาย', name: 'สมชาย ใจดี' } (prefix '' when there is none) */
+export function splitNamePrefix(nameTh) {
+    const text = (nameTh || '').trim();
+    const p = [...NAME_PREFIXES].sort((a, b) => b.th.length - a.th.length).find(x => text.startsWith(x.th));
+    return p ? { prefix: p.th, name: text.slice(p.th.length).trim() } : { prefix: '', name: text };
+}
+
+/** "สมชาย ใจดี" → { first: 'สมชาย', last: 'ใจดี' } (the last name is everything after the first space) */
+export function splitFirstLast(name) {
+    const text = (name || '').trim().replace(/\s+/g, ' ');
+    const i = text.indexOf(' ');
+    return i < 0 ? { first: text, last: '' } : { first: text.slice(0, i), last: text.slice(i + 1) };
+}
+
+/** First and last name joined with one space */
+export function joinFirstLast(first, last) {
+    return [(first || '').trim(), (last || '').trim()].filter(Boolean).join(' ');
+}
+
+/** Adds the title to the Thai and English names, replacing a title that is already there */
+export function withNamePrefix(prefixTh, nameTh, nameEn) {
+    const p = NAME_PREFIXES.find(x => x.th === prefixTh);
+    const th = splitNamePrefix(nameTh).name;
+    const en = (nameEn || '').trim().replace(/^(Mr|Mrs|Ms|Miss)\.?\s+/i, '');
+    if (!p) return { nameTh: th, nameEn: en };
+    return { nameTh: p.th + th, nameEn: en ? `${p.en} ${en}` : '' };
+}
+
 /**
  * Petition status as shown to users. The backend stores Thai labels; old seed rows used
  * English codes (APPROVED, PENDING, IN_REVIEW, REJECTED). Map those, and show anything

@@ -7,7 +7,8 @@ import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, fetchAPI } from '../../utils.js';
 import { apiErrorText, sectionStatusBadge } from '../admin.js';
 import { getAuthState } from '../../auth.js';
-import { showAdvisorToast } from './ui.js';
+import { showAdvisorModal, showAdvisorToast } from './ui.js';
+import { openGradeEditor } from '../../components/gradeEditor.js';
 import { openSectionStudentsModal } from './sectionRoster.js';
 
 /* ============================================================
@@ -290,6 +291,7 @@ function sectionsCardHtml(sections) {
                     <button type="button" class="btn btn-sm btn-ghost btn-icon adv-sec-students" title="รายชื่อนักศึกษา" aria-label="รายชื่อนักศึกษา">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </button>
+                    ${s.approvalStatus === 'APPROVED' ? '<button type="button" class="btn btn-sm btn-ghost btn-icon adv-sec-grades" title="ใส่เกรด / ส่งเกรด" aria-label="ใส่เกรด / ส่งเกรด">📝</button>' : ''}
                     <button type="button" class="btn btn-sm btn-ghost btn-icon adv-sec-edit" title="แก้ไข" aria-label="แก้ไข">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
@@ -492,6 +494,13 @@ function bindSectionsCard(sections) {
             } catch (err) {
                 showAdvisorToast('error', esc(apiErrorText(err)));
             }
+        });
+
+        row.querySelector('.adv-sec-grades')?.addEventListener('click', () => {
+            const overlay = showAdvisorModal(`เกรด ${section.courseCode} กลุ่ม ${section.sectionNo} (${section.term}/${section.academicYear})`,
+                '<div id="advGradeSheet"></div>');
+            openGradeEditor(overlay.querySelector('#advGradeSheet'), section.sectionId,
+                { toast: showAdvisorToast, errorText: apiErrorText });
         });
 
         row.querySelector('.adv-sec-students').addEventListener('click', async () => {

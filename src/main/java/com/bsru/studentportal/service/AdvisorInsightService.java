@@ -114,19 +114,46 @@ public class AdvisorInsightService {
                 .toList();
     }
 
+    /** Every real (not simulated) student, for the demo advisor login that may see everyone */
+    @Transactional(readOnly = true)
+    public List<Student> allRealStudents() {
+        return studentRepository.findAll().stream()
+                .filter(s -> !s.isSimulated())
+                .sorted(Comparator.comparing(Student::getStudentId))
+                .toList();
+    }
+
+    /** Risk of every real student, most at-risk first (demo advisor login) */
+    @Transactional(readOnly = true)
+    public List<AdviseeRisk> risksOfAllReal() {
+        return allRealStudents().stream()
+                .map(this::riskOf)
+                .sorted(Comparator.comparing(AdviseeRisk::level)
+                        .thenComparing(r -> r.gpa() == null ? 99 : r.gpa()))
+                .toList();
+    }
+
+    /** Detail of any student, without the advisor check (demo advisor login) */
+    @Transactional(readOnly = true)
+    public Optional<AdviseeDetail> detailOfAny(String studentId) {
+        return studentRepository.findById(studentId).map(this::detail);
+    }
+
     /** Detail of one advisee; empty when the student is not advised by this advisor */
     @Transactional(readOnly = true)
     public Optional<AdviseeDetail> detailOf(String advisorId, String studentId) {
-        Optional<Student> student = studentRepository.findById(studentId)
-                .filter(s -> s.getAdvisor() != null && advisorId.equals(s.getAdvisor().getId()));
-        return student.map(s -> {
-            Optional<AuditResult> audit = graduationAudits.auditOf(s.getStudentId());
-            return new AdviseeDetail(riskOf(s), s, coursesOf(s, audit),
-                    audit.map(a -> a.audit().get("summary")).orElse(null),
-                    audit.map(AuditResult::units).orElse(List.of()),
-                    timetableService.timetableOf(s.getStudentId()),
-                    petitionRepository.findByStudentStudentId(s.getStudentId()));
-        });
+        return studentRepository.findById(studentId)
+                .filter(s -> s.getAdvisor() != null && advisorId.equals(s.getAdvisor().getId()))
+                .map(this::detail);
+    }
+
+    private AdviseeDetail detail(Student s) {
+        Optional<AuditResult> audit = graduationAudits.auditOf(s.getStudentId());
+        return new AdviseeDetail(riskOf(s), s, coursesOf(s, audit),
+                audit.map(a -> a.audit().get("summary")).orElse(null),
+                audit.map(AuditResult::units).orElse(List.of()),
+                timetableService.timetableOf(s.getStudentId()),
+                petitionRepository.findByStudentStudentId(s.getStudentId()));
     }
 
     @Transactional(readOnly = true)
@@ -141,7 +168,9 @@ public class AdvisorInsightService {
         Integer required = null;
         if (audit.isPresent()) {
             JsonNode summary = audit.get().audit().get("summary");
-            gpa = summary.path("currentGpa").asDouble();
+            // Same as the grades page: the audit plus teacher grades the admin has released
+            Double withReleased = academicRecords.gradesOf(s.getStudentId()).gpa();
+            gpa = withReleased != null ? withReleased : summary.path("currentGpa").asDouble();
             gpaSource = "ใบตรวจสอบจบ";
             earned = summary.path("totalEarnedCredits").asInt();
             required = summary.path("totalRequiredCredits").asInt();
@@ -246,6 +275,12 @@ public class AdvisorInsightService {
         List<CourseResult> result = new ArrayList<>();
         if (audit.isPresent()) {
             collect(audit.get().audit().path("sections"), result);
+            // Teacher grades released by the admin replace the same course in the same term
+            academicRecords.releasedGradesOf(s.getStudentId()).forEach(g -> {
+                String term = g.term() + "/" + (g.academicYear() % 100);
+                result.removeIf(c -> c.code().equalsIgnoreCase(g.courseCode()) && term.equals(c.term()));
+                result.add(new CourseResult(g.courseCode(), g.courseName(), g.grade(), term, g.credits()));
+            });
             return result;
         }
         academicRecords.gradesOf(s.getStudentId()).semesters().forEach(sem -> sem.courses().forEach(c -> {

@@ -1,0 +1,375 @@
+{
+  "note": "ข้อมูลทดสอบ (รอบ 26) ระบบใส่ให้อัตโนมัติตอนเริ่มทำงานเฉพาะส่วนที่ยังไม่มี ปิดได้ด้วย APP_SEED_TEST_DATA=false · เกรด/GPA อยู่ใน graduation/<รหัส>.json",
+  "sections": [
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3101",
+      "courseName": "ปัญญาประดิษฐ์",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 0,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab1",
+      "instructorId": "ADV-03",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3101",
+      "courseName": "ปัญญาประดิษฐ์",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 0,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-Lab1",
+      "instructorId": "ADV-03",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3102",
+      "courseName": "วิศวกรรมซอฟต์แวร์",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 1,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-205",
+      "instructorId": "ADV-03",
+      "capacity": 45
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3102",
+      "courseName": "วิศวกรรมซอฟต์แวร์",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 1,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-205",
+      "instructorId": "ADV-03",
+      "capacity": 45
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3103",
+      "courseName": "การพัฒนาเว็บแอปพลิเคชัน",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 4,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-Lab3",
+      "instructorId": "ADV-02",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3103",
+      "courseName": "การพัฒนาเว็บแอปพลิเคชัน",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 0,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab3",
+      "instructorId": "ADV-02",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3201",
+      "courseName": "ระบบฐานข้อมูลขั้นสูง",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 2,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab2",
+      "instructorId": "ADV-01",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3201",
+      "courseName": "ระบบฐานข้อมูลขั้นสูง",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 2,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-Lab2",
+      "instructorId": "ADV-01",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3301",
+      "courseName": "เครือข่ายคอมพิวเตอร์",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 3,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab3",
+      "instructorId": "ADV-02",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3301",
+      "courseName": "เครือข่ายคอมพิวเตอร์",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 4,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab3",
+      "instructorId": "ADV-02",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3401",
+      "courseName": "การเรียนรู้ของเครื่อง",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 2,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-Lab1",
+      "instructorId": "ADV-03",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3401",
+      "courseName": "การเรียนรู้ของเครื่อง",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 2,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-Lab1",
+      "instructorId": "ADV-03",
+      "capacity": 40
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3402",
+      "courseName": "การประมวลผลภาษาธรรมชาติ",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 0,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "CS-301",
+      "instructorId": "ADV-01",
+      "capacity": 35
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "CS3402",
+      "courseName": "การประมวลผลภาษาธรรมชาติ",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 3,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "CS-301",
+      "instructorId": "ADV-01",
+      "capacity": 35
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "GE2301",
+      "courseName": "ภาษาอังกฤษเชิงวิชาการ",
+      "credits": 3,
+      "sectionNo": "D1",
+      "dayOfWeek": 4,
+      "startTime": "09:00",
+      "endTime": "12:00",
+      "room": "LA-402",
+      "instructorId": null,
+      "capacity": 50
+    },
+    {
+      "academicYear": 2565,
+      "term": 2,
+      "courseCode": "GE2301",
+      "courseName": "ภาษาอังกฤษเชิงวิชาการ",
+      "credits": 3,
+      "sectionNo": "D2",
+      "dayOfWeek": 4,
+      "startTime": "13:00",
+      "endTime": "16:00",
+      "room": "LA-402",
+      "instructorId": null,
+      "capacity": 50
+    }
+  ],
+  "students": [
+    {
+      "studentId": "6621207044",
+      "nameTh": "ปิติพัฒน์ นิ่มจินดา",
+      "nameEn": "pitipat nimjinda",
+      "year": 4,
+      "status": "กำลังศึกษา",
+      "studentSection": "D1",
+      "activity": {
+        "completed": 6,
+        "required": 6
+      },
+      "enrollments": [
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3402",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3101",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3102",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3401",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3201",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3301",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "GE2301",
+          "sectionNo": "D2"
+        }
+      ]
+    },
+    {
+      "studentId": "6621207055",
+      "nameTh": "นายสุกี้ แจ้งสมบุญ",
+      "nameEn": "Mr. suki jangsomboon",
+      "year": 4,
+      "status": "กำลังศึกษา",
+      "studentSection": "D1",
+      "activity": {
+        "completed": 4,
+        "required": 6
+      },
+      "enrollments": [
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3401",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3201",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "GE2301",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3103",
+          "sectionNo": "D1"
+        }
+      ]
+    },
+    {
+      "studentId": "6621207034",
+      "nameTh": "นายมูฮัมหมัดไฟซู ตันยีนายู",
+      "nameEn": "Mr. muhammadfaisiu tanyinayuu",
+      "year": 4,
+      "status": "กำลังศึกษา",
+      "studentSection": "D1",
+      "activity": {
+        "completed": 1,
+        "required": 6
+      },
+      "enrollments": [
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3101",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3102",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3301",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3402",
+          "sectionNo": "D2"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "GE2301",
+          "sectionNo": "D1"
+        },
+        {
+          "academicYear": 2565,
+          "term": 2,
+          "courseCode": "CS3103",
+          "sectionNo": "D1"
+        }
+      ]
+    }
+  ]
+}

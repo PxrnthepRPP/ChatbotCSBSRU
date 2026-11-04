@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { confirmDialog } from '../../components/confirmDialog.js';
-import { esc, statusBadge, getBatch, debounce, showToast } from '../../utils.js';
+import { esc, statusBadge, getBatch, debounce, showToast, NAME_PREFIXES, splitNamePrefix, withNamePrefix, splitFirstLast, joinFirstLast } from '../../utils.js';
 import { impersonateStudent } from '../../auth.js';
 import { fetchAPI, API_BASE_URL } from '../../api.js';
 import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../../components/careerCatalog.js';
@@ -42,6 +42,7 @@ export function toPoolStudent(s) {
     };
 }
 let adminSearchQuery = '';
+const selectedSecStudents = new Set();   // ids ticked for setting Sec แรกเข้า together, kept across re-renders
 let highlightStudentId = null;   // row to show and flash on the next render (after add/edit)
 let adminStudentsPage = 1;
 let adminStudentsPageSize = 15;
@@ -69,6 +70,9 @@ export function renderManageStudents() {
         const q = adminSearchQuery.toLowerCase();
         filtered = filtered.filter(s => s.studentId.includes(q) || s.nameTh.toLowerCase().includes(q) || (s.nameEn && s.nameEn.toLowerCase().includes(q)));
     }
+
+    // Ordered by student id
+    filtered = [...filtered].sort((a, b) => a.studentId.localeCompare(b.studentId));
 
     // Just added / edited: jump to the page with that row (clearing filters that hide it)
     const highlight = highlightStudentId;
@@ -99,6 +103,7 @@ export function renderManageStudents() {
         const batch = getBatch(s.studentId);
         return `
         <tr data-sid="${esc(s.studentId)}">
+            <td>${s.studentSection ? `<input type="checkbox" class="sec-bulk-check" value="${esc(s.studentId)}" aria-label="เลือก ${esc(s.studentId)}" ${selectedSecStudents.has(s.studentId) ? 'checked' : ''}>` : ''}</td>
             <td><strong>${esc(s.studentId)}</strong></td>
             <td>${esc(s.nameTh)} <span class="batch-tag batch-${batch}">รุ่น ${batch}</span>${s.simulated ? ' <span class="badge badge-amber" style="font-size:0.7rem" title="ข้อมูลจำลอง: ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน">จำลอง</span>' : ''}</td>
             <td style="text-align:center" class="hide-mobile">ปี ${s.year}</td>
@@ -181,11 +186,18 @@ export function renderManageStudents() {
             <input type="file" id="importStudentCsvInput" accept=".csv,text/csv" hidden>
             <input type="file" id="auditUploadInput" accept=".json,application/json" hidden>
         </div>
+        ${studentsFromDb ? `
+        <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
+            <span style="font-size:0.88rem">เลือกแล้ว <strong id="secBulkCount">${selectedSecStudents.size}</strong> คน · ตั้ง Sec แรกเข้าเป็น</span>
+            <select class="batch-select" id="secBulkValue" aria-label="Sec แรกเข้าที่จะตั้ง"><option value="D1">D1</option><option value="D2">D2</option></select>
+            <button class="btn btn-sm btn-orange" id="secBulkApply">ตั้ง Sec ให้ที่เลือก</button>
+            <button class="btn btn-sm btn-ghost" id="secBulkClear">ล้างที่เลือก</button>
+        </div>` : ''}
         <div class="card" style="padding:0;overflow:hidden">
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th>Sec</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-                    <tbody>${rows.length > 0 ? rows : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">ไม่พบข้อมูลนักศึกษาที่ตรงกับเงื่อนไขการค้นหา</td></tr>`}</tbody>
+                    <thead><tr><th>${studentsFromDb ? '<input type="checkbox" id="secBulkAll" title="เลือกทั้งหมดที่แสดงอยู่" aria-label="เลือกทั้งหมดที่แสดงอยู่">' : ''}</th><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th style="text-align:center" class="hide-mobile">ชั้นปี</th><th style="text-align:center">GPA</th><th title="Sec ตอนแรกเข้า ใช้อ้างอิงเท่านั้น">Sec แรกเข้า</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <tbody>${rows.length > 0 ? rows : `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">ไม่พบข้อมูลนักศึกษาที่ตรงกับเงื่อนไขการค้นหา</td></tr>`}</tbody>
                 </table>
             </div>
             ${paginationHtml}
@@ -354,6 +366,7 @@ export function renderManageStudents() {
     };
     document.querySelectorAll('.student-sec-select').forEach(sel =>
         sel.addEventListener('change', () => moveSection(sel, sel.dataset.sid, sel.value)));
+    bindSecBulkControls();
     bindGraduationAuditButtons();
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;
@@ -398,22 +411,32 @@ function setFieldError(id, message) {
 }
 
 /** Checks every field, marks the wrong ones and focuses the first; true when the form can be sent */
-function validateStudentForm(mode) {
+function validateStudentForm(mode, { prefixRequired = true, advisorRequired = false, careerCustomRequired = false } = {}) {
     const val = id => document.getElementById(id)?.value.trim() ?? '';
     const errors = {};
     if (mode !== 'edit') {
         if (!val('mfSid')) errors.mfSid = 'กรุณากรอกรหัสนักศึกษา';
         else if (!/^\d{10}$/.test(val('mfSid'))) errors.mfSid = 'รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก';
     }
-    if (!val('mfSnameTh')) errors.mfSnameTh = 'กรุณากรอกชื่อ-สกุล (ไทย)';
-    else if (!/^[฀-๿\s.]+$/.test(val('mfSnameTh'))) errors.mfSnameTh = 'ใช้ตัวอักษรภาษาไทยเท่านั้น';
-    if (val('mfSnameEn') && !/^[A-Za-z\s.]+$/.test(val('mfSnameEn'))) errors.mfSnameEn = 'ใช้ตัวอักษรภาษาอังกฤษเท่านั้น';
+    // A student saved without a title (e.g. 6621207044) may stay without one when edited
+    if (prefixRequired && !val('mfSprefix')) errors.mfSprefix = 'กรุณาเลือกคำนำหน้า';
+    [['mfSfirstTh', 'ชื่อ (ไทย)'], ['mfSlastTh', 'นามสกุล (ไทย)']].forEach(([id, label]) => {
+        if (!val(id)) errors[id] = `กรุณากรอก${label}`;
+        else if (!/^[฀-๿\s.]+$/.test(val(id))) errors[id] = 'ใช้ตัวอักษรภาษาไทยเท่านั้น';
+    });
+    [['mfSfirstEn', 'ชื่อ (Eng)'], ['mfSlastEn', 'นามสกุล (Eng)']].forEach(([id, label]) => {
+        if (!val(id)) errors[id] = `กรุณากรอก${label}`;
+        else if (!/^[A-Za-z\s.'-]+$/.test(val(id))) errors[id] = 'ใช้ตัวอักษรภาษาอังกฤษเท่านั้น';
+    });
+    if (advisorRequired && !val('mfSadvisor')) errors.mfSadvisor = 'กรุณาเลือกอาจารย์ที่ปรึกษา';
+    if (careerCustomRequired && !val('mfScareerCustom')) errors.mfScareerCustom = 'กรุณาระบุสายอาชีพ';
     const year = Number(val('mfSyear'));
     if (!Number.isInteger(year) || year < YEAR_MIN || year > YEAR_MAX) errors.mfSyear = `ชั้นปีต้องอยู่ระหว่าง ${YEAR_MIN}–${YEAR_MAX}`;
     const gpa = Number(val('mfSgpa'));
     if (val('mfSgpa') === '' || Number.isNaN(gpa) || gpa < 0 || gpa > 4) errors.mfSgpa = 'GPA ต้องอยู่ระหว่าง 0.00–4.00';
 
-    ['mfSid', 'mfSnameTh', 'mfSnameEn', 'mfSyear', 'mfSgpa'].forEach(id => setFieldError(id, errors[id]));
+    ['mfSid', 'mfSprefix', 'mfSfirstTh', 'mfSlastTh', 'mfSfirstEn', 'mfSlastEn', 'mfSyear', 'mfSgpa', 'mfSadvisor', 'mfScareerCustom']
+        .forEach(id => setFieldError(id, errors[id]));
     const first = Object.keys(errors)[0];
     if (first) document.getElementById(first)?.focus();
     return !first;
@@ -421,9 +444,66 @@ function validateStudentForm(mode) {
 
 /** Put a backend validation message under the field it is about (it is still shown as a toast too) */
 function showServerFieldError(message) {
-    const map = [[/รหัสนักศึกษา/, 'mfSid'], [/ภาษาไทย|\(ไทย\)/, 'mfSnameTh'], [/English|Eng/, 'mfSnameEn'], [/ชั้นปี/, 'mfSyear'], [/GPA/, 'mfSgpa']];
+    const map = [[/รหัสนักศึกษา/, 'mfSid'], [/คำนำหน้า/, 'mfSprefix'], [/ภาษาไทย|\(ไทย\)/, 'mfSfirstTh'], [/English|Eng/, 'mfSfirstEn'], [/ชั้นปี/, 'mfSyear'], [/GPA/, 'mfSgpa']];
     const hit = map.find(([re]) => re.test(message));
     if (hit) { setFieldError(hit[1], message); document.getElementById(hit[1])?.focus(); }
+}
+
+/** Tick several students and set their Sec แรกเข้า at once (same API as the per-row dropdown) */
+function bindSecBulkControls() {
+    const checks = [...document.querySelectorAll('.sec-bulk-check')];
+    const countEl = document.getElementById('secBulkCount');
+    const allBox = document.getElementById('secBulkAll');
+    const refresh = () => {
+        if (countEl) countEl.textContent = selectedSecStudents.size;
+        if (allBox) {
+            const ticked = checks.filter(c => c.checked).length;
+            allBox.checked = checks.length > 0 && ticked === checks.length;
+            allBox.indeterminate = ticked > 0 && ticked < checks.length;
+        }
+    };
+    refresh();
+    checks.forEach(c => c.addEventListener('change', () => {
+        if (c.checked) selectedSecStudents.add(c.value); else selectedSecStudents.delete(c.value);
+        refresh();
+    }));
+    allBox?.addEventListener('change', () => {
+        checks.forEach(c => {
+            c.checked = allBox.checked;
+            if (c.checked) selectedSecStudents.add(c.value); else selectedSecStudents.delete(c.value);
+        });
+        refresh();
+    });
+    document.getElementById('secBulkClear')?.addEventListener('click', () => {
+        selectedSecStudents.clear();
+        renderManageStudents();
+    });
+    document.getElementById('secBulkApply')?.addEventListener('click', async (e) => {
+        const ids = [...selectedSecStudents];
+        const sec = document.getElementById('secBulkValue').value;
+        if (ids.length === 0) {
+            showToast('error', 'กรุณาเลือกนักศึกษาอย่างน้อย 1 คน');
+            return;
+        }
+        if (!await confirmDialog(`ตั้ง Sec แรกเข้าเป็น ${sec} ให้นักศึกษา ${ids.length} คน?`)) return;
+        e.currentTarget.disabled = true;
+        const results = await Promise.allSettled(ids.map(id =>
+            fetchAPI(`/students/${encodeURIComponent(id)}/section`, 'PUT', { studentSection: sec }, 8000)));
+        const failed = [];
+        results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+                const student = MOCK_STUDENTS_POOL.find(s => s.studentId === ids[i]);
+                if (student) student.studentSection = sec;
+                selectedSecStudents.delete(ids[i]);
+            } else {
+                failed.push(`${ids[i]}: ${apiErrorText(r.reason)}`);
+            }
+        });
+        const done = ids.length - failed.length;
+        if (done) showToast('success', esc(`ตั้ง Sec ${sec} ให้ ${done} คนแล้ว`));
+        if (failed.length) showToast('error', esc(`ไม่สำเร็จ ${failed.length} คน — ${failed.join(', ')}`));
+        renderManageStudents();
+    });
 }
 
 function openStudentModal(mode, idx) {
@@ -454,17 +534,29 @@ function openStudentModal(mode, idx) {
         ${SALARY_RANGES.map(sr => `<option value="${esc(sr)}" ${s.salaryRange === sr ? 'selected' : ''}>${esc(sr)}</option>`).join('')}
     `;
 
+    const REQ = '<span class="req" style="color:var(--red-500);font-weight:700" title="ต้องกรอก">*</span>';
+    const thName = splitNamePrefix(s.nameTh);
+    const thParts = splitFirstLast(thName.name);
+    const enParts = splitFirstLast(withNamePrefix('', '', s.nameEn).nameEn);
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขนักศึกษา' : 'เพิ่มนักศึกษาใหม่';
     modalBody.innerHTML = `
-        <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px"><span class="req" style="color:var(--red-500);font-weight:700">*</span> ช่องที่ต้องกรอก</p>
-        <div class="modal-field"><label for="mfSid">รหัสนักศึกษา <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSid" inputmode="numeric" maxlength="10" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : 'required'}>${fieldError('mfSid')}</div>
-        <div class="modal-field"><label for="mfSnameTh">ชื่อ-สกุล (ไทย) <span class="req" style="color:var(--red-500);font-weight:700">*</span></label><input id="mfSnameTh" required value="${esc(s.nameTh || '')}">${fieldError('mfSnameTh')}</div>
-        <div class="modal-field"><label for="mfSnameEn">ชื่อ-สกุล (Eng)</label><input id="mfSnameEn" value="${esc(s.nameEn || '')}">${fieldError('mfSnameEn')}</div>
-        <div class="modal-field"><label for="mfSyear">ชั้นปี (${YEAR_MIN}–${YEAR_MAX})</label><input id="mfSyear" type="number" min="${YEAR_MIN}" max="${YEAR_MAX}" value="${s.year || 1}">${fieldError('mfSyear')}</div>
-        <div class="modal-field"><label for="mfSgpa">GPA (0.00–4.00)</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}">${fieldError('mfSgpa')}</div>
-        <div class="modal-field"><label>สถานะ</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
-        <div class="modal-field"><label>อาจารย์ที่ปรึกษา</label><select id="mfSadvisor">${advisorOpts}</select></div>
-        ${studentsFromDb ? `<div class="modal-field"><label>Sec</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
+        <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px">${REQ} ช่องที่ต้องกรอก · ช่องที่เขียนว่า (ถ้ามี) เว้นว่างได้</p>
+        <div class="modal-field"><label for="mfSid">รหัสนักศึกษา ${REQ}</label><input id="mfSid" inputmode="numeric" maxlength="10" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : 'required'}>${fieldError('mfSid')}</div>
+        <div class="modal-field"><label for="mfSprefix">คำนำหน้า ${REQ}</label><select id="mfSprefix">
+            <option value="">-- เลือกคำนำหน้า --</option>
+            ${NAME_PREFIXES.map(p => `<option value="${p.th}" ${thName.prefix === p.th ? 'selected' : ''}>${p.th} (${p.en})</option>`).join('')}
+        </select>${fieldError('mfSprefix')}</div>
+        <div class="modal-field"><label for="mfSfirstTh">ชื่อ (ไทย) ${REQ}</label><input id="mfSfirstTh" required value="${esc(thParts.first)}" placeholder="เช่น สมชาย">${fieldError('mfSfirstTh')}</div>
+        <div class="modal-field"><label for="mfSlastTh">นามสกุล (ไทย) ${REQ}</label><input id="mfSlastTh" required value="${esc(thParts.last)}" placeholder="เช่น ใจดี">${fieldError('mfSlastTh')}</div>
+        <div class="modal-field"><label for="mfSfirstEn">ชื่อ (Eng) ${REQ}</label><input id="mfSfirstEn" required value="${esc(enParts.first)}" placeholder="e.g. Somchai">${fieldError('mfSfirstEn')}</div>
+        <div class="modal-field"><label for="mfSlastEn">นามสกุล (Eng) ${REQ}</label><input id="mfSlastEn" required value="${esc(enParts.last)}" placeholder="e.g. Jaidee">${fieldError('mfSlastEn')}</div>
+        <div class="modal-field"><label for="mfSyear">ชั้นปี (${YEAR_MIN}–${YEAR_MAX}) ${REQ}</label><input id="mfSyear" type="number" min="${YEAR_MIN}" max="${YEAR_MAX}" value="${s.year || 1}">${fieldError('mfSyear')}</div>
+        <div class="modal-field"><label for="mfSgpa">GPA (0.00–4.00) ${REQ}</label><input id="mfSgpa" type="number" step="0.01" min="0" max="4" value="${s.gpa || 0}">${fieldError('mfSgpa')}</div>
+        <div class="modal-field"><label>สถานะ ${REQ}</label><select id="mfSstatus"><option value="กำลังศึกษา" ${s.status === 'กำลังศึกษา' ? 'selected' : ''}>กำลังศึกษา</option><option value="จบการศึกษา" ${s.status === 'จบการศึกษา' ? 'selected' : ''}>จบการศึกษา</option><option value="พักการศึกษา" ${s.status === 'พักการศึกษา' ? 'selected' : ''}>พักการศึกษา</option><option value="พ้นสภาพ" ${s.status === 'พ้นสภาพ' ? 'selected' : ''}>พ้นสภาพ</option></select></div>
+        ${studentsFromDb && mode === 'edit' && !s.simulated
+            ? `<div class="modal-field"><label>อาจารย์ที่ปรึกษา (กำหนดตามรุ่น)</label><input readonly style="opacity:0.6" value="${esc(MOCK_ADVISORS.find(a => a.id === s.advisor)?.nameTh || (s.advisor || 'ยังไม่มีที่ปรึกษา'))}"><input type="hidden" id="mfSadvisor" value=""></div>`
+            : `<div class="modal-field"><label for="mfSadvisor">อาจารย์ที่ปรึกษา${studentsFromDb ? ' (ถ้ามี · ใช้กับข้อมูลจำลอง นักศึกษาจริงได้ที่ปรึกษาประจำรุ่นอัตโนมัติ)' : ' ' + REQ}</label><select id="mfSadvisor">${studentsFromDb ? '<option value="">— ไม่ระบุ —</option>' : ''}${advisorOpts}</select></div>`}
+        ${studentsFromDb ? `<div class="modal-field"><label for="mfSsection">Sec แรกเข้า ${REQ} (ใช้อ้างอิง นักศึกษาลงวิชาได้ทุก Sec)</label><select id="mfSsection">${['D1', 'D2'].map(g => `<option value="${g}" ${(s.studentSection || 'D1') === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>` : ''}
         ${studentsFromDb && mode !== 'edit' ? `<label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:0.88rem;cursor:pointer"><input type="checkbox" id="mfSsimulated" checked style="width:auto"> เป็นข้อมูลจำลอง (แสดงในแดชบอร์ดอย่างเดียว ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน)</label>` : ''}
         ${studentsFromDb ? '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">💾 บันทึกลงฐานข้อมูลจริง · รหัสนักศึกษาเป็นตัวเลข 10 หลัก · ถ้าไม่ใช่ข้อมูลจำลอง นักศึกษาล็อกอินด้วยรหัสนี้ได้ทันที</p>' : ''}
         
@@ -473,15 +565,15 @@ function openStudentModal(mode, idx) {
                 💼 ข้อมูลสายอาชีพและภาวะการมีงานทำ (บัณฑิต)
             </div>
             <div class="modal-field">
-                <label>สถานะการทำงาน</label>
+                <label>สถานะการทำงาน (ถ้ามี)</label>
                 <select id="mfSempStatus">${empStatusOpts}</select>
             </div>
             <div class="modal-field">
-                <label>สายอาชีพหลัก</label>
+                <label>สายอาชีพหลัก (ถ้ามี)</label>
                 <select id="mfScareerSelect">${careerOpts}</select>
             </div>
             <div class="modal-field" id="mfScareerCustomWrap" style="${selectedCareerId === 'other' ? 'display:block;' : 'display:none;'}">
-                <label>ระบุสายอาชีพเพิ่มเติม</label>
+                <label>ระบุสายอาชีพเพิ่มเติม ${REQ}</label>
                 <input id="mfScareerCustom" placeholder="พิมพ์ชื่อตำแหน่งหรือสายอาชีพ..." value="${esc(customCareerVal)}">
             </div>
             <div class="modal-field">
@@ -522,10 +614,19 @@ function openStudentModal(mode, idx) {
             finalCareer = undefined;
         }
 
+        const prefix = document.getElementById('mfSprefix').value;
+        const val = id => document.getElementById(id)?.value ?? '';
+        if (!validateStudentForm(mode, {
+            prefixRequired: mode !== 'edit' || !!splitNamePrefix(s.nameTh).prefix,
+            advisorRequired: !studentsFromDb,
+            careerCustomRequired: statusVal === 'จบการศึกษา' && careerSelectVal === 'other',
+        })) return;
+        const names = withNamePrefix(prefix, joinFirstLast(val('mfSfirstTh'), val('mfSlastTh')),
+            joinFirstLast(val('mfSfirstEn'), val('mfSlastEn')));
         const data = {
             studentId: document.getElementById('mfSid').value.trim(),
-            nameTh: document.getElementById('mfSnameTh').value.trim(),
-            nameEn: document.getElementById('mfSnameEn').value.trim(),
+            nameTh: names.nameTh,
+            nameEn: names.nameEn,
             year: parseInt(document.getElementById('mfSyear').value) || 1,
             gpa: parseFloat(document.getElementById('mfSgpa').value) || 0,
             status: statusVal,
@@ -535,7 +636,6 @@ function openStudentModal(mode, idx) {
             companyName: document.getElementById('mfScompany').value.trim() || undefined,
             salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
-        if (!validateStudentForm(mode)) return;
 
         if (studentsFromDb) {
             const body = {
@@ -545,7 +645,9 @@ function openStudentModal(mode, idx) {
                 year: data.year,
                 gpa: data.gpa,
                 status: data.status,
-                advisorId: data.advisor || '',
+                // Real students get the cohort advisor on the server; only simulated ones take the picked advisor
+                advisorId: (mode === 'edit' ? s.simulated : document.getElementById('mfSsimulated')?.checked)
+                    ? (data.advisor || '') : undefined,
                 studentSection: document.getElementById('mfSsection')?.value,
                 simulated: document.getElementById('mfSsimulated')?.checked ?? undefined,
                 // Career fields only apply to graduates; '' clears them

@@ -8,8 +8,15 @@ import java.util.Optional;
 /** Reads who is calling from the verified JWT authentication. */
 public final class CurrentUser {
 
-    /** The demo "student" login is student 6621100042 (same mapping as AuthController) */
-    public static final String DEMO_STUDENT_ID = "6621100042";
+    /**
+     * The demo "student" login is student 6621100042 (same mapping as AuthController).
+     * APP_DEMO_STUDENT_ID points it at another existing student, e.g. on a database seeded before the IDs moved.
+     */
+    public static final String DEMO_STUDENT_ID = demoStudentId(System.getenv("APP_DEMO_STUDENT_ID"));
+
+    static String demoStudentId(String configured) {
+        return configured != null && configured.trim().matches("\\d{10}") ? configured.trim() : "6621100042";
+    }
 
     private CurrentUser() {}
 
@@ -33,6 +40,14 @@ public final class CurrentUser {
         if (!hasRole(auth, "ROLE_ADVISOR")) return Optional.empty();
         String username = auth.getName();
         return Optional.of("advisor".equalsIgnoreCase(username) ? DEMO_ADVISOR_ID : username);
+    }
+
+    /**
+     * The demo "advisor" login (used until real advisor accounts exist): its chatbot sees every real
+     * student and every course, not only ADV-01's advisees and sections.
+     */
+    public static boolean isDemoAdvisor(Authentication auth) {
+        return hasRole(auth, "ROLE_ADVISOR") && "advisor".equalsIgnoreCase(auth.getName());
     }
 
     /** The caller's student id, or empty when the caller is not a logged-in student. */

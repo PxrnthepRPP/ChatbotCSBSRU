@@ -14,6 +14,7 @@ import { resolveBatchRange } from './shared.js';
 import { renderRegistrationCard } from './registrationPeriods.js';
 import { renderAdminSectionsCard } from './sections.js';
 import { renderEnrollmentRequestsCard } from './enrollmentRequests.js';
+import { renderAdminGradesCard } from './grades.js';
 
 let adminDashboardSelectedBatch = 'all';
 let adminDashboardSelectedBatches = []; // Multi-select batch chips state
@@ -163,6 +164,7 @@ export function renderAdminDashboard() {
         <div id="adminRegistrationCard"></div>
         <div id="adminEnrollmentRequestsCard"></div>
         <div id="adminSectionsCard"></div>
+        <div id="adminGradesCard"></div>
 
         <div class="dashboard-grid">
             <div id="statusChartContainer"></div>
@@ -274,6 +276,7 @@ export function renderAdminDashboard() {
     renderRegistrationCard({ cached: true });
     renderEnrollmentRequestsCard({ cached: true });
     renderAdminSectionsCard({ cached: true });
+    renderAdminGradesCard();
 }
 
 export function exportCareerStatisticsCsv(students) {
