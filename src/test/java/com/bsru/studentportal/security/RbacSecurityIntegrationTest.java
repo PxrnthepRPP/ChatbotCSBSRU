@@ -8,6 +8,7 @@ import com.bsru.studentportal.controller.PetitionFileController;
 import com.bsru.studentportal.controller.StudentAdminController;
 import com.bsru.studentportal.dto.PetitionRequest;
 import com.bsru.studentportal.dto.PetitionStatusUpdateRequest;
+import com.bsru.studentportal.dto.StudentRequest;
 import com.bsru.studentportal.model.AcademicPetition;
 import com.bsru.studentportal.model.Advisor;
 import com.bsru.studentportal.model.Student;
@@ -22,6 +23,7 @@ import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.KnowledgeIngestionService;
 import com.bsru.studentportal.service.NotificationService;
 import com.bsru.studentportal.service.StudentAdminService;
+import com.bsru.studentportal.service.StudentCsvService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -58,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         PetitionFileController.class
 })
 @AutoConfigureMockMvc(addFilters = true)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtUtil.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtUtil.class, StudentCsvService.class})
 @DisplayName("RBAC Security Integration Tests")
 class RbacSecurityIntegrationTest {
 
@@ -110,6 +112,7 @@ class RbacSecurityIntegrationTest {
 
     private String adminToken;
     private String advisorToken;
+    private String advisorWithAdminToken;
     private String studentToken;
 
     private Student demoStudent;
@@ -122,6 +125,7 @@ class RbacSecurityIntegrationTest {
         // Tokens
         adminToken = jwtUtil.generateToken("admin", "ROLE_ADMIN", Map.of("role", "ROLE_ADMIN"));
         advisorToken = jwtUtil.generateToken("advisor", "ROLE_ADVISOR", Map.of("role", "ROLE_ADVISOR"));
+        advisorWithAdminToken = jwtUtil.generateToken("advisor-admin", "ROLE_ADVISOR,ROLE_ADMIN", Map.of("role", "ROLE_ADVISOR,ROLE_ADMIN", "canAdmin", true));
         studentToken = jwtUtil.generateToken("student", "ROLE_STUDENT", Map.of("role", "ROLE_STUDENT"));
 
         // Domain models
@@ -600,6 +604,65 @@ class RbacSecurityIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.importedCount").value(1));
+        }
+
+        @Test
+        @DisplayName("Advisor with admin privilege calling CSV export returns HTTP 200 OK with text/csv and UTF-8 BOM bytes")
+        void advisorWithAdmin_ExportCsv_Returns200WithUtf8Bom() throws Exception {
+            when(studentRepository.findAll(any(Sort.class))).thenReturn(List.of(demoStudent));
+
+            byte[] responseBytes = mockMvc.perform(get("/api/students/export-csv")
+                            .header("Authorization", "Bearer " + advisorWithAdminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", containsString("text/csv")))
+                    .andExpect(header().string("Content-Disposition", containsString("students_bsru.csv")))
+                    .andReturn().getResponse().getContentAsByteArray();
+
+            assertTrue(responseBytes.length >= 3);
+            assertEquals((byte) 0xEF, responseBytes[0]);
+            assertEquals((byte) 0xBB, responseBytes[1]);
+            assertEquals((byte) 0xBF, responseBytes[2]);
+        }
+
+        @Test
+        @DisplayName("Advisor with admin privilege calling CSV import succeeds with HTTP 200 OK")
+        void advisorWithAdmin_ImportCsv_Returns200() throws Exception {
+            when(studentRepository.findById(anyString())).thenReturn(Optional.empty());
+            when(studentRepository.save(any(Student.class))).thenAnswer(i -> i.getArgument(0));
+
+            String csvContent = "studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
+                    "6621100002,ทดสอบ ผ่านอาจารย์แอดมิน,Test Admin Advisor,test2@bsru.ac.th,0812345679,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
+
+            mockMvc.perform(post("/api/students/import-csv")
+                            .header("Authorization", "Bearer " + advisorWithAdminToken)
+                            .contentType("text/csv; charset=UTF-8")
+                            .content(csvContent))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.importedCount").value(1));
+        }
+
+        @Test
+        @DisplayName("Advisor with admin privilege calling create student succeeds with HTTP 201 Created")
+        void advisorWithAdmin_CreateStudent_Returns201() throws Exception {
+            when(studentAdminService.create(any(StudentRequest.class))).thenReturn(demoStudent);
+
+            mockMvc.perform(post("/api/students")
+                            .header("Authorization", "Bearer " + advisorWithAdminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"studentId\":\"6621100042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("Normal advisor without admin privilege calling create student returns HTTP 403 Forbidden")
+        void advisor_CreateStudent_Returns403() throws Exception {
+            mockMvc.perform(post("/api/students")
+                            .header("Authorization", "Bearer " + advisorToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"studentId\":\"6621100042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.error", containsString("เฉพาะผู้ดูแลระบบเท่านั้น")));
         }
     }
 }

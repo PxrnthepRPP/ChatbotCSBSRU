@@ -10,7 +10,9 @@ import com.bsru.studentportal.security.CurrentUser;
 import com.bsru.studentportal.service.AdvisorInsightService;
 import com.bsru.studentportal.service.StudentAdminService;
 import com.bsru.studentportal.service.StudentAdminService.StudentAdminException;
-import lombok.RequiredArgsConstructor;
+import com.bsru.studentportal.service.StudentCsvService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,7 +23,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,7 +38,6 @@ import java.util.Optional;
 /** The logged-in advisor's own advisees: real records, history and risk check. */
 @RestController
 @RequestMapping("/api/advisors/me")
-@RequiredArgsConstructor
 public class AdvisorController {
 
     private final AdvisorInsightService insights;
@@ -42,6 +45,32 @@ public class AdvisorController {
     private final StudentAdminService studentAdminService;
     private final AdvisingNoteRepository advisingNoteRepository;
     private final StudentRepository studentRepository;
+    private final StudentCsvService studentCsvService;
+
+    @Autowired
+    public AdvisorController(AdvisorInsightService insights,
+                             AdvisorRepository advisorRepository,
+                             StudentAdminService studentAdminService,
+                             AdvisingNoteRepository advisingNoteRepository,
+                             StudentRepository studentRepository,
+                             StudentCsvService studentCsvService) {
+        this.insights = insights;
+        this.advisorRepository = advisorRepository;
+        this.studentAdminService = studentAdminService;
+        this.advisingNoteRepository = advisingNoteRepository;
+        this.studentRepository = studentRepository;
+        this.studentCsvService = studentCsvService != null
+                ? studentCsvService
+                : new StudentCsvService(studentRepository, advisorRepository, null);
+    }
+
+    public AdvisorController(AdvisorInsightService insights,
+                             AdvisorRepository advisorRepository,
+                             StudentAdminService studentAdminService,
+                             AdvisingNoteRepository advisingNoteRepository,
+                             StudentRepository studentRepository) {
+        this(insights, advisorRepository, studentAdminService, advisingNoteRepository, studentRepository, null);
+    }
 
     @GetMapping
     public ResponseEntity<?> me(Authentication auth) {
@@ -90,6 +119,19 @@ public class AdvisorController {
         if (advisorId.isEmpty()) return forbidden();
         studentAdminService.deleteSimulatedForAdvisor(advisorId.get(), studentId);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Advisor imports students into their own cohort / advisees via CSV */
+    @PostMapping(value = "/advisees/import-csv", consumes = {"*/*"})
+    public ResponseEntity<?> importAdviseesCsv(
+            @RequestBody(required = false) String rawBody,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            HttpServletRequest request,
+            Authentication auth) throws Exception {
+        Optional<String> advisorId = CurrentUser.advisorId(auth);
+        if (advisorId.isEmpty()) return forbidden();
+        Map<String, Object> result = studentCsvService.processCsvImport(rawBody, file, request, advisorId.get());
+        return ResponseEntity.ok(result);
     }
 
     // ------------------------------------------------------------------ advising notes

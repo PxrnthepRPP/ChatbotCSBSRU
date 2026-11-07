@@ -183,6 +183,24 @@ public class ApiController {
         return advisorRepository.findAll();
     }
 
+    @PutMapping("/advisors/{id}/admin-privilege")
+    public ResponseEntity<?> updateAdvisorAdminPrivilege(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body,
+            Authentication auth) {
+        if (!CurrentUser.isAdmin(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
+        }
+        Advisor adv = advisorRepository.findById(id).orElse(null);
+        if (adv == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "ไม่พบอาจารย์รหัส " + id));
+        }
+        boolean canAdmin = Boolean.TRUE.equals(body.get("canAdmin"));
+        adv.setCanAdmin(canAdmin);
+        advisorRepository.save(adv);
+        return ResponseEntity.ok(Map.of("success", true, "id", id, "canAdmin", canAdmin));
+    }
+
     @GetMapping("/petitions")
     public ResponseEntity<?> getAllPetitions(Authentication authentication) {
         if (CurrentUser.isAdmin(authentication)) {

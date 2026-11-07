@@ -20,4 +20,6 @@ public class LoginResponse {
     private long expiresIn;
     /** The account uses a first / reset password that must be changed now */
     private boolean mustChangePassword;
+    /** Advisor has admin privilege */
+    private boolean canAdmin;
 }

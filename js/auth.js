@@ -45,16 +45,20 @@ export const login = async (username, password) => {
         throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่าระบบ backend ทำงานอยู่ แล้วลองใหม่');
     }
 
-    const role = String(authData.role || '').replace('ROLE_', '');
+    const rawRole = String(authData.role || '');
+    const isMultiRole = rawRole.includes('ROLE_ADMIN') && rawRole.includes('ROLE_ADVISOR');
+    const role = isMultiRole ? 'ADVISOR' : rawRole.replace('ROLE_', '');
     const user = {
         username: authData.username,
         displayName: authData.displayName,
         role,
+        roles: rawRole.split(',').map(r => r.trim().replace('ROLE_', '')),
+        canAdmin: !!authData.canAdmin || isMultiRole,
         mustChangePassword: !!authData.mustChangePassword,
     };
     // The real ids, so the dashboard and the chatbot look at the same person
     if (role === 'STUDENT') user.studentId = authData.userId;
-    if (role === 'ADVISOR') user.advisorId = authData.userId;
+    if (role === 'ADVISOR' || isMultiRole) user.advisorId = authData.userId;
     setState({
         currentRole: role,
         user,

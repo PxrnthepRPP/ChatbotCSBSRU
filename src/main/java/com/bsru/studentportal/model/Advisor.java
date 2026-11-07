@@ -31,6 +31,17 @@ public class Advisor {
     private String phone;
 
     private String department;
+
+    @Column(name = "can_admin", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean canAdmin = false;
+
+    public Advisor(String id, String nameTh, String nameEn, String email, String phone, String department) {
+        this.id = id;
+        this.nameTh = nameTh;
+        this.nameEn = nameEn;
+        this.email = email;
+        this.phone = phone;
+        this.department = department;
+        this.canAdmin = false;
+    }
 }
-
-
