@@ -71,12 +71,36 @@ export function renderMyAdvisees() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="advStudentSearch" aria-label="à¸à¹à¸à¸«à¸²à¸à¸±à¸à¸¨à¸¶à¸à¸©à¸²" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(advisorSearchQuery)}">
             </div>
-            ${liveAdvisees ? '<button class="btn btn-sm btn-orange" id="advAddSimBtn">➕ เพิ่มนักศึกษาจำลอง</button>' : ''}
+            ${liveAdvisees ? `
+                <button class="btn btn-sm btn-primary" id="advImportCsvBtn">📥 นำเข้า CSV นักศึกษา</button>
+                <input type="file" id="advImportCsvInput" accept=".csv,text/csv" style="display:none">
+                <button class="btn btn-sm btn-orange" id="advAddSimBtn">➕ เพิ่มนักศึกษาจำลอง</button>
+            ` : ''}
         </div>
         <div class="card" style="background:transparent;box-shadow:none;border:none;padding:0">
             ${cards || '<div style="text-align:center;padding:40px;color:var(--text-muted)">ไม่พบข้อมูลนักศึกษา</div>'}
         </div>
     `;
+
+    const advImportBtn = document.getElementById('advImportCsvBtn');
+    const advImportInput = document.getElementById('advImportCsvInput');
+    if (advImportBtn && advImportInput) {
+        advImportBtn.addEventListener('click', () => advImportInput.click());
+        advImportInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const res = await fetchAPI('/advisors/me/advisees/import-csv', 'POST', text, 20000);
+                showAdvisorToast('success', esc(res.message || 'นำเข้าข้อมูลนักศึกษาสำเร็จ'));
+                await loadLiveAdvisees();
+            } catch (err) {
+                showAdvisorToast('error', 'นำเข้า CSV ไม่สำเร็จ: ' + esc(apiErrorText(err)));
+            } finally {
+                advImportInput.value = '';
+            }
+        });
+    }
 
     document.getElementById('advBatchFilter').addEventListener('change', (e) => {
         lastSelectedBatch = e.target.value;

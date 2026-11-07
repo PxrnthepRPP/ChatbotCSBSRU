@@ -18,6 +18,12 @@ export function renderManageAdvisors() {
             <td class="hide-mobile">${esc(a.email)}</td>
             <td class="hide-mobile">${esc(a.department)}</td>
             <td style="text-align:center">${a.studentsCount}</td>
+            <td style="text-align:center">
+                <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                    <input type="checkbox" class="advisor-admin-toggle" data-id="${esc(a.id)}" data-idx="${i}" ${a.canAdmin ? 'checked' : ''}>
+                    <span style="font-size:0.75rem" class="${a.canAdmin ? 'badge badge-purple' : 'badge badge-gray'}">${a.canAdmin ? 'มีสิทธิ์แอดมิน' : 'ทั่วไป'}</span>
+                </label>
+            </td>
             <td>
                 <div class="action-btns">
                     <button class="btn btn-sm btn-warning edit-advisor-btn" data-idx="${i}">แก้ไข</button>
@@ -35,7 +41,7 @@ export function renderManageAdvisors() {
             </div>
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th class="hide-mobile">Email</th><th class="hide-mobile">สาขา</th><th style="text-align:center">นศ.ที่ดูแล</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th class="hide-mobile">Email</th><th class="hide-mobile">สาขา</th><th style="text-align:center">นศ.ที่ดูแล</th><th style="text-align:center">สิทธิ์แอดมิน</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -45,6 +51,20 @@ export function renderManageAdvisors() {
     renderCohortAdvisorsCard();
     document.getElementById('addAdvisorBtn').addEventListener('click', () => openAdvisorModal('add'));
     document.querySelectorAll('.edit-advisor-btn').forEach(b => b.addEventListener('click', () => openAdvisorModal('edit', parseInt(b.dataset.idx))));
+    document.querySelectorAll('.advisor-admin-toggle').forEach(chk => chk.addEventListener('change', async () => {
+        const id = chk.dataset.id;
+        const newStatus = chk.checked;
+        const idx = parseInt(chk.dataset.idx);
+        try {
+            await fetchAPI(`/advisors/${encodeURIComponent(id)}/admin-privilege`, 'PUT', { canAdmin: newStatus }, 8000);
+            if (MOCK_ADVISORS[idx]) MOCK_ADVISORS[idx].canAdmin = newStatus;
+            showToast('success', newStatus ? `มอบสิทธิ์แอดมินให้อาจารย์ ${esc(MOCK_ADVISORS[idx]?.nameTh || id)} แล้ว` : `ยกเลิกสิทธิ์แอดมินของ ${esc(MOCK_ADVISORS[idx]?.nameTh || id)} แล้ว`);
+            renderManageAdvisors();
+        } catch (err) {
+            chk.checked = !newStatus;
+            showToast('error', esc(apiErrorText(err)));
+        }
+    }));
     document.querySelectorAll('.del-advisor-btn').forEach(b => b.addEventListener('click', async () => {
         const idx = parseInt(b.dataset.idx);
         if (await confirmDialog(`ต้องการลบ "${MOCK_ADVISORS[idx].nameTh}" หรือไม่?`)) {

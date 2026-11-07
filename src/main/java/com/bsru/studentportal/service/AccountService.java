@@ -1,5 +1,6 @@
 package com.bsru.studentportal.service;
 
+import com.bsru.studentportal.model.Student;
 import com.bsru.studentportal.model.UserAccount;
 import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.StudentRepository;
@@ -97,21 +98,86 @@ public class AccountService {
         if (!studentRepository.existsById(studentId)) {
             throw new AccountException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId);
         }
+        Student s = studentRepository.findById(studentId).orElse(null);
+        String initialPassword = generateDefaultStudentPassword(s, studentId);
         UserAccount account = accounts.findByUsernameIgnoreCase(studentId)
-                .orElseGet(() -> newAccount(studentId, "ROLE_STUDENT", studentId, true));
-        account.setPasswordHash(passwordEncoder.encode(studentId));
+                .orElseGet(() -> newAccount(studentId, "ROLE_STUDENT", initialPassword, true));
+        account.setPasswordHash(passwordEncoder.encode(initialPassword));
         account.setMustChangePassword(true);
         account.setFailedAttempts(0);
         account.setLockedUntil(null);
         accounts.save(account);
     }
 
-    /** New student created by an admin: first password = student id, must be changed */
+    /** New student created by an admin or advisor: default password based on name/surname/birthdate, must be changed */
     @Transactional
     public void createStudentAccount(String studentId) {
         if (accounts.findByUsernameIgnoreCase(studentId).isEmpty()) {
-            accounts.save(newAccount(studentId, "ROLE_STUDENT", studentId, true));
+            Student s = studentRepository.findById(studentId).orElse(null);
+            String initialPassword = generateDefaultStudentPassword(s, studentId);
+            accounts.save(newAccount(studentId, "ROLE_STUDENT", initialPassword, true));
         }
+    }
+
+    /**
+     * Generates a default initial password using:
+     * - First letter of first name (uppercase)
+     * - 3 letters of last name (lowercase)
+     * - Birth date in DDMMYYYY (Buddhist Era)
+     * Example: Somchai Jaidee, born 15/08/2546 -> Sjai15082546
+     */
+    public static String generateDefaultStudentPassword(Student s, String studentId) {
+        if (s == null) return studentId != null ? studentId : "DefaultPass123!";
+
+        char firstChar = 'S';
+        String name = s.getNameEn() != null && !s.getNameEn().isBlank() ? s.getNameEn().trim() : "";
+        if (name.isEmpty() && s.getNameTh() != null && !s.getNameTh().isBlank()) {
+            name = s.getNameTh().trim();
+        }
+        String[] nameParts = name.split("\\s+");
+        String firstName = nameParts.length > 0 ? nameParts[0] : "";
+        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+
+        for (char c : firstName.toCharArray()) {
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                firstChar = Character.toUpperCase(c);
+                break;
+            }
+        }
+
+        StringBuilder lastPart = new StringBuilder();
+        for (char c : lastName.toCharArray()) {
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                lastPart.append(Character.toLowerCase(c));
+                if (lastPart.length() >= 3) break;
+            }
+        }
+        if (lastPart.length() < 3) {
+            for (char c : firstName.toCharArray()) {
+                if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) && Character.toUpperCase(c) != firstChar) {
+                    lastPart.append(Character.toLowerCase(c));
+                    if (lastPart.length() >= 3) break;
+                }
+            }
+            while (lastPart.length() < 3) {
+                lastPart.append("cs");
+            }
+            if (lastPart.length() > 3) lastPart.setLength(3);
+        }
+
+        String datePart;
+        if (s.getBirthDate() != null) {
+            int d = s.getBirthDate().getDayOfMonth();
+            int m = s.getBirthDate().getMonthValue();
+            int y = s.getBirthDate().getYear() + 543;
+            datePart = String.format("%02d%02d%04d", d, m, y);
+        } else {
+            datePart = studentId != null && studentId.length() >= 8
+                    ? studentId.substring(studentId.length() - 8)
+                    : (studentId != null ? studentId : "25460101");
+        }
+
+        return firstChar + lastPart.toString() + datePart;
     }
 
     @Transactional
@@ -134,13 +200,24 @@ public class AccountService {
                 .forEach(s -> ensure(s.getStudentId(), "ROLE_STUDENT", DEMO_PASSWORD, false));
     }
 
-    /** null when the password is acceptable */
+    /** Advanced Password Policy validation. Returns null when acceptable. */
     public static String passwordProblem(String password, String username) {
         if (password == null || password.length() < 8) return "รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร";
-        if (!password.matches(".*[A-Za-z].*") || !password.matches(".*\\d.*")) {
-            return "รหัสผ่านใหม่ต้องมีทั้งตัวอักษรภาษาอังกฤษและตัวเลข";
+        if (!password.matches(".*[A-Z].*")) {
+            return "รหัสผ่านใหม่ต้องมีตัวอักษรภาษาอังกฤษพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว";
         }
-        if (password.equalsIgnoreCase(username)) return "รหัสผ่านต้องไม่เหมือนชื่อผู้ใช้";
+        if (!password.matches(".*[a-z].*")) {
+            return "รหัสผ่านใหม่ต้องมีตัวอักษรภาษาอังกฤษพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว";
+        }
+        if (!password.matches(".*\\d.*")) {
+            return "รหัสผ่านใหม่ต้องมีตัวเลข (0-9) อย่างน้อย 1 ตัว";
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+            return "รหัสผ่านใหม่ต้องมีอักขระพิเศษอย่างน้อย 1 ตัว (เช่น !@#$%^&*)";
+        }
+        if (username != null && !username.isBlank() && password.toLowerCase().contains(username.toLowerCase())) {
+            return "รหัสผ่านต้องไม่มีชื่อผู้ใช้หรือรหัสนักศึกษา";
+        }
         return null;
     }
 

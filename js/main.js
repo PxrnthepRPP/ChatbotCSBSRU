@@ -334,6 +334,22 @@ function initApp() {
         const roleLabels = { ADMIN: '🔑 ADMINISTRATOR', ADVISOR: '👩‍🏫 ADVISOR', STUDENT: '🎓 STUDENT' };
         sidebarRole.textContent = roleLabels[role];
 
+        document.getElementById('roleSwitchBtn')?.remove();
+        if (state.user?.canAdmin && !state.isImpersonating) {
+            const isCurrentlyAdmin = (role === 'ADMIN');
+            const switchBtn = document.createElement('button');
+            switchBtn.id = 'roleSwitchBtn';
+            switchBtn.type = 'button';
+            switchBtn.className = 'btn btn-sm btn-ghost';
+            switchBtn.style.cssText = 'margin: 6px 12px; font-size: 0.78rem; border: 1px dashed var(--primary); color: var(--primary); width: calc(100% - 24px); border-radius: 6px; padding: 6px; font-weight: 600; cursor: pointer;';
+            switchBtn.innerHTML = isCurrentlyAdmin ? '👩‍🏫 สลับไปมุมมองอาจารย์' : '🔑 สลับไปมุมมองแอดมิน';
+            switchBtn.onclick = () => {
+                setState({ currentRole: isCurrentlyAdmin ? 'ADVISOR' : 'ADMIN' });
+                initDashboard();
+            };
+            sidebarRole.after(switchBtn);
+        }
+
         const links = NAV_CONFIG[role] || NAV_CONFIG.STUDENT;
         sidebarNav.innerHTML = links.map(l =>
             `<a href="#${l.module}" class="nav-link" data-module="${l.module}">${l.icon}<span>${esc(l.label)}</span></a>`

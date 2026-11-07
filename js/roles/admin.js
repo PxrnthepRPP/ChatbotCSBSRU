@@ -62,7 +62,7 @@ export async function initAdminDashboard() {
             (liveStudents || []).forEach(st => { const id = st.advisor?.id; if (id) counts[id] = (counts[id] || 0) + 1; });
             MOCK_ADVISORS.splice(0, MOCK_ADVISORS.length, ...liveAdvisors.map(a => ({
                 id: a.id, nameTh: a.nameTh, nameEn: a.nameEn, email: a.email, phone: a.phone,
-                department: a.department, studentsCount: counts[a.id] || 0,
+                department: a.department, studentsCount: counts[a.id] || 0, canAdmin: !!a.canAdmin,
             })));
             renderManageAdvisors();
         }
