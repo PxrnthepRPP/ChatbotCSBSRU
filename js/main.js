@@ -6,7 +6,7 @@
    ================================================================ */
 
 import { getState, setState, subscribe } from './state.js';
-import { login, logout, getAuthState, exitImpersonation } from './auth.js';
+import { login, logout, getAuthState, exitImpersonation, goToLoginPage } from './auth.js';
 import { fetchAPI } from './api.js';
 import { loadRoleCSS, loadComponentCSS } from './css-loader.js';
 import { initChatbot, resetChatSession } from './components/chatbot.js';
@@ -103,7 +103,7 @@ function initApp() {
         openChangePasswordModal({
             forced: true,
             onChanged: () => setState({ user: { ...getState().user, mustChangePassword: false } }),
-            onLogout: async () => { await resetChatSession(); logout(); window.location.reload(); },
+            onLogout: async () => { await resetChatSession(); logout(); goToLoginPage(); },
         });
     }
 
@@ -189,11 +189,11 @@ function initApp() {
         e.preventDefault();
         // Each login gets a fresh chat: drop this user's chat while the token is still valid
         await resetChatSession();
-        const state = getState();
-        if (state.isImpersonating) exitImpersonation();
         clearNotifications();
+        // logout() also ends "view as student"; exitImpersonation() is not called here because it
+        // reloads the page itself, which would race with going to the login URL
         logout();
-        window.location.reload();
+        goToLoginPage();
     });
 
     if (exitImpBtn) {

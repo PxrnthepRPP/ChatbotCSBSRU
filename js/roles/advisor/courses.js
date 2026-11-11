@@ -10,6 +10,7 @@ import { getAuthState } from '../../auth.js';
 import { showAdvisorModal, showAdvisorToast } from './ui.js';
 import { openGradeEditor } from '../../components/gradeEditor.js';
 import { openSectionStudentsModal } from './sectionRoster.js';
+import { bindCourseCodeInput, isValidCourseCode } from '../../components/courseForm.js';
 
 /* ============================================================
    MOCK DATA — Advisor's Courses & Exam Announcements
@@ -320,7 +321,7 @@ function sectionsCardHtml(sections) {
                 </button>
             </div>
             <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
-                กลุ่มเรียนที่เพิ่มหรือแก้ไขจะถูกส่งไปให้ผู้ดูแลระบบอนุมัติก่อน นักศึกษาจึงจะลงทะเบียนได้ ·
+                กลุ่มเรียนที่เพิ่มจะใช้ได้ทันที นักศึกษาลงทะเบียนเองได้โดยไม่ต้องรออนุมัติ ·
                 วัน เวลา หรือห้องที่แก้ จะเปลี่ยนในตารางเรียนของนักศึกษาที่ลงกลุ่มนี้ไว้แล้วทันที
             </p>
 
@@ -354,7 +355,7 @@ function sectionsCardHtml(sections) {
                     </div>
                 </div>`).join('')}
                 <div class="app-form-actions">
-                    <button class="app-btn-primary" id="advSaveSectionBtn">ส่งให้ผู้ดูแลระบบอนุมัติ</button>
+                    <button class="app-btn-primary" id="advSaveSectionBtn">บันทึกกลุ่มเรียน</button>
                     <button class="app-btn-ghost" id="advCancelSectionBtn">ยกเลิก</button>
                 </div>
             </div>
@@ -383,6 +384,7 @@ function bindSectionsCard(sections) {
         block.querySelectorAll('.adv-sec-fields input, .adv-sec-fields select').forEach(el => { el.disabled = !on; });
     };
     blocks.forEach(block => block.querySelector('.adv-sec-enabled').addEventListener('change', () => syncBlock(block)));
+    bindCourseCodeInput($('advSecCode'));
 
     const openForm = (section) => {
         editingId = section ? section.sectionId : null;
@@ -433,6 +435,10 @@ function bindSectionsCard(sections) {
             showAdvisorToast('error', 'กรุณากรอกข้อมูลรายวิชาที่มี * ให้ครบ');
             return;
         }
+        if (!isValidCourseCode(course.courseCode.toUpperCase())) {
+            showAdvisorToast('error', 'รหัสวิชาใส่ได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น เช่น CS3101');
+            return;
+        }
         const secs = blocks
             .filter(b => b.style.display !== 'none' && b.querySelector('.adv-sec-enabled').checked)
             .map(b => ({
@@ -466,10 +472,10 @@ function bindSectionsCard(sections) {
         try {
             if (editingId !== null) {
                 await fetchAPI(`/sections/${editingId}`, 'PUT', secs[0], 8000);
-                showAdvisorToast('success', esc(`แก้ไข ${course.courseCode} Sec ${secs[0].sectionNo} แล้ว ส่งให้ผู้ดูแลระบบอนุมัติอีกครั้ง`));
+                showAdvisorToast('success', esc(`แก้ไข ${course.courseCode} Sec ${secs[0].sectionNo} แล้ว`));
             } else {
                 await fetchAPI('/sections/batch', 'POST', secs, 8000);
-                showAdvisorToast('success', esc(`ส่งคำขอเปิด ${course.courseCode} Sec ${secs.map(s => s.sectionNo).join(', ')} แล้ว รอผู้ดูแลระบบอนุมัติ`));
+                showAdvisorToast('success', esc(`เปิด ${course.courseCode} Sec ${secs.map(s => s.sectionNo).join(", ")} แล้ว นักศึกษาลงทะเบียนได้ทันที`));
             }
             renderAdvisorCourses();
         } catch (err) {

@@ -70,11 +70,16 @@ public class StudentAdminService {
             throw new StudentAdminException(HttpStatus.BAD_REQUEST, "กรุณากรอกชื่อ-สกุล (ไทย)");
         }
         if (isBlank(s.getNameEn())) s.setNameEn(s.getNameTh());
+        // Real students log in, and their first password is built from the national ID
+        if (!s.isSimulated() && s.getNationalId() == null) {
+            throw new StudentAdminException(HttpStatus.BAD_REQUEST, "กรุณากรอกเลขบัตรประชาชน 13 หลัก");
+        }
         s.setFaculty("คณะวิทยาศาสตร์และเทคโนโลยี");
         s.setDepartment("สาขาวิทยาการคอมพิวเตอร์");
         Student saved = studentRepository.save(s);
-        // Login account for real students: first password = student id, must be changed at the first login
-        if (!saved.isSimulated()) accountService.createStudentAccount(id);
+        // Login account for real students: username = student id, first password = initials + national ID
+        // (e.g. SJ1101700203450), must be changed at the first login. Sent back once so the admin can hand it over.
+        if (!saved.isSimulated()) saved.setInitialPassword(accountService.createStudentAccount(id));
         return saved;
     }
 
@@ -172,6 +177,16 @@ public class StudentAdminService {
     }
 
     private void apply(Student s, StudentRequest req) {
+        // Blank = keep the number already recorded (the edit form never receives the full number)
+        String nationalId = NationalId.normalize(req.getNationalId());
+        if (!isBlank(nationalId)) {
+            String problem = NationalId.problem(nationalId);
+            if (problem != null) throw new StudentAdminException(HttpStatus.BAD_REQUEST, problem);
+            if (studentRepository.existsByNationalIdAndStudentIdNot(nationalId, s.getStudentId())) {
+                throw new StudentAdminException(HttpStatus.CONFLICT, "เลขบัตรประชาชนนี้ถูกใช้กับนักศึกษาคนอื่นในระบบแล้ว");
+            }
+            s.setNationalId(nationalId);
+        }
         if (req.getNameTh() != null) s.setNameTh(req.getNameTh().trim());
         if (req.getNameEn() != null) s.setNameEn(req.getNameEn().trim());
         if (req.getYear() != null) {

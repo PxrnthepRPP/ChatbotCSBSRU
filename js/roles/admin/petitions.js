@@ -3,6 +3,7 @@ import { fetchAPI, viewPdfAttachmentAPI } from '../../api.js';
 import { MOCK_ADVISORS, MOCK_STUDENTS_POOL, MOCK_PETITIONS_LOG } from './mockData.js';
 import { resolveBatchRange, renderPaginationPagesHtml } from './shared.js';
 import { renderAdminDashboard } from './dashboard.js';
+import { attachFormDraft } from '../../components/formDraft.js';
 
 /* ============================================================
    MANAGE PETITIONS (Admin Petition Logs)
@@ -432,6 +433,7 @@ function openPetitionDetailModal(idx) {
             p.status = updated.status || newStatus;
             p.adminComment = (updated.adminComment !== undefined) ? updated.adminComment : newComment;
 
+            petitionDraft.clear();   // decision saved: the draft is no longer needed
             crudModal.classList.remove('open');
             renderManagePetitions();
             renderAdminDashboard();
@@ -463,6 +465,9 @@ function openPetitionDetailModal(idx) {
         document.getElementById('adminPetitionStatusSelect').value = 'ไม่อนุมัติ';
         handlePetitionStatusUpdate('ไม่อนุมัติ', comment);
     });
+
+    // The status picked and the comment typed survive closing this window by mistake; cleared once saved
+    const petitionDraft = attachFormDraft(modalBody, `petition:${p.id}`);
 
     crudModal.classList.add('open');
 }

@@ -1,6 +1,5 @@
 package com.bsru.studentportal.controller;
 
-import com.bsru.studentportal.dto.EnrollmentReviewRequest;
 import com.bsru.studentportal.dto.PetitionRequest;
 import com.bsru.studentportal.dto.PetitionStatusUpdateRequest;
 import com.bsru.studentportal.model.AcademicPetition;
@@ -41,13 +40,13 @@ import static org.mockito.Mockito.*;
 
 /**
  * Adversarial Empirical Verification Suite for Milestone 5 (WP-5)
- * Verifies all 5 Domain Notification Triggers and stress-tests edge cases:
+ * Verifies the Domain Notification Triggers and stress-tests edge cases:
  *
  * 1. Petition Submission: POST /api/petitions -> notifies advisor (targetModule = "advisor-petitions")
  * 2. Advisor Endorsement: PATCH /api/petitions/{id}/status -> notifies admin ("manage-petitions") and student ("petitions")
  * 3. Advisor Rejection: PATCH /api/petitions/{id}/status -> notifies student ("petitions")
  * 4. Admin Decision: Final approval/rejection -> notifies student ("petitions")
- * 5. Course Registration Review: TimetableService.reviewRequests -> notifies student ("timetable")
+ * (Course registration no longer has an admin review step, so it sends no review notification.)
  */
 @ExtendWith(MockitoExtension.class)
 class DomainNotificationTriggerAdversarialTest {
@@ -512,195 +511,6 @@ class DomainNotificationTriggerAdversarialTest {
             assertEquals(HttpStatus.OK, res.getStatusCode());
 
             verify(notificationService, never()).notifyUser(any(), any(), any(), any(), any());
-        }
-    }
-
-    // =========================================================================
-    // TRIGGER 5: Course Registration Review -> Timetable Notification
-    // =========================================================================
-    @Nested
-    @DisplayName("Trigger 5: TimetableService.reviewRequests -> Student Notification")
-    class Trigger5_CourseRegistrationReview {
-
-        private ClassSection section1;
-        private ClassSection section2;
-        private SectionEnrollment enrollment1;
-        private SectionEnrollment enrollment2;
-        private Actor adminActor;
-        private Actor studentActor;
-
-        @BeforeEach
-        void initSections() {
-            adminActor = new Actor(Actor.Kind.ADMIN, "admin");
-            studentActor = new Actor(Actor.Kind.STUDENT, "6621100042");
-
-            section1 = new ClassSection();
-            section1.setId(10L);
-            section1.setCourseCode("CS3101");
-            section1.setCourseName("Web Application Development");
-            section1.setAcademicYear(2569);
-            section1.setTerm(1);
-            section1.setCredits(3);
-            section1.setSectionNo("01");
-            section1.setDayOfWeek(0);
-            section1.setStartTime(LocalTime.of(9, 0));
-            section1.setEndTime(LocalTime.of(12, 0));
-
-            section2 = new ClassSection();
-            section2.setId(20L);
-            section2.setCourseCode("CS3202");
-            section2.setCourseName("Software Engineering");
-            section2.setAcademicYear(2569);
-            section2.setTerm(1);
-            section2.setCredits(3);
-            section2.setSectionNo("01");
-            section2.setDayOfWeek(2);
-            section2.setStartTime(LocalTime.of(13, 0));
-            section2.setEndTime(LocalTime.of(16, 0));
-
-            enrollment1 = new SectionEnrollment();
-            enrollment1.setId(101L);
-            enrollment1.setStudent(student1);
-            enrollment1.setSection(section1);
-            enrollment1.setStatus(EnrollmentStatus.PENDING);
-            enrollment1.setEnrolledAt(LocalDateTime.now());
-
-            enrollment2 = new SectionEnrollment();
-            enrollment2.setId(102L);
-            enrollment2.setStudent(student2);
-            enrollment2.setSection(section2);
-            enrollment2.setStatus(EnrollmentStatus.PENDING);
-            enrollment2.setEnrolledAt(LocalDateTime.now());
-        }
-
-        @Test
-        @DisplayName("5.1 Admin confirms registration requests -> notifies each affected student with targetModule='timetable'")
-        void testReviewRequests_Confirmed_NotifiesStudents() {
-            when(enrollmentRepository.findAllById(List.of(101L, 102L))).thenReturn(List.of(enrollment1, enrollment2));
-
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L, 102L), "CONFIRMED", null);
-            int count = timetableService.reviewRequests(adminActor, req);
-            assertEquals(2, count);
-
-            ArgumentCaptor<String> recipientCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> titleCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> msgCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> targetCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> typeCap = ArgumentCaptor.forClass(String.class);
-
-            verify(notificationService, times(2)).notifyUser(
-                    recipientCap.capture(),
-                    titleCap.capture(),
-                    msgCap.capture(),
-                    targetCap.capture(),
-                    typeCap.capture()
-            );
-
-            List<String> recipients = recipientCap.getAllValues();
-            List<String> titles = titleCap.getAllValues();
-            List<String> targets = targetCap.getAllValues();
-            List<String> types = typeCap.getAllValues();
-            List<String> msgs = msgCap.getAllValues();
-
-            assertEquals("6621100042", recipients.get(0));
-            assertEquals("ผลการลงทะเบียนเรียนได้รับการอนุมัติ", titles.get(0));
-            assertEquals("timetable", targets.get(0));
-            assertEquals("REGISTRATION", types.get(0));
-            assertTrue(msgs.get(0).contains("CS3101"));
-
-            assertEquals("6621100099", recipients.get(1));
-            assertEquals("ผลการลงทะเบียนเรียนได้รับการอนุมัติ", titles.get(1));
-            assertEquals("timetable", targets.get(1));
-            assertEquals("REGISTRATION", types.get(1));
-            assertTrue(msgs.get(1).contains("CS3202"));
-
-            verify(enrollmentRepository, times(1)).saveAll(any());
-        }
-
-        @Test
-        @DisplayName("5.2 Admin rejects registration requests -> notifies student with reason and targetModule='timetable'")
-        void testReviewRequests_Rejected_NotifiesStudentsWithReason() {
-            when(enrollmentRepository.findAllById(List.of(101L))).thenReturn(List.of(enrollment1));
-
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L), "REJECTED", "ที่นั่งเต็มตามความจุห้อง");
-            int count = timetableService.reviewRequests(adminActor, req);
-            assertEquals(1, count);
-
-            ArgumentCaptor<String> recipientCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> titleCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> msgCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> targetCap = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> typeCap = ArgumentCaptor.forClass(String.class);
-
-            verify(notificationService, times(1)).notifyUser(
-                    recipientCap.capture(),
-                    titleCap.capture(),
-                    msgCap.capture(),
-                    targetCap.capture(),
-                    typeCap.capture()
-            );
-
-            assertEquals("6621100042", recipientCap.getValue());
-            assertEquals("ผลการลงทะเบียนเรียนไม่ผ่านการอนุมัติ", titleCap.getValue());
-            assertEquals("timetable", targetCap.getValue());
-            assertEquals("REGISTRATION", typeCap.getValue());
-            assertTrue(msgCap.getValue().contains("CS3101"));
-            assertTrue(msgCap.getValue().contains("เนื่องจาก: ที่นั่งเต็มตามความจุห้อง"));
-        }
-
-        @Test
-        @DisplayName("5.3 Rejection without note -> throws BAD_REQUEST and sends 0 notifications")
-        void testReviewRequests_RejectedWithoutNote_ThrowsExceptionAndNoNotifications() {
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L), "REJECTED", "   ");
-
-            TimetableException ex = assertThrows(TimetableException.class, () ->
-                    timetableService.reviewRequests(adminActor, req)
-            );
-            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
-            assertEquals("กรุณาระบุเหตุผลที่ไม่อนุมัติ", ex.getMessage());
-
-            verify(notificationService, never()).notifyUser(any(), any(), any(), any(), any());
-        }
-
-        @Test
-        @DisplayName("5.4 Non-admin actor attempts review -> throws FORBIDDEN and sends 0 notifications")
-        void testReviewRequests_NonAdminCaller_ThrowsForbidden() {
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L), "CONFIRMED", null);
-
-            TimetableException ex = assertThrows(TimetableException.class, () ->
-                    timetableService.reviewRequests(studentActor, req)
-            );
-            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
-            verify(notificationService, never()).notifyUser(any(), any(), any(), any(), any());
-        }
-
-        @Test
-        @DisplayName("5.5 Conflict: Enrollment is already CONFIRMED -> throws CONFLICT and sends 0 notifications")
-        void testReviewRequests_AlreadyReviewed_ThrowsConflict() {
-            enrollment1.setStatus(EnrollmentStatus.CONFIRMED);
-            when(enrollmentRepository.findAllById(List.of(101L))).thenReturn(List.of(enrollment1));
-
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L), "CONFIRMED", null);
-
-            TimetableException ex = assertThrows(TimetableException.class, () ->
-                    timetableService.reviewRequests(adminActor, req)
-            );
-            assertEquals(HttpStatus.CONFLICT, ex.getStatus());
-            verify(notificationService, never()).notifyUser(any(), any(), any(), any(), any());
-        }
-
-        @Test
-        @DisplayName("5.6 Edge case: Enrollment student is null -> saves decision without NPE or notification")
-        void testReviewRequests_NullStudentOnEnrollment_GracefulHandling() {
-            enrollment1.setStudent(null);
-            when(enrollmentRepository.findAllById(List.of(101L))).thenReturn(List.of(enrollment1));
-
-            EnrollmentReviewRequest req = new EnrollmentReviewRequest(List.of(101L), "CONFIRMED", null);
-            int count = timetableService.reviewRequests(adminActor, req);
-            assertEquals(1, count);
-
-            verify(notificationService, never()).notifyUser(any(), any(), any(), any(), any());
-            verify(enrollmentRepository).saveAll(any());
         }
     }
 }

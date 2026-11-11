@@ -1,6 +1,10 @@
 import { confirmDialog } from '../../components/confirmDialog.js';
 import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
+import { attachFormDraft } from '../../components/formDraft.js';
+
+/** Draft of the ingest form (text pasted but not ingested yet) */
+let kbDraft = null;
 
 // ================================================================
 // KNOWLEDGE BASE MANAGEMENT (WP-3)
@@ -152,6 +156,7 @@ export async function renderKnowledgeManagement() {
             const sourceInput = document.getElementById('kbSourceInput');
             if (sourceInput && (!sourceInput.value.trim() || sourceInput.value === 'manual_entry')) {
                 sourceInput.value = file.name;
+                sourceInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
 
             // Read text files directly
@@ -159,7 +164,10 @@ export async function renderKnowledgeManagement() {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const contentArea = document.getElementById('kbContentInput');
-                    if (contentArea) contentArea.value = evt.target.result;
+                    if (contentArea) {
+                        contentArea.value = evt.target.result;
+                        contentArea.dispatchEvent(new Event('input', { bubbles: true }));   // keep it in the draft
+                    }
                 };
                 reader.readAsText(file, 'UTF-8');
             } else if (/\.pdf$/i.test(file.name)) {
@@ -167,6 +175,9 @@ export async function renderKnowledgeManagement() {
             }
         });
     }
+
+    // Unsaved text survives leaving this page or a refresh; cleared once ingested
+    kbDraft = attachFormDraft(document.getElementById('kbIngestForm'), 'knowledge:ingest');
 
     // Wire Ingest Submit Button
     const ingestBtn = document.getElementById('kbIngestBtn');
@@ -308,6 +319,7 @@ async function handleKnowledgeIngest() {
         console.log('✅ [Admin] Document ingested successfully:', res);
         showToast('success', `นำเข้าเอกสาร "${source}" เข้าสู่คลังความรู้สำเร็จแล้ว ✅`);
 
+        kbDraft?.clear();
         // Reset form inputs
         if (sourceInput) sourceInput.value = '';
         if (contentInput) contentInput.value = '';

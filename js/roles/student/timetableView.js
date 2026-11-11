@@ -8,6 +8,10 @@ import { fetchAPI } from '../../api.js';
 import { getAuthState } from '../../auth.js';
 import { MOCK_EXAM_ANNOUNCEMENTS } from '../advisor.js';
 import { showPetitionToast } from './petitionsView.js';
+import {
+    DAY_NAMES_TH, bindInstructorPicker, dayOptionsHTML, formField, instructorPickerHTML, loadAdvisors,
+    bindCourseCodeInput, isValidCourseCode, readInstructor, setInstructor, timeRangeHTML,
+} from '../../components/courseForm.js';
 
 /* ============================================================
    MOCK DATA — Timetable schedules grouped by semester
@@ -67,13 +71,19 @@ export function timeToSlot(t) {
     return Math.max(0, h - 7);
 }
 
+/** Slot where a class ending at "HH:MM" stops; 11:30 runs into the 11:00 row, so round up */
+export function timeToEndSlot(t) {
+    const [h, m] = t.split(':').map(n => parseInt(n, 10));
+    return Math.max(0, h - 7 + (m > 0 ? 1 : 0));
+}
+
 /** Build desktop CSS Grid schedule matrix */
 export function buildTimetableDesktopHTML(schedule, showDelete) {
     // Determine which time slots are actually used
     let minSlot = 14, maxSlot = 0;
     schedule.forEach(e => {
         const s = timeToSlot(e.startTime);
-        const end = timeToSlot(e.endTime);
+        const end = timeToEndSlot(e.endTime);
         if (s < minSlot) minSlot = s;
         if (end > maxSlot) maxSlot = end;
     });
@@ -119,7 +129,7 @@ export function buildTimetableDesktopHTML(schedule, showDelete) {
     schedule.forEach((e, idx) => {
         const colStart = e.day + 2;
         const rowStart = (timeToSlot(e.startTime) - minSlot) + 2;
-        const rowEnd = (timeToSlot(e.endTime) - minSlot) + 2;
+        const rowEnd = Math.max(rowStart + 1, (timeToEndSlot(e.endTime) - minSlot) + 2);
         const color = colorMap[e.subjectCode] || 'color-1';
 
         const deleteBtn = showDelete ? `<button class="tt-delete-course" data-course-idx="${idx}" title="ลบวิชานี้" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.3);border:none;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity 0.2s;color:#fff;font-size:12px;padding:0;line-height:1">✕</button>` : '';
@@ -159,7 +169,7 @@ export function buildTimetableAgendaHTML(schedule, colorMap, showDelete) {
         return `<div class="tt-agenda-view" style="text-align:center;padding:32px 16px;color:var(--text-muted)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:0.4;margin-bottom:8px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <div style="font-weight:500;margin-bottom:4px">ยังไม่มีรายวิชาในภาคเรียนนี้</div>
-            <div style="font-size:0.82rem">กดปุ่ม "+ เพิ่มวิชาเรียน" ด้านบนเพื่อลงข้อมูลตารางเรียน</div>
+            <div style="font-size:0.82rem">กดปุ่ม "+ ลงทะเบียนเรียน" ด้านบนเพื่อลงข้อมูลตารางเรียน</div>
         </div>`;
     }
 
@@ -287,6 +297,13 @@ export function apiErrorMessage(err) {
     return err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
 }
 
+/** The whole JSON body of a fetchAPI error ({ error, details }), or null */
+export function apiErrorBody(err) {
+    const match = /\{.*\}$/s.exec(err.message || '');
+    if (!match) return null;
+    try { return JSON.parse(match[0]); } catch (e) { return null; }
+}
+
 /** Banner telling the student whether they can add or drop courses in this semester */
 export function buildRegistrationBanner(sem) {
     if (sem.offline) {
@@ -345,8 +362,8 @@ export function renderTimetable(studentId) {
     let semesters = MOCK_TIMETABLE_SEMESTERS.map(s => ({ ...s, offline: true }));
     let currentIdx = 0;
     let cartOpen = false;
-    const carts = {};            // "year/term" -> course codes picked but not sent yet
-    const cartSecs = {};         // "year/term" -> { course code: Sec the student picked }
+    let homeSec = '';            // the student's own Sec (D1/D2), the default in the registration form
+    let advisors = [];           // teachers in the system for the "อาจารย์ผู้สอน" list
     // An admin opening this page as the student registers for them (e.g. the first semester after
     // admission): confirmed straight away and allowed while registration is closed
     const auth = getAuthState();
@@ -355,10 +372,14 @@ export function renderTimetable(studentId) {
     async function load(keepSelection) {
         const selected = semesters[currentIdx];
         try {
-            const [terms, periods] = await Promise.all([
+            const [terms, periods, student, teachers] = await Promise.all([
                 fetchAPI(`/students/${encodeURIComponent(studentId)}/timetable`),
                 fetchAPI('/registration-periods'),
+                fetchAPI(`/students/${encodeURIComponent(studentId)}`).catch(() => null),
+                loadAdvisors(),
             ]);
+            homeSec = student?.studentSection || '';
+            advisors = teachers;
             semesters = timetableFromApi(terms, periods);
             if (keepSelection && selected) {
                 currentIdx = Math.max(0, semesters.findIndex(s =>
@@ -409,7 +430,7 @@ export function renderTimetable(studentId) {
                 ${rejectedBox}
 
                 ${canEdit ? `
-                <!-- Registration cart: pick several courses, check them, then send them together -->
+                <!-- Self-registration: the student types in a course and it goes straight into the timetable -->
                 <div id="ttCartPanel" style="display:${cartOpen ? 'block' : 'none'}" class="app-form-panel">
                     <div class="app-form-header">
                         <div>
@@ -417,23 +438,34 @@ export function renderTimetable(studentId) {
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                                 ลงทะเบียนเรียน (${esc(sem.label)})
                             </div>
-                            <div class="app-form-subtitle">${staffRegistering
-                                ? 'ผู้ดูแลระบบลงทะเบียนให้นักศึกษา: ใส่รหัสวิชาและเลือก Sec ของแต่ละวิชา (ตั้งต้นเป็น Sec แรกเข้าถ้าวิชานั้นมี) เมื่อกด "ยืนยันลงทะเบียน" จะลงทะเบียนสำเร็จทันที'
-                                : 'พิมพ์รหัสวิชาแล้วกด "เพิ่มลงรายการ" ได้หลายวิชา เลือก Sec ของแต่ละวิชาได้เอง (Sec ไหนก็ได้) ระบบตรวจที่นั่งกับเวลาชนให้ เมื่อครบแล้วกด "ยืนยันลงทะเบียน" คำขอจะรอผู้ดูแลระบบยืนยัน'}</div>
-                            <div class="app-form-subtitle" id="ttCartHomeSec"></div>
+                            <div class="app-form-subtitle">กรอกข้อมูลวิชาที่เรียนแล้วกด "ลงทะเบียน" วิชาจะเข้าตารางเรียนทันที ไม่ต้องรออนุมัติ ·
+                                พิมพ์รหัสหรือชื่อวิชาเพื่อเลือกวิชาที่เคยมีในระบบ ระบบจะกรอกข้อมูลให้อัตโนมัติ</div>
                         </div>
                         <button type="button" class="btn btn-sm btn-ghost" id="ttCloseFormBtn" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                     </div>
 
-                    <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px">
-                        <input type="text" id="ttCartCode" class="app-input" placeholder="รหัสวิชา เช่น CS3401" style="max-width:220px">
-                        <button class="btn btn-sm btn-orange" id="ttCartAddBtn">เพิ่มลงรายการ</button>
+                    <div id="ttRegForm">
+                        <div class="app-form-grid app-form-grid-3col">
+                            ${formField('รหัสวิชา <span class="req">*</span>', `
+                                <div style="position:relative">
+                                    <input type="text" id="ttRegCode" class="app-input" placeholder="เช่น CS3101" autocomplete="off">
+                                    <div id="ttRegSuggest" class="tt-suggest-box" style="display:none"></div>
+                                </div>`)}
+                            ${formField('ชื่อวิชา <span class="req">*</span>', '<input type="text" id="ttRegName" class="app-input" placeholder="เช่น ปัญญาประดิษฐ์" autocomplete="off">')}
+                            ${formField('หน่วยกิต <span class="req">*</span>', '<input type="number" id="ttRegCredits" class="app-input" min="1" max="12" value="3">')}
+                            ${formField('Sec <span class="req">*</span>', `<select id="ttRegSec" class="app-select">${['D1', 'D2'].map(g =>
+                                `<option value="${g}" ${g === (homeSec || 'D1') ? 'selected' : ''}>${g}${g === homeSec ? ' (Sec ของฉัน)' : ''}</option>`).join('')}</select>`)}
+                            ${formField('อาจารย์ผู้สอน <span class="req">*</span>', instructorPickerHTML('ttReg', advisors))}
+                            ${formField('ห้องเรียน', '<input type="text" id="ttRegRoom" class="app-input" placeholder="เช่น CS-Lab1">')}
+                            ${formField('วันที่เรียน <span class="req">*</span>', `<select id="ttRegDay" class="app-select">${dayOptionsHTML(0)}</select>`)}
+                            ${formField('เวลาเรียน <span class="req">*</span>', timeRangeHTML('ttReg'), 'app-form-span-2')}
+                        </div>
+                        <div id="ttRegDupBox" class="tt-reg-banner warn" style="display:none;margin-top:12px"></div>
                     </div>
-                    <div id="ttCartList" style="margin-top:12px"></div>
 
                     <div class="app-form-actions">
-                        <button class="app-btn-primary" id="ttCartSubmitBtn" disabled>ยืนยันลงทะเบียน</button>
-                        <button class="app-btn-ghost" id="ttCartClearBtn">ล้างรายการ</button>
+                        <button class="app-btn-primary" id="ttRegSubmitBtn">ลงทะเบียน</button>
+                        <button class="app-btn-ghost" id="ttRegClearBtn">ล้างข้อมูล</button>
                     </div>
                 </div>` : ''}
 
@@ -476,136 +508,185 @@ export function renderTimetable(studentId) {
 
         if (!canEdit) return;
 
-        // ── Registration cart ──
-        const cartKey = `${sem.academicYear}/${sem.term}`;
-        const cart = carts[cartKey] || (carts[cartKey] = []);
-        const secs = cartSecs[cartKey] || (cartSecs[cartKey] = {});
+        // ── Self-registration form ──
         const panel = document.getElementById('ttCartPanel');
-        const submitBtn = document.getElementById('ttCartSubmitBtn');
+        const form = document.getElementById('ttRegForm');
+        const $ = (id) => document.getElementById(id);
+        const submitBtn = $('ttRegSubmitBtn');
+        bindInstructorPicker(form, 'ttReg');
+        bindCourseCodeInput($('ttRegCode'));
 
-        document.getElementById('ttToggleAddCourse').addEventListener('click', () => {
+        $('ttToggleAddCourse').addEventListener('click', () => {
             cartOpen = panel.style.display === 'none';
             panel.style.display = cartOpen ? 'block' : 'none';
-            if (cartOpen) document.getElementById('ttCartCode').focus();
+            if (cartOpen) $('ttRegCode').focus();
         });
-        document.getElementById('ttCloseFormBtn').addEventListener('click', () => {
+        $('ttCloseFormBtn').addEventListener('click', () => {
             cartOpen = false;
             panel.style.display = 'none';
         });
 
-        /** Ask the backend about the whole cart and show seats, time clashes and other problems per course */
-        async function refreshCart() {
-            const list = document.getElementById('ttCartList');
-            if (!list) return;
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'ยืนยันลงทะเบียน';
-            if (cart.length === 0) {
-                list.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem">ยังไม่มีวิชาในรายการ</div>';
+        const dupBox = $('ttRegDupBox');
+        const suggestBox = $('ttRegSuggest');
+        let existingSection = null;   // same course + Sec already recorded in this semester
+
+        function showDuplicate(section) {
+            existingSection = section;
+            if (!section) {
+                dupBox.style.display = 'none';
+                dupBox.innerHTML = '';
+                submitBtn.textContent = 'ลงทะเบียน';
                 return;
             }
-            let check;
-            try {
-                check = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration/check`, 'POST', {
-                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart, sections: secs,
-                }, 8000);
-            } catch (err) {
-                list.innerHTML = `<div class="tt-cart-problem">${esc(apiErrorMessage(err))}</div>`;
-                return;
-            }
-            const homeSec = document.getElementById('ttCartHomeSec');
-            if (homeSec) homeSec.textContent = check.studentSection ? `Sec แรกเข้า: ${check.studentSection} (ใช้อ้างอิงเท่านั้น ไม่จำกัดการเลือก Sec)` : '';
-            const rows = check.items.map((item, i) => {
-                const s = item.section;
-                const seats = !s ? '-' : item.seatsLeft === null ? 'ไม่จำกัด' : `เหลือ ${item.seatsLeft}`;
-                const state = item.problems.length
-                    ? item.problems.map(p => `<div class="tt-cart-problem">⚠️ ${esc(p)}</div>`).join('')
-                    : '<span class="badge badge-green">พร้อมลงทะเบียน</span>';
-                // Any approved Sec of the course can be picked; each option shows its time and seats
-                const choices = item.choices || [];
-                const secCell = choices.length > 0
-                    ? `<select class="batch-select tt-cart-sec" data-code="${esc(item.courseCode)}">${choices.map(c => {
-                        const left = c.capacity == null ? 'ไม่จำกัด' : `เหลือ ${Math.max(0, c.capacity - c.enrolledCount)}`;
-                        return `<option value="${esc(c.sectionNo)}" ${s && s.sectionNo === c.sectionNo ? 'selected' : ''}>${esc(c.sectionNo)} · ${esc(c.dayName)} ${esc(c.startTime)}–${esc(c.endTime)} · ${left}</option>`;
-                    }).join('')}</select>`
-                    : (s ? esc(s.sectionNo) : '-');
-                return `
-                    <tr>
-                        <td><span class="badge badge-blue">${esc(item.courseCode)}</span>${s ? `<div style="font-size:0.82rem">${esc(s.courseName)}</div>` : ''}</td>
-                        <td>${secCell}</td>
-                        <td>${s ? `${esc(s.dayName)} ${esc(s.startTime)}–${esc(s.endTime)}` : '-'}</td>
-                        <td class="hide-mobile">${s ? s.credits : '-'}</td>
-                        <td>${seats}</td>
-                        <td>${state}</td>
-                        <td><button class="btn btn-sm btn-ghost tt-cart-remove" data-idx="${i}" title="เอาออกจากรายการ">✕</button></td>
-                    </tr>`;
-            }).join('');
-            list.innerHTML = `
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>วิชา</th><th>Sec</th><th>วัน-เวลา</th><th class="hide-mobile">หน่วยกิต</th><th>ที่นั่ง</th><th>ตรวจสอบ</th><th></th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-                <div style="font-size:0.85rem;margin-top:8px">รวม <strong>${check.items.length}</strong> วิชา · <strong>${check.totalCredits}</strong> หน่วยกิต</div>`;
-            list.querySelectorAll('.tt-cart-remove').forEach(btn => btn.addEventListener('click', () => {
-                const [code] = cart.splice(parseInt(btn.dataset.idx, 10), 1);
-                delete secs[code];
-                refreshCart();
-            }));
-            list.querySelectorAll('.tt-cart-sec').forEach(sel => sel.addEventListener('change', () => {
-                secs[sel.dataset.code] = sel.value;
-                refreshCart();
-            }));
-            submitBtn.disabled = !check.ok;
-            submitBtn.textContent = `ยืนยันลงทะเบียน (${check.items.length} วิชา)`;
+            const teacher = section.instructorName ? ` · อาจารย์ ${esc(section.instructorName)}` : '';
+            const room = section.room ? ` · ห้อง ${esc(section.room)}` : '';
+            dupBox.innerHTML = `
+                <div style="font-weight:600;margin-bottom:4px">⚠️ มีวิชานี้ในระบบแล้ว</div>
+                <div>${esc(section.courseCode)} ${esc(section.courseName)} (Sec ${esc(section.sectionNo)}, ${section.credits} หน่วยกิต)
+                    · วัน${esc(section.dayName)} ${esc(section.startTime)}–${esc(section.endTime)}${teacher}${room}
+                    · ลงทะเบียนแล้ว ${section.enrolledCount} คน</div>
+                <div style="font-size:0.82rem;margin-top:4px">กด "ลงทะเบียนวิชานี้" เพื่อใช้ข้อมูลเดิม ไม่ต้องกรอกใหม่ (ถ้าข้อมูลไม่ถูกต้อง แจ้งผู้ดูแลระบบให้แก้ไข)</div>`;
+            dupBox.style.display = 'block';
+            submitBtn.textContent = 'ลงทะเบียนวิชานี้ (ใช้ข้อมูลเดิม)';
         }
 
-        const addToCart = () => {
-            const input = document.getElementById('ttCartCode');
-            const code = input.value.trim().toUpperCase();
-            if (!code) {
-                input.classList.add('is-invalid');
-                showPetitionToast('error', 'กรุณากรอกรหัสวิชา');
-                return;
+        /** Warn as soon as the typed course + Sec already exists in this semester */
+        async function checkDuplicate() {
+            const code = $('ttRegCode').value.trim().toUpperCase();
+            const sec = $('ttRegSec').value;
+            if (!code) { showDuplicate(null); return; }
+            try {
+                const found = await fetchAPI(`/sections/lookup?academicYear=${sem.academicYear}&term=${sem.term}&courseCode=${encodeURIComponent(code)}`, 'GET', null, 8000);
+                if ($('ttRegCode').value.trim().toUpperCase() !== code) return;   // typed on meanwhile
+                showDuplicate(found.find(s => s.sectionNo === sec) || null);
+            } catch (err) {
+                showDuplicate(null);
             }
-            if (cart.includes(code)) {
-                showPetitionToast('info', `${esc(code)} อยู่ในรายการแล้ว`);
-                return;
+        }
+
+        function fillFrom(c) {
+            $('ttRegCode').value = c.courseCode;
+            $('ttRegName').value = c.courseName || '';
+            $('ttRegCredits').value = c.credits || 3;
+            $('ttRegDay').value = String(c.dayOfWeek ?? 0);
+            $('ttRegStart').value = c.startTime || '';
+            $('ttRegEnd').value = c.endTime || '';
+            $('ttRegRoom').value = c.room || '';
+            setInstructor(form, 'ttReg', c);
+        }
+
+        let suggestTimer = null;
+        let suggestions = [];
+        function hideSuggestions() {
+            suggestBox.style.display = 'none';
+            suggestBox.innerHTML = '';
+        }
+        async function suggest(q) {
+            if (q.trim().length < 2) { hideSuggestions(); return; }
+            try {
+                suggestions = await fetchAPI(`/courses/suggestions?q=${encodeURIComponent(q.trim())}`, 'GET', null, 8000);
+            } catch (err) {
+                suggestions = [];
             }
-            cart.push(code);
-            input.value = '';
-            input.focus();
-            refreshCart();
-        };
-        document.getElementById('ttCartAddBtn').addEventListener('click', addToCart);
-        document.getElementById('ttCartCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') addToCart(); });
-        document.getElementById('ttCartCode').addEventListener('input', (e) => e.target.classList.remove('is-invalid'));
-        document.getElementById('ttCartClearBtn').addEventListener('click', () => {
-            cart.splice(0, cart.length);
-            Object.keys(secs).forEach(k => delete secs[k]);
-            refreshCart();
+            if (suggestions.length === 0) { hideSuggestions(); return; }
+            suggestBox.innerHTML = `<div style="font-size:0.78rem;color:var(--text-muted);padding:6px 10px">วิชาที่เคยบันทึกในระบบ — กดเพื่อกรอกให้อัตโนมัติ</div>`
+                + suggestions.map((c, i) => `
+                <button type="button" class="tt-suggest-item" data-idx="${i}">
+                    <strong>${esc(c.courseCode)}</strong> ${esc(c.courseName)}
+                    <span style="color:var(--text-muted);font-size:0.8rem"> · ${c.credits} หน่วยกิต${c.instructorName ? ` · ${esc(c.instructorName)}` : ''} · วัน${esc(DAY_NAMES_TH[c.dayOfWeek])} ${esc(c.startTime)}–${esc(c.endTime)} · ล่าสุด ${esc(c.lastTaught)}</span>
+                </button>`).join('');
+            suggestBox.style.display = 'block';
+            suggestBox.querySelectorAll('.tt-suggest-item').forEach(btn => btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();   // keep focus handling simple: fill before the input blurs
+                fillFrom(suggestions[Number(btn.dataset.idx)]);
+                hideSuggestions();
+                checkDuplicate();
+            }));
+        }
+        ['ttRegCode', 'ttRegName'].forEach(id => {
+            $(id).addEventListener('input', (e) => {
+                e.target.classList.remove('is-invalid');
+                clearTimeout(suggestTimer);
+                suggestTimer = setTimeout(() => suggest(e.target.value), 250);
+                if (id === 'ttRegCode') showDuplicate(null);
+            });
+            $(id).addEventListener('blur', () => setTimeout(hideSuggestions, 150));
+        });
+        $('ttRegCode').addEventListener('change', checkDuplicate);
+        $('ttRegSec').addEventListener('change', checkDuplicate);
+        form.querySelectorAll('.app-input, .app-select').forEach(el =>
+            el.addEventListener('input', () => el.classList.remove('is-invalid')));
+
+        $('ttRegClearBtn').addEventListener('click', () => {
+            form.querySelectorAll('input').forEach(el => { el.value = ''; el.classList.remove('is-invalid'); });
+            $('ttRegCredits').value = 3;
+            $('ttRegDay').value = '0';
+            setInstructor(form, 'ttReg', {});
+            showDuplicate(null);
+            hideSuggestions();
         });
 
-        submitBtn.addEventListener('click', async () => {
+        async function register(useExisting) {
+            const teacher = readInstructor(form, 'ttReg');
+            const body = {
+                academicYear: sem.academicYear,
+                term: sem.term,
+                courseCode: $('ttRegCode').value.trim().toUpperCase(),
+                courseName: $('ttRegName').value.trim(),
+                credits: parseInt($('ttRegCredits').value, 10),
+                sectionNo: $('ttRegSec').value,
+                dayOfWeek: parseInt($('ttRegDay').value, 10),
+                startTime: $('ttRegStart').value,
+                endTime: $('ttRegEnd').value,
+                room: $('ttRegRoom').value.trim(),
+                instructorId: teacher.instructorId,
+                instructorName: teacher.instructorName,
+                useExisting,
+            };
+            if (!useExisting) {
+                const missing = [];
+                const need = (ok, id, label) => { if (!ok) { $(id).classList.add('is-invalid'); missing.push(label); } };
+                need(body.courseCode, 'ttRegCode', 'รหัสวิชา');
+                need(body.courseName, 'ttRegName', 'ชื่อวิชา');
+                need(body.credits > 0, 'ttRegCredits', 'หน่วยกิต');
+                need(body.instructorId || body.instructorName, $('ttRegTeacher').value === '__other' ? 'ttRegTeacherName' : 'ttRegTeacher', 'อาจารย์ผู้สอน');
+                need(body.startTime, 'ttRegStart', 'เวลาเริ่ม');
+                need(body.endTime, 'ttRegEnd', 'เวลาสิ้นสุด');
+                if (missing.length) {
+                    showPetitionToast('error', `กรุณากรอก ${missing.join(', ')}`);
+                    return;
+                }
+                if (!isValidCourseCode(body.courseCode)) {
+                    $('ttRegCode').classList.add('is-invalid');
+                    showPetitionToast('error', 'รหัสวิชาใส่ได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น เช่น CS3101');
+                    return;
+                }
+                if (body.startTime >= body.endTime) {
+                    $('ttRegEnd').classList.add('is-invalid');
+                    showPetitionToast('error', 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+                    return;
+                }
+            }
             submitBtn.disabled = true;
             try {
-                const result = await fetchAPI(`/students/${encodeURIComponent(studentId)}/registration`, 'POST', {
-                    academicYear: sem.academicYear, term: sem.term, courseCodes: cart, sections: secs,
-                }, 10000);
-                showPetitionToast('success', staffRegistering
-                    ? `ลงทะเบียนให้นักศึกษา ${result.items.length} วิชาแล้ว ✅`
-                    : `ส่งคำขอลงทะเบียน ${result.items.length} วิชาแล้ว รอผู้ดูแลระบบยืนยัน ✅`);
-                cart.splice(0, cart.length);
-                Object.keys(secs).forEach(k => delete secs[k]);
+                const saved = await fetchAPI(`/students/${encodeURIComponent(studentId)}/self-registration`, 'POST', body, 10000);
+                showPetitionToast('success', esc(`ลงทะเบียน ${saved.courseCode} ${saved.courseName} แล้ว บันทึกลงตารางเรียนเรียบร้อย ✅`));
                 cartOpen = false;
                 await load(true);
             } catch (err) {
-                showPetitionToast('error', esc(apiErrorMessage(err)));
-                refreshCart();
+                const parsed = apiErrorBody(err);
+                if (parsed?.details?.sectionId) {
+                    showDuplicate(parsed.details);
+                    showPetitionToast('info', esc(parsed.error));
+                } else {
+                    showPetitionToast('error', esc(apiErrorMessage(err)));
+                }
+            } finally {
+                submitBtn.disabled = false;
             }
-        });
+        }
+        submitBtn.addEventListener('click', () => register(!!existingSection));
 
-        refreshCart();
 
         // ── Event: Drop a course ──
         document.querySelectorAll('.tt-delete-course').forEach(btn => {

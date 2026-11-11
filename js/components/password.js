@@ -43,7 +43,6 @@ export function openChangePasswordModal({ forced = false, onChanged, onLogout } 
                     <div id="chkUpper" style="color:var(--text-muted);display:flex;align-items:center;gap:6px"><span>⚪</span> ตัวอักษรพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว</div>
                     <div id="chkLower" style="color:var(--text-muted);display:flex;align-items:center;gap:6px"><span>⚪</span> ตัวอักษรพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว</div>
                     <div id="chkNum" style="color:var(--text-muted);display:flex;align-items:center;gap:6px"><span>⚪</span> ตัวเลข (0-9) อย่างน้อย 1 ตัว</div>
-                    <div id="chkSpecial" style="color:var(--text-muted);display:flex;align-items:center;gap:6px"><span>⚪</span> อักขระพิเศษอย่างน้อย 1 ตัว (เช่น !@#$%^&*)</div>
                 </div>
 
                 <div id="pwError" style="display:none;color:var(--red-600);font-size:0.85rem;margin-top:8px"></div>
@@ -87,7 +86,6 @@ export function openChangePasswordModal({ forced = false, onChanged, onLogout } 
         setItem('chkUpper', /[A-Z]/.test(val));
         setItem('chkLower', /[a-z]/.test(val));
         setItem('chkNum', /\d/.test(val));
-        setItem('chkSpecial', /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val));
     };
 
     pwNewInput.addEventListener('input', updateChecklist);
@@ -102,7 +100,6 @@ export function openChangePasswordModal({ forced = false, onChanged, onLogout } 
         if (!/[A-Z]/.test(next)) return showError('รหัสผ่านใหม่ต้องมีตัวอักษรพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว');
         if (!/[a-z]/.test(next)) return showError('รหัสผ่านใหม่ต้องมีตัวอักษรพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว');
         if (!/\d/.test(next)) return showError('รหัสผ่านใหม่ต้องมีตัวเลข (0-9) อย่างน้อย 1 ตัว');
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(next)) return showError('รหัสผ่านใหม่ต้องมีอักขระพิเศษอย่างน้อย 1 ตัว');
         if (next !== confirmValue) return showError('รหัสผ่านใหม่และการยืนยันไม่ตรงกัน');
 
         const saveBtn = overlay.querySelector('#pwSave');

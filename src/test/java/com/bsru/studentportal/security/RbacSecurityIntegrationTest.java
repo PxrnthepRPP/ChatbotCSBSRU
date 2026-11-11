@@ -564,7 +564,7 @@ class RbacSecurityIntegrationTest {
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + studentToken)
                             .contentType("text/csv")
-                            .content("studentId,nameTh\n6621100001,Test"))
+                            .content("nationalId,studentId,nameTh\n1662110000107,6621100001,Test"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("เฉพาะผู้ดูแลระบบเท่านั้น")));
         }
@@ -594,8 +594,8 @@ class RbacSecurityIntegrationTest {
             when(studentRepository.findById(anyString())).thenReturn(Optional.empty());
             when(studentRepository.save(any(Student.class))).thenAnswer(i -> i.getArgument(0));
 
-            String csvContent = "studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
-                    "6621100001,ทดสอบ ระบบ,Test System,test@bsru.ac.th,0812345678,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
+            String csvContent = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
+                    "1662110000107,6621100001,ทดสอบ ระบบ,Test System,test@bsru.ac.th,0812345678,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
 
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + adminToken)
@@ -630,8 +630,8 @@ class RbacSecurityIntegrationTest {
             when(studentRepository.findById(anyString())).thenReturn(Optional.empty());
             when(studentRepository.save(any(Student.class))).thenAnswer(i -> i.getArgument(0));
 
-            String csvContent = "studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
-                    "6621100002,ทดสอบ ผ่านอาจารย์แอดมิน,Test Admin Advisor,test2@bsru.ac.th,0812345679,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
+            String csvContent = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
+                    "1662110000204,6621100002,ทดสอบ ผ่านอาจารย์แอดมิน,Test Admin Advisor,test2@bsru.ac.th,0812345679,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
 
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + advisorWithAdminToken)

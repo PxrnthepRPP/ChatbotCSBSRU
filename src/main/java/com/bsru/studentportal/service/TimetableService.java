@@ -1,10 +1,10 @@
 package com.bsru.studentportal.service;
 
 import com.bsru.studentportal.dto.EnrollmentRequest;
-import com.bsru.studentportal.dto.EnrollmentReviewRequest;
 import com.bsru.studentportal.dto.RegistrationCartRequest;
 import com.bsru.studentportal.dto.RegistrationPeriodRequest;
 import com.bsru.studentportal.dto.SectionRequest;
+import com.bsru.studentportal.dto.SelfRegistrationRequest;
 import com.bsru.studentportal.model.Advisor;
 import com.bsru.studentportal.model.ClassSection;
 import com.bsru.studentportal.model.ClassSection.ApprovalStatus;
@@ -46,11 +46,12 @@ import java.util.stream.Collectors;
  * students may add or drop, time clashes, seat limits) lives here so the REST API, the web page
  * and the chatbot all see the same data and the same answers.
  *
- * Registration flow: teachers request sections (admin approves them), students pick courses into a
- * cart and choose any Sec of each course, the cart is sent as PENDING requests, and an admin confirms
- * or rejects each request. Pending requests already hold a seat. The home Sec the admin set at
- * admission (Student.studentSection) is only a record of where the student started; an admin or
- * teacher registering for a student confirms directly.
+ * Registration flow (no approval step): while registration is open a student registers a course
+ * themselves by typing its code, name, credits, teacher, day and start-end time. The course is saved
+ * as a class section and the student is enrolled straight away (CONFIRMED). Sections saved earlier are
+ * offered as suggestions to later students, and typing a course + Sec that already exists in the
+ * semester joins that section instead of creating a copy. Teachers and admins can still create
+ * sections, also without approval. The admin keeps the registration log and can edit any section.
  */
 @Service
 public class TimetableService {
@@ -59,6 +60,7 @@ public class TimetableService {
     /** Student groups; a class section is offered to exactly one group */
     public static final List<String> STUDENT_GROUPS = List.of("D1", "D2");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+    private static final java.util.regex.Pattern COURSE_CODE = java.util.regex.Pattern.compile("^[A-Z0-9]{1,20}$");
     /** Enrollments that take a seat and appear in the timetable */
     private static final Set<EnrollmentStatus> ACTIVE = EnumSet.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED);
     private static final Comparator<ClassSection> SECTION_ORDER =
@@ -79,7 +81,7 @@ public class TimetableService {
                               String instructorId, String instructorName, String instructorEmail,
                               Integer capacity, long enrolledCount,
                               ApprovalStatus approvalStatus, String reviewNote,
-                              EnrollmentStatus enrollmentStatus) {}
+                              EnrollmentStatus enrollmentStatus, String recordedBy) {}
 
     public record RegistrationStatus(Long id, int academicYear, int term, LocalDateTime opensAt,
                                      LocalDateTime closesAt, boolean forceClosed, boolean open) {}
@@ -114,9 +116,14 @@ public class TimetableService {
         }
     }
 
-    /** A pending registration request, as listed for the admin */
-    public record EnrollmentRequestView(Long enrollmentId, String studentId, String studentName, String studentSection,
-                                        SessionView section, EnrollmentStatus status, LocalDateTime requestedAt) {}
+    /** One registration in the admin's registration log */
+    public record RegistrationRecord(Long enrollmentId, String studentId, String studentName, String studentSection,
+                                     SessionView section, EnrollmentStatus status, LocalDateTime registeredAt) {}
+
+    /** A course recorded before, offered to fill in the registration form (latest semester first) */
+    public record CourseSuggestion(String courseCode, String courseName, int credits, String instructorId,
+                                   String instructorName, String room, int dayOfWeek, String startTime,
+                                   String endTime, String lastTaught) {}
 
     @Getter
     public static class TimetableException extends IllegalArgumentException {
@@ -445,7 +452,7 @@ public class TimetableService {
 
     /**
      * Sends the whole cart at once. Nothing is saved unless every course passes the check.
-     * Students create PENDING requests; an admin or teacher adding for a student confirms directly.
+     * Every registration is confirmed straight away; there is no admin approval step.
      */
     @Transactional
     public RegistrationCheck submitRegistration(Actor actor, String studentId, RegistrationCartRequest req) {
@@ -467,7 +474,7 @@ public class TimetableService {
             throw new TimetableException(HttpStatus.CONFLICT, errorMsg, check);
         }
         Student student = findStudent(studentId);
-        EnrollmentStatus status = actor.kind() == Actor.Kind.STUDENT ? EnrollmentStatus.PENDING : EnrollmentStatus.CONFIRMED;
+        EnrollmentStatus status = EnrollmentStatus.CONFIRMED;
         for (CartItem item : check.items()) {
             ClassSection section = findSection(item.section().sectionId());
             if (actor.kind() == Actor.Kind.ADVISOR) requireCanManage(actor, section);
@@ -524,75 +531,122 @@ public class TimetableService {
         return toView(section);
     }
 
-    // ------------------------------------------------------------------ registration requests (admin)
+    // ------------------------------------------------------------------ student self-registration
 
+    /**
+     * Courses recorded in earlier semesters (or by other students) that match what the student is typing,
+     * by code prefix or part of the name; one entry per course code, from its latest semester.
+     */
     @Transactional(readOnly = true)
-    public List<EnrollmentRequestView> pendingRequests(Actor actor) {
-        requireAdmin(actor, "เฉพาะผู้ดูแลระบบเท่านั้นที่ดูคำขอลงทะเบียนได้");
-        return enrollmentRepository.findByStatusOrderByEnrolledAtAsc(EnrollmentStatus.PENDING).stream()
-                .map(e -> new EnrollmentRequestView(e.getId(), e.getStudent().getStudentId(), e.getStudent().getNameTh(),
-                        e.getStudent().getStudentSection(), toView(e.getSection()), e.getStatus(), e.getEnrolledAt()))
-                .toList();
+    public List<CourseSuggestion> courseSuggestions(String query) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        if (q.isEmpty()) return List.of();
+        Map<String, ClassSection> latest = new LinkedHashMap<>();
+        for (ClassSection s : sectionRepository.findAllByOrderByAcademicYearDescTermDescCourseCodeAscSectionNoAsc()) {
+            boolean match = s.getCourseCode().toLowerCase().startsWith(q)
+                    || (s.getCourseName() != null && s.getCourseName().toLowerCase().contains(q));
+            if (match) latest.putIfAbsent(s.getCourseCode().toUpperCase(), s);
+            if (latest.size() >= 10) break;
+        }
+        return latest.values().stream().map(s -> new CourseSuggestion(s.getCourseCode(), s.getCourseName(),
+                s.getCredits(), s.getInstructor() == null ? null : s.getInstructor().getId(), teacherName(s),
+                s.getRoom(), s.getDayOfWeek(), s.getStartTime().format(HH_MM), s.getEndTime().format(HH_MM),
+                termKey(s))).toList();
     }
 
-    /** Admin confirms or rejects several pending requests at once */
-    @Transactional
-    public int reviewRequests(Actor actor, EnrollmentReviewRequest req) {
-        requireAdmin(actor, "เฉพาะผู้ดูแลระบบเท่านั้นที่ยืนยันการลงทะเบียนได้");
-        EnrollmentStatus decision;
-        try {
-            decision = EnrollmentStatus.valueOf(req.getStatus() == null ? "" : req.getStatus().trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            decision = EnrollmentStatus.PENDING;
-        }
-        if (decision == EnrollmentStatus.PENDING) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "status ต้องเป็น CONFIRMED หรือ REJECTED");
-        }
-        if (decision == EnrollmentStatus.REJECTED && isBlank(req.getNote())) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณาระบุเหตุผลที่ไม่อนุมัติ");
-        }
-        if (req.getEnrollmentIds() == null || req.getEnrollmentIds().isEmpty()) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณาเลือกคำขออย่างน้อย 1 รายการ");
-        }
-        List<SectionEnrollment> enrollments = enrollmentRepository.findAllById(req.getEnrollmentIds());
-        if (enrollments.size() != new HashSet<>(req.getEnrollmentIds()).size()) {
-            throw new TimetableException(HttpStatus.NOT_FOUND, "ไม่พบคำขอบางรายการ อาจถูกยกเลิกไปแล้ว กรุณารีเฟรช");
-        }
-        for (SectionEnrollment e : enrollments) {
-            if (e.getStatus() != EnrollmentStatus.PENDING) {
-                throw new TimetableException(HttpStatus.CONFLICT, "คำขอ " + e.getSection().getCourseCode() + " ของ "
-                        + e.getStudent().getStudentId() + " ถูกพิจารณาไปแล้ว กรุณารีเฟรช");
-            }
-            e.setStatus(decision);
-            e.setReviewNote(decision == EnrollmentStatus.REJECTED ? req.getNote().trim() : null);
+    /** Sections of one course already recorded in a semester, so the form can warn before saving a duplicate */
+    @Transactional(readOnly = true)
+    public List<SessionView> sectionsOfCourse(int academicYear, int term, String courseCode) {
+        if (isBlank(courseCode)) return List.of();
+        return sectionRepository.findByAcademicYearAndTermAndCourseCodeIgnoreCaseOrderBySectionNoAsc(
+                academicYear, term, courseCode.trim()).stream().map(this::toView).toList();
+    }
 
-            if (e.getStudent() != null && e.getStudent().getStudentId() != null) {
-                String studentId = e.getStudent().getStudentId();
-                String courseInfo = e.getSection() != null
-                        ? e.getSection().getCourseCode() + " " + e.getSection().getCourseName()
-                        : "รายวิชา";
-                if (decision == EnrollmentStatus.CONFIRMED) {
-                    notificationService.notifyUser(
-                            studentId,
-                            "ผลการลงทะเบียนเรียนได้รับการอนุมัติ",
-                            "การลงทะเบียน " + courseInfo + " ได้รับการอนุมัติเรียบร้อยแล้ว",
-                            "timetable",
-                            "REGISTRATION"
-                    );
-                } else if (decision == EnrollmentStatus.REJECTED) {
-                    String reason = req.getNote() != null && !req.getNote().isBlank() ? " เนื่องจาก: " + req.getNote().trim() : "";
-                    notificationService.notifyUser(
-                            studentId,
-                            "ผลการลงทะเบียนเรียนไม่ผ่านการอนุมัติ",
-                            "การลงทะเบียน " + courseInfo + " ไม่ได้รับการอนุมัติ" + reason,
-                            "timetable",
-                            "REGISTRATION"
-                    );
-                }
-            }
+    /**
+     * A student types in a course and is registered straight away (no approval). A new course is saved
+     * as a section for later students to reuse; a course + Sec that already exists in the semester is
+     * refused with 409 (details = the existing section) unless the student chose to join it.
+     */
+    @Transactional
+    public SessionView selfRegister(Actor actor, String studentId, SelfRegistrationRequest req) {
+        if (actor.kind() == Actor.Kind.ADVISOR) {
+            throw new TimetableException(HttpStatus.FORBIDDEN, "เฉพาะนักศึกษาหรือผู้ดูแลระบบเท่านั้นที่ลงทะเบียนได้");
         }
-        enrollmentRepository.saveAll(enrollments);
-        return enrollments.size();
+        requireStudentAccess(actor, studentId);
+        Student student = findStudent(studentId);
+
+        if (req.getAcademicYear() == null || req.getTerm() == null) {
+            LocalDateTime now = LocalDateTime.now();
+            RegistrationPeriod open = periodRepository.findAll().stream().filter(p -> p.isOpenAt(now)).findFirst()
+                    .orElseThrow(() -> new TimetableException(HttpStatus.FORBIDDEN, "ขณะนี้ปิดการลงทะเบียน"));
+            req.setAcademicYear(open.getAcademicYear());
+            req.setTerm(open.getTerm());
+        }
+        if (actor.kind() == Actor.Kind.STUDENT) requireRegistrationOpen(req.getAcademicYear(), req.getTerm());
+        if (isBlank(req.getCourseCode())) {
+            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณากรอกรหัสวิชา");
+        }
+        String code = req.getCourseCode().trim().toUpperCase();
+        requireValidCourseCode(code);
+        String sectionNo = !isBlank(req.getSectionNo()) ? req.getSectionNo().trim().toUpperCase()
+                : !isBlank(student.getStudentSection()) ? student.getStudentSection() : STUDENT_GROUPS.get(0);
+
+        Optional<ClassSection> existing = sectionRepository
+                .findByAcademicYearAndTermAndCourseCodeIgnoreCaseOrderBySectionNoAsc(req.getAcademicYear(), req.getTerm(), code)
+                .stream().filter(s -> s.getSectionNo().equalsIgnoreCase(sectionNo)).findFirst();
+        if (existing.isPresent()) {
+            if (!req.isUseExisting()) {
+                throw new TimetableException(HttpStatus.CONFLICT, "มีวิชา " + code + " Sec " + sectionNo + " ในภาคเรียน "
+                        + req.getTerm() + "/" + req.getAcademicYear() + " อยู่ในระบบแล้ว", toView(existing.get()));
+            }
+            // Same checks as the cart: already registered, time clash, seats, prerequisites
+            RegistrationCheck done = submitRegistration(actor, studentId, new RegistrationCartRequest(
+                    req.getAcademicYear(), req.getTerm(), List.of(code), Map.of(code, sectionNo)));
+            return done.items().get(0).section();
+        }
+
+        if (enrolledSections(studentId, req.getAcademicYear(), req.getTerm()).stream()
+                .anyMatch(o -> o.getCourseCode().equalsIgnoreCase(code))) {
+            throw new TimetableException(HttpStatus.CONFLICT, "ลงทะเบียนวิชา " + code + " ในภาคเรียนนี้ไว้แล้ว");
+        }
+
+        ClassSection s = new ClassSection();
+        s.setSectionNo(sectionNo);
+        SectionRequest sectionReq = new SectionRequest(req.getAcademicYear(), req.getTerm(), code, req.getCourseName(),
+                req.getCredits(), sectionNo, req.getDayOfWeek(), req.getStartTime(), req.getEndTime(), req.getRoom(),
+                isBlank(req.getInstructorId()) ? null : req.getInstructorId(), null, req.getInstructorName());
+        applyRequest(s, sectionReq, true);
+        if (s.getInstructor() == null && isBlank(s.getInstructorName())) {
+            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณาเลือกหรือพิมพ์ชื่ออาจารย์ผู้สอน");
+        }
+        enrolledSections(studentId, s.getAcademicYear(), s.getTerm()).stream().filter(o -> overlaps(s, o)).findFirst()
+                .ifPresent(o -> {
+                    throw new TimetableException(HttpStatus.CONFLICT, "เวลาเรียนชนกับ " + o.getCourseCode() + " "
+                            + o.getCourseName() + " (" + timeOf(o) + ")");
+                });
+        s.setApprovalStatus(ApprovalStatus.APPROVED);
+        s.setRecordedBy(actor.id());
+        s.setRecordedAt(LocalDateTime.now());
+        ClassSection saved = sectionRepository.save(s);
+        enrollmentRepository.save(new SectionEnrollment(null, student, saved, LocalDateTime.now(),
+                EnrollmentStatus.CONFIRMED, null));
+        return toView(saved, EnrollmentStatus.CONFIRMED);
+    }
+
+    // ------------------------------------------------------------------ registration log (admin)
+
+    /** Every registration, newest first; optionally only one semester */
+    @Transactional(readOnly = true)
+    public List<RegistrationRecord> registrationLog(Actor actor, Integer academicYear, Integer term) {
+        requireAdmin(actor, "เฉพาะผู้ดูแลระบบเท่านั้นที่ดูบันทึกการลงทะเบียนได้");
+        return enrollmentRepository.findAll().stream()
+                .filter(e -> e.getStatus() != EnrollmentStatus.REJECTED)
+                .filter(e -> academicYear == null || e.getSection().getAcademicYear().equals(academicYear))
+                .filter(e -> term == null || e.getSection().getTerm().equals(term))
+                .sorted(Comparator.comparing(SectionEnrollment::getEnrolledAt).reversed())
+                .map(e -> new RegistrationRecord(e.getId(), e.getStudent().getStudentId(), e.getStudent().getNameTh(),
+                        e.getStudent().getStudentSection(), toView(e.getSection()), e.getStatus(), e.getEnrolledAt()))
+                .toList();
     }
 
     /** Admin moves a student to Sec D1 or D2 */
@@ -620,12 +674,13 @@ public class TimetableService {
         s.setSectionNo(STUDENT_GROUPS.get(0));
         applyRequest(s, req, true);
         if (actor.kind() == Actor.Kind.ADVISOR) {
-            // Teachers always create sections they teach themselves, as a request for the admin to approve
+            // Teachers always create sections they teach themselves
             s.setInstructor(findAdvisor(actor.id()));
-            s.setApprovalStatus(ApprovalStatus.PENDING);
-        } else {
-            s.setApprovalStatus(ApprovalStatus.APPROVED);
+            s.setInstructorName(null);
         }
+        s.setApprovalStatus(ApprovalStatus.APPROVED);
+        s.setRecordedBy(actor.id());
+        s.setRecordedAt(LocalDateTime.now());
         requireUniqueSection(s);
         requireNoTimeClash(s);
         return toView(sectionRepository.save(s));
@@ -655,9 +710,7 @@ public class TimetableService {
         applyRequest(s, req, false);
         if (actor.kind() == Actor.Kind.ADVISOR) {
             s.setInstructor(findAdvisor(actor.id()));
-            // Any teacher change goes back to the admin; students already enrolled keep the section
-            s.setApprovalStatus(ApprovalStatus.PENDING);
-            s.setReviewNote(null);
+            s.setInstructorName(null);
         }
         requireUniqueSection(s);
         requireNoTimeClash(s);
@@ -677,28 +730,6 @@ public class TimetableService {
         if (gradeSubmissionRepository != null)
             gradeSubmissionRepository.findById(sectionId).ifPresent(gradeSubmissionRepository::delete);
         sectionRepository.delete(s);
-    }
-
-    /** Admin approves or rejects a teacher's section request */
-    @Transactional
-    public SessionView reviewSection(Actor actor, Long sectionId, String status, String note) {
-        requireAdmin(actor, "เฉพาะผู้ดูแลระบบเท่านั้นที่อนุมัติรายวิชาได้");
-        ApprovalStatus decision;
-        try {
-            decision = ApprovalStatus.valueOf(status == null ? "" : status.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            decision = ApprovalStatus.PENDING;
-        }
-        if (decision == ApprovalStatus.PENDING) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "status ต้องเป็น APPROVED หรือ REJECTED");
-        }
-        if (decision == ApprovalStatus.REJECTED && isBlank(note)) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณาระบุเหตุผลที่ไม่อนุมัติ");
-        }
-        ClassSection s = findSection(sectionId);
-        s.setApprovalStatus(decision);
-        s.setReviewNote(isBlank(note) ? null : note.trim());
-        return toView(sectionRepository.save(s));
     }
 
     // ------------------------------------------------------------------ registration periods (admin)
@@ -815,11 +846,14 @@ public class TimetableService {
             throw new TimetableException(HttpStatus.BAD_REQUEST,
                     "ข้อมูลไม่ครบ ต้องมี academicYear, term, courseCode, courseName, credits, dayOfWeek, startTime, endTime");
         }
-        // Seats are set by the teacher and are the hard limit for registration
-        if (s.getCapacity() == null || s.getCapacity() <= 0) {
-            throw new TimetableException(HttpStatus.BAD_REQUEST, "กรุณากำหนดจำนวนที่นั่ง (มากกว่า 0)");
+        if (req.getInstructorName() != null) s.setInstructorName(isBlank(req.getInstructorName()) ? null : req.getInstructorName().trim());
+        if (s.getInstructor() != null) s.setInstructorName(null);
+
+        // Seats are optional (null = unlimited); when set they are the hard limit for registration
+        if (s.getCapacity() != null && s.getCapacity() <= 0) {
+            throw new TimetableException(HttpStatus.BAD_REQUEST, "จำนวนที่นั่งต้องมากกว่า 0 (เว้นว่างได้ถ้าไม่จำกัด)");
         }
-        if (s.getId() != null) {
+        if (s.getId() != null && s.getCapacity() != null) {
             long taken = enrollmentRepository.countBySectionIdAndStatusIn(s.getId(), ACTIVE);
             if (s.getCapacity() < taken) {
                 throw new TimetableException(HttpStatus.BAD_REQUEST, "จำนวนที่นั่งต้องไม่น้อยกว่าจำนวนนักศึกษาที่ลงไว้แล้ว (" + taken + " คน)");
@@ -828,6 +862,7 @@ public class TimetableService {
         if (!STUDENT_GROUPS.contains(s.getSectionNo())) {
             throw new TimetableException(HttpStatus.BAD_REQUEST, "Sec ต้องเป็น " + String.join(" หรือ ", STUDENT_GROUPS));
         }
+        requireValidCourseCode(s.getCourseCode());
         if (s.getTerm() < 1 || s.getTerm() > 3) {
             throw new TimetableException(HttpStatus.BAD_REQUEST, "ภาคเรียนต้องเป็น 1, 2 หรือ 3");
         }
@@ -890,10 +925,23 @@ public class TimetableService {
                 s.getCredits(), s.getSectionNo(), s.getDayOfWeek(), DAY_NAMES_TH[s.getDayOfWeek()],
                 s.getStartTime().format(HH_MM), s.getEndTime().format(HH_MM), s.getRoom(),
                 teacher == null ? null : teacher.getId(),
-                teacher == null ? null : teacher.getNameTh(),
+                teacherName(s),
                 teacher == null ? null : teacher.getEmail(),
                 s.getCapacity(), enrollmentRepository.countBySectionIdAndStatusIn(s.getId(), ACTIVE),
-                s.getApprovalStatus(), s.getReviewNote(), enrollmentStatus);
+                s.getApprovalStatus(), s.getReviewNote(), enrollmentStatus, s.getRecordedBy());
+    }
+
+    /** Course codes are English letters and digits only (stored upper-case), at most 20 characters */
+    private static void requireValidCourseCode(String code) {
+        if (code == null || !COURSE_CODE.matcher(code).matches()) {
+            throw new TimetableException(HttpStatus.BAD_REQUEST,
+                    "รหัสวิชาต้องเป็นภาษาอังกฤษหรือตัวเลขเท่านั้น (ไม่เกิน 20 ตัว ไม่มีช่องว่างหรือสัญลักษณ์) เช่น CS3101");
+        }
+    }
+
+    /** The teacher in the system, else the name typed by hand */
+    private static String teacherName(ClassSection s) {
+        return s.getInstructor() != null ? s.getInstructor().getNameTh() : s.getInstructorName();
     }
 
     private static RegistrationStatus toStatus(RegistrationPeriod p, LocalDateTime now) {

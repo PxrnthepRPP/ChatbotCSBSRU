@@ -13,7 +13,7 @@ import { MOCK_ADVISORS, MOCK_STUDENTS_POOL } from './mockData.js';
 import { resolveBatchRange } from './shared.js';
 import { renderRegistrationCard } from './registrationPeriods.js';
 import { renderAdminSectionsCard } from './sections.js';
-import { renderEnrollmentRequestsCard } from './enrollmentRequests.js';
+import { renderRegistrationLogCard } from './registrationLog.js';
 import { renderAdminGradesCard } from './grades.js';
 
 let adminDashboardSelectedBatch = 'all';
@@ -162,7 +162,7 @@ export function renderAdminDashboard() {
         </div>
 
         <div id="adminRegistrationCard"></div>
-        <div id="adminEnrollmentRequestsCard"></div>
+        <div id="adminRegistrationLogCard"></div>
         <div id="adminSectionsCard"></div>
         <div id="adminGradesCard"></div>
 
@@ -274,7 +274,7 @@ export function renderAdminDashboard() {
     });
 
     renderRegistrationCard({ cached: true });
-    renderEnrollmentRequestsCard({ cached: true });
+    renderRegistrationLogCard({ cached: true });
     renderAdminSectionsCard({ cached: true });
     renderAdminGradesCard();
 }

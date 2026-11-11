@@ -23,4 +23,6 @@ public class StudentRequest {
     private String salaryRange;
     /** true = sample record (no login account, no grades); only used when creating */
     private Boolean simulated;
+    /** 13-digit Thai national ID; required for a real (not simulated) new student, blank on edit = keep */
+    private String nationalId;
 }

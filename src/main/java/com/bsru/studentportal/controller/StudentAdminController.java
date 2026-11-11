@@ -96,16 +96,30 @@ public class StudentAdminController {
         return ResponseEntity.ok(studentAdminService.updateProfile(studentId, request));
     }
 
-    /** Admin: the student's password becomes their student id and must be changed at the next login */
+    /** Admin only: the full national ID (every other response carries only the masked form) */
+    @GetMapping("/{studentId}/national-id")
+    public ResponseEntity<?> nationalId(@PathVariable String studentId, Authentication auth) {
+        requireAdmin(auth);
+        com.bsru.studentportal.model.Student s = studentRepository.findById(studentId)
+                .orElseThrow(() -> new StudentAdminException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId));
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("studentId", studentId);
+        body.put("nationalId", s.getNationalId());
+        return ResponseEntity.ok(body);
+    }
+
+    /** Admin: the student's password goes back to the default (initials + student id) and must be changed at the next login */
     @PostMapping("/{studentId}/reset-password")
     public ResponseEntity<?> resetPassword(@PathVariable String studentId, Authentication auth) {
         requireAdmin(auth);
+        String password;
         try {
-            accountService.resetStudentPassword(studentId);
+            password = accountService.resetStudentPassword(studentId);
         } catch (AccountException e) {
             throw new StudentAdminException(e.getStatus(), e.getMessage());
         }
-        return ResponseEntity.ok(Map.of("message", "รีเซ็ตรหัสผ่านของ " + studentId + " แล้ว รหัสผ่านใหม่คือรหัสนักศึกษา (ต้องเปลี่ยนเมื่อเข้าสู่ระบบ)"));
+        return ResponseEntity.ok(Map.of("message", "รีเซ็ตรหัสผ่านของ " + studentId + " แล้ว รหัสผ่านใหม่คือ " + password
+                + " (ต้องเปลี่ยนเมื่อเข้าสู่ระบบ)", "initialPassword", password));
     }
 
     @DeleteMapping("/{studentId}")
