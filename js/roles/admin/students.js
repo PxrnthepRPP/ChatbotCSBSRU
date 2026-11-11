@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { confirmDialog } from '../../components/confirmDialog.js';
-import { esc, statusBadge, getBatch, debounce, showToast, NAME_PREFIXES, splitNamePrefix, withNamePrefix, splitFirstLast, joinFirstLast } from '../../utils.js';
+import { esc, statusBadge, getBatch, debounce, showToast, NAME_PREFIXES, splitNamePrefix, withNamePrefix, splitFirstLast, joinFirstLast, titleCaseEn } from '../../utils.js';
 import { impersonateStudent } from '../../auth.js';
 import { fetchAPI, API_BASE_URL } from '../../api.js';
 import { STANDARD_CAREERS, EMPLOYMENT_STATUSES, SALARY_RANGES } from '../../components/careerCatalog.js';
@@ -13,6 +13,7 @@ import { MOCK_ADVISORS, MOCK_STUDENTS_POOL } from './mockData.js';
 import { resolveBatchRange, renderPaginationPagesHtml, apiErrorText } from './shared.js';
 import { renderAdminDashboard } from './dashboard.js';
 import { bindGraduationAuditButtons } from './graduationAudit.js';
+import { attachFormDraft } from '../../components/formDraft.js';
 
 let adminLastSelectedBatch = 'all';
 /** true once the student list came from the database: add / edit / delete then go through the API */
@@ -38,6 +39,7 @@ export function toPoolStudent(s) {
         salaryRange: s.salaryRange || undefined,
         studentSection: s.studentSection || null,
         simulated: !!s.simulated,
+        nationalIdMasked: s.nationalIdMasked || null,
         advisor: (s.advisor && typeof s.advisor === 'object') ? s.advisor.id : (s.advisor || ''),
     };
 }
@@ -118,7 +120,7 @@ export function renderManageStudents() {
                     ${s.studentSection && !s.simulated ? `
                     <button class="btn btn-sm btn-ghost audit-dl-btn" data-sid="${esc(s.studentId)}" title="ดาวน์โหลดใบตรวจสอบจบ (ใช้เป็นแม่แบบได้)">⬇ ใบตรวจจบ</button>
                     <button class="btn btn-sm btn-ghost audit-ul-btn" data-sid="${esc(s.studentId)}" title="อัปโหลดใบตรวจสอบจบ (.json)">⬆ อัปโหลด</button>
-                    <button class="btn btn-sm btn-ghost reset-pw-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="รีเซ็ตรหัสผ่านเป็นรหัสนักศึกษา">🔑 รีเซ็ตรหัส</button>` : ''}
+                    <button class="btn btn-sm btn-ghost reset-pw-btn" data-sid="${esc(s.studentId)}" data-sname="${esc(s.nameTh)}" title="รีเซ็ตรหัสผ่านเป็นค่าเริ่มต้น (อักษรแรกชื่อ+นามสกุล ตามด้วยเลขบัตรประชาชน)">🔑 รีเซ็ตรหัส</button>` : ''}
                     <button class="btn btn-sm btn-warning edit-student-btn" data-idx="${realIdx}">แก้ไข</button>
                     <button class="btn btn-sm btn-danger del-student-btn" data-idx="${realIdx}" style="margin-left:12px" title="ลบนักศึกษา">ลบ</button>
                 </div>
@@ -179,7 +181,7 @@ export function renderManageStudents() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 ส่งออก CSV
             </button>
-            <button class="btn btn-secondary" id="importStudentCsvBtn" title="นำเข้าข้อมูลนักศึกษาแบบกลุ่มจากไฟล์ CSV">
+            <button class="btn btn-secondary" id="importStudentCsvBtn" title="นำเข้าข้อมูลนักศึกษาแบบกลุ่มจากไฟล์ CSV (ต้องมีคอลัมน์ studentId, nameTh, nameEn, nationalId)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 นำเข้า CSV
             </button>
@@ -313,7 +315,10 @@ export function renderManageStudents() {
             try {
                 const text = await file.text();
                 const res = await fetchAPI('/students/import-csv', 'POST', text, 20000);
-                showToast('success', res.message || 'นำเข้าข้อมูลนักศึกษาสำเร็จ');
+                showToast('success', esc(res.message || 'นำเข้าข้อมูลนักศึกษาสำเร็จ'));
+                if (Array.isArray(res.errors) && res.errors.length) {
+                    showToast('error', esc(`นำเข้าไม่ได้ ${res.errors.length} แถว: ${res.errors.slice(0, 3).join(' · ')}${res.errors.length > 3 ? ' …' : ''}`));
+                }
                 const liveStudents = await fetchAPI('/students').catch(() => null);
                 if (Array.isArray(liveStudents)) {
                     MOCK_STUDENTS_POOL.splice(0, MOCK_STUDENTS_POOL.length, ...liveStudents.map(toPoolStudent));
@@ -371,7 +376,7 @@ export function renderManageStudents() {
     document.querySelectorAll('.reset-pw-btn').forEach(b => b.addEventListener('click', async () => {
         const sid = b.dataset.sid;
         if (!await confirmDialog(`รีเซ็ตรหัสผ่านของ ${b.dataset.sname} (${sid})?
-รหัสผ่านใหม่จะเป็นรหัสนักศึกษา และนักศึกษาต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ`)) return;
+รหัสผ่านใหม่จะเป็นอักษรแรกของชื่อและนามสกุล (ภาษาอังกฤษ พิมพ์ใหญ่) ตามด้วยเลขบัตรประชาชน 13 หลัก และนักศึกษาต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ`)) return;
         try {
             const res = await fetchAPI(`/students/${encodeURIComponent(sid)}/reset-password`, 'POST', {}, 10000);
             showToast('success', esc(res.message));
@@ -410,8 +415,16 @@ function setFieldError(id, message) {
     box.classList.toggle('visible', !!message);
 }
 
+/** Thai national ID check digit: (11 - Σ d[i]·(13-i) mod 11) mod 10 must equal the 13th digit */
+function isValidThaiNationalId(id) {
+    if (!/^\d{13}$/.test(id)) return false;
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += Number(id[i]) * (13 - i);
+    return (11 - (sum % 11)) % 10 === Number(id[12]);
+}
+
 /** Checks every field, marks the wrong ones and focuses the first; true when the form can be sent */
-function validateStudentForm(mode, { prefixRequired = true, advisorRequired = false, careerCustomRequired = false } = {}) {
+function validateStudentForm(mode, { prefixRequired = true, advisorRequired = false, careerCustomRequired = false, nationalIdRequired = false } = {}) {
     const val = id => document.getElementById(id)?.value.trim() ?? '';
     const errors = {};
     if (mode !== 'edit') {
@@ -428,6 +441,13 @@ function validateStudentForm(mode, { prefixRequired = true, advisorRequired = fa
         if (!val(id)) errors[id] = `กรุณากรอก${label}`;
         else if (!/^[A-Za-z\s.'-]+$/.test(val(id))) errors[id] = 'ใช้ตัวอักษรภาษาอังกฤษเท่านั้น';
     });
+    // National ID: 13 digits with a valid check digit; required for a real student (part of the first password)
+    if (document.getElementById('mfSnid')) {
+        const nid = val('mfSnid');
+        if (!nid) { if (nationalIdRequired) errors.mfSnid = 'กรุณากรอกเลขบัตรประชาชน 13 หลัก'; }
+        else if (!/^\d{13}$/.test(nid)) errors.mfSnid = 'เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก';
+        else if (!isValidThaiNationalId(nid)) errors.mfSnid = 'เลขบัตรประชาชนไม่ถูกต้อง (หลักสุดท้ายไม่ตรงกับเลขตรวจสอบ)';
+    }
     if (advisorRequired && !val('mfSadvisor')) errors.mfSadvisor = 'กรุณาเลือกอาจารย์ที่ปรึกษา';
     if (careerCustomRequired && !val('mfScareerCustom')) errors.mfScareerCustom = 'กรุณาระบุสายอาชีพ';
     const year = Number(val('mfSyear'));
@@ -435,7 +455,7 @@ function validateStudentForm(mode, { prefixRequired = true, advisorRequired = fa
     const gpa = Number(val('mfSgpa'));
     if (val('mfSgpa') === '' || Number.isNaN(gpa) || gpa < 0 || gpa > 4) errors.mfSgpa = 'GPA ต้องอยู่ระหว่าง 0.00–4.00';
 
-    ['mfSid', 'mfSprefix', 'mfSfirstTh', 'mfSlastTh', 'mfSfirstEn', 'mfSlastEn', 'mfSyear', 'mfSgpa', 'mfSadvisor', 'mfScareerCustom']
+    ['mfSid', 'mfSnid', 'mfSprefix', 'mfSfirstTh', 'mfSlastTh', 'mfSfirstEn', 'mfSlastEn', 'mfSyear', 'mfSgpa', 'mfSadvisor', 'mfScareerCustom']
         .forEach(id => setFieldError(id, errors[id]));
     const first = Object.keys(errors)[0];
     if (first) document.getElementById(first)?.focus();
@@ -542,6 +562,16 @@ function openStudentModal(mode, idx) {
     modalBody.innerHTML = `
         <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 8px">${REQ} ช่องที่ต้องกรอก · ช่องที่เขียนว่า (ถ้ามี) เว้นว่างได้</p>
         <div class="modal-field"><label for="mfSid">รหัสนักศึกษา ${REQ}</label><input id="mfSid" inputmode="numeric" maxlength="10" value="${esc(s.studentId || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : 'required'}>${fieldError('mfSid')}</div>
+        ${studentsFromDb ? `<div class="modal-field"><label for="mfSnid">เลขบัตรประชาชน ${mode === 'edit' ? '' : REQ}</label>
+            <div style="display:flex;gap:6px;align-items:center">
+                <input id="mfSnid" inputmode="numeric" maxlength="13" autocomplete="off" style="flex:1"
+                    placeholder="${mode === 'edit'
+                        ? (s.nationalIdMasked ? `ปัจจุบัน ${esc(s.nationalIdMasked)} · เว้นว่าง = ไม่เปลี่ยน` : 'ยังไม่มี · กรอกตัวเลข 13 หลัก')
+                        : 'ตัวเลข 13 หลัก'}">
+                ${mode === 'edit' && s.nationalIdMasked ? '<button type="button" class="btn btn-sm btn-ghost" id="mfSnidShow">แสดงเลขเต็ม</button>' : ''}
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">ใช้สร้างรหัสผ่านเริ่มต้น (อักษรแรกชื่อ+นามสกุล ตามด้วยเลขบัตร) · แสดงเต็มเฉพาะผู้ดูแลระบบ${mode === 'edit' ? '' : ' · ไม่ต้องกรอกถ้าเป็นข้อมูลจำลอง'}</div>
+            ${fieldError('mfSnid')}</div>` : ''}
         <div class="modal-field"><label for="mfSprefix">คำนำหน้า ${REQ}</label><select id="mfSprefix">
             <option value="">-- เลือกคำนำหน้า --</option>
             ${NAME_PREFIXES.map(p => `<option value="${p.th}" ${thName.prefix === p.th ? 'selected' : ''}>${p.th} (${p.en})</option>`).join('')}
@@ -620,9 +650,10 @@ function openStudentModal(mode, idx) {
             prefixRequired: mode !== 'edit' || !!splitNamePrefix(s.nameTh).prefix,
             advisorRequired: !studentsFromDb,
             careerCustomRequired: statusVal === 'จบการศึกษา' && careerSelectVal === 'other',
+            nationalIdRequired: studentsFromDb && mode !== 'edit' && !document.getElementById('mfSsimulated')?.checked,
         })) return;
         const names = withNamePrefix(prefix, joinFirstLast(val('mfSfirstTh'), val('mfSlastTh')),
-            joinFirstLast(val('mfSfirstEn'), val('mfSlastEn')));
+            titleCaseEn(joinFirstLast(val('mfSfirstEn'), val('mfSlastEn'))));
         const data = {
             studentId: document.getElementById('mfSid').value.trim(),
             nameTh: names.nameTh,
@@ -636,6 +667,7 @@ function openStudentModal(mode, idx) {
             companyName: document.getElementById('mfScompany').value.trim() || undefined,
             salaryRange: document.getElementById('mfSsalary').value || undefined,
         };
+        let createdPassword = '';   // first password the backend generated for a new student
 
         if (studentsFromDb) {
             const body = {
@@ -650,6 +682,7 @@ function openStudentModal(mode, idx) {
                     ? (data.advisor || '') : undefined,
                 studentSection: document.getElementById('mfSsection')?.value,
                 simulated: document.getElementById('mfSsimulated')?.checked ?? undefined,
+                nationalId: document.getElementById('mfSnid')?.value.trim() || undefined,
                 // Career fields only apply to graduates; '' clears them
                 careerPath: data.careerPath || '',
                 employmentStatus: data.status === 'จบการศึกษา' ? (data.employmentStatus || '') : '',
@@ -661,7 +694,7 @@ function openStudentModal(mode, idx) {
                     ? await fetchAPI(`/students/${encodeURIComponent(data.studentId)}`, 'PUT', body, 10000)
                     : await fetchAPI('/students', 'POST', body, 10000);
                 if (mode === 'edit') { MOCK_STUDENTS_POOL[idx] = toPoolStudent(saved); }
-                else { MOCK_STUDENTS_POOL.push(toPoolStudent(saved)); }
+                else { MOCK_STUDENTS_POOL.push(toPoolStudent(saved)); createdPassword = saved.initialPassword || ""; }
             } catch (err) {
                 showToast('error', esc(apiErrorText(err)));
                 showServerFieldError(apiErrorText(err));
@@ -672,6 +705,7 @@ function openStudentModal(mode, idx) {
             else { MOCK_STUDENTS_POOL.push(data); }
         }
 
+        studentDraft.clear();   // saved: the draft is no longer needed
         crudModal.classList.remove('open');
         highlightStudentId = data.studentId;   // open the page that has this row and flash it
         renderManageStudents();
@@ -679,8 +713,29 @@ function openStudentModal(mode, idx) {
         showToast('success', !studentsFromDb ? 'บันทึกข้อมูลนักศึกษาเรียบร้อย (โหมดออฟไลน์ ไม่ได้บันทึกลงฐานข้อมูล)'
             : mode === 'edit' ? 'บันทึกข้อมูลนักศึกษาลงฐานข้อมูลเรียบร้อย'
             : document.getElementById('mfSsimulated')?.checked ? esc(`เพิ่มนักศึกษาจำลอง ${data.studentId} แล้ว`)
-            : esc(`เพิ่มนักศึกษาแล้ว · เข้าสู่ระบบด้วยชื่อผู้ใช้ ${data.studentId} รหัสผ่านเริ่มต้น ${data.studentId} (ต้องเปลี่ยนเมื่อเข้าครั้งแรก)`));
+            : esc(`เพิ่มนักศึกษาแล้ว · ชื่อผู้ใช้ ${data.studentId} รหัสผ่านเริ่มต้น ${createdPassword || "(มีบัญชีอยู่แล้ว)"} (ต้องเปลี่ยนเมื่อเข้าครั้งแรก)`));
     });
     
+    // Student id (10) and national ID (13): digits only; dashes or spaces pasted from a card are dropped
+    [['mfSid', 10], ['mfSnid', 13]].forEach(([id, max]) => {
+        document.getElementById(id)?.addEventListener('input', (e) => {
+            const digits = e.target.value.replace(/\D/g, '').slice(0, max);
+            if (digits !== e.target.value) e.target.value = digits;
+        });
+    });
+    // Admin only: fetch the full national ID into the box (it is never part of the student list)
+    document.getElementById('mfSnidShow')?.addEventListener('click', async (e) => {
+        try {
+            const res = await fetchAPI(`/students/${encodeURIComponent(s.studentId)}/national-id`, 'GET', null, 8000);
+            document.getElementById('mfSnid').value = res.nationalId || '';
+            e.target.remove();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        }
+    });
+
+    // Unsaved input survives closing the form by mistake; cleared once the student is saved
+    const studentDraft = attachFormDraft(modalBody, mode === 'edit' ? `student:edit:${s.studentId}` : 'student:add');
+
     crudModal.classList.add('open');
 }

@@ -86,7 +86,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Security: Non-admin student cannot import CSV (HTTP 403)")
     void testImportCsv_studentAuth_rejected403() {
-        String csv = "studentId,nameTh\n6621101111,ทดสอบ";
+        String csv = "nationalId,studentId,nameTh\n1662110111103,6621101111,ทดสอบ";
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 controller.importCsv(csv, null, httpServletRequest, studentAuth));
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
@@ -97,7 +97,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Security: Advisor cannot import CSV (HTTP 403)")
     void testImportCsv_advisorAuth_rejected403() {
-        String csv = "studentId,nameTh\n6621101111,ทดสอบ";
+        String csv = "nationalId,studentId,nameTh\n1662110111103,6621101111,ทดสอบ";
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 controller.importCsv(csv, null, httpServletRequest, advisorAuth));
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
@@ -107,7 +107,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Security: Anonymous/null authentication cannot import CSV (HTTP 403)")
     void testImportCsv_nullAuth_rejected403() {
-        String csv = "studentId,nameTh\n6621101111,ทดสอบ";
+        String csv = "nationalId,studentId,nameTh\n1662110111103,6621101111,ทดสอบ";
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 controller.importCsv(csv, null, httpServletRequest, null));
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
@@ -137,8 +137,8 @@ class StudentCsvAdversarialTest {
     @DisplayName("Format: Multipart file upload with UTF-8 BOM bytes is supported and stripped")
     void testImportCsv_multipartWithBom_success() throws Exception {
         byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
-        byte[] csvBytes = ("studentId,nameTh,faculty,major,year,status\n" +
-                "6621102222,สมศักดิ์ รักชาติ,วิทยาการคอมพิวเตอร์,คณะวิทยาศาสตร์,2,กำลังศึกษา\n")
+        byte[] csvBytes = ("nationalId,studentId,nameTh,faculty,major,year,status\n" +
+                "1662110222207,6621102222,สมศักดิ์ รักชาติ,วิทยาการคอมพิวเตอร์,คณะวิทยาศาสตร์,2,กำลังศึกษา\n")
                 .getBytes(StandardCharsets.UTF_8);
 
         byte[] fullContent = new byte[bom.length + csvBytes.length];
@@ -168,7 +168,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Format: JSON payload with 'csv' property succeeds")
     void testImportCsv_jsonWithCsvProp_success() throws Exception {
-        String jsonPayload = "{\"csv\": \"studentId,nameTh\\n6621103333,มานะ กล้าหาญ\"}";
+        String jsonPayload = "{\"csv\": \"nationalId,studentId,nameTh\\n1662110333301,6621103333,มานะ กล้าหาญ\"}";
         when(studentRepository.existsById("6621103333")).thenReturn(false);
 
         ResponseEntity<?> response = controller.importCsv(jsonPayload, null, httpServletRequest, adminAuth);
@@ -185,7 +185,7 @@ class StudentCsvAdversarialTest {
     @DisplayName("Format: Raw InputStream fallback when rawBody and file are null")
     void testImportCsv_inputStreamFallback_success() throws Exception {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        String csvContent = "studentId,nameTh\n6621104444,กานดา สดใส";
+        String csvContent = "nationalId,studentId,nameTh\n1662110444404,6621104444,กานดา สดใส";
         req.setContent(csvContent.getBytes(StandardCharsets.UTF_8));
 
         when(studentRepository.existsById("6621104444")).thenReturn(false);
@@ -206,10 +206,10 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Deduplication: Duplicate IDs inside the SAME batch are skipped gracefully")
     void testImportCsv_intraBatchDuplicates_skipped() throws Exception {
-        String csv = "studentId,nameTh\n" +
-                "6621105555,คนแรก\n" +
-                "6621105555,คนเดิมซ้ำแถวสอง\n" +
-                "6621106666,คนใหม่";
+        String csv = "nationalId,studentId,nameTh\n" +
+                "1662110555508,6621105555,คนแรก\n" +
+                "1662110555508,6621105555,คนเดิมซ้ำแถวสอง\n" +
+                "1662110666601,6621106666,คนใหม่";
 
         when(studentRepository.existsById("6621105555")).thenReturn(false);
         when(studentRepository.existsById("6621106666")).thenReturn(false);
@@ -236,10 +236,10 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Normalization: Status mapping (GRADUATED, ON_LEAVE, DISMISSED, STUDYING) & Thai headers")
     void testImportCsv_statusMappingAndThaiHeaders() throws Exception {
-        String csv = "รหัสนักศึกษา,ชื่อ-สกุล,สถานะ,เกรดเฉลี่ย,สายอาชีพ\n" +
-                "6621107771,นักศึกษาที่หนึ่ง,GRADUATED,3.75,AI Engineer\n" +
-                "6621107772,นักศึกษาที่สอง,ON_LEAVE,2.50,Data Analyst\n" +
-                "6621107773,นักศึกษาที่สาม,DISMISSED,1.80,Web Developer";
+        String csv = "nationalId,รหัสนักศึกษา,ชื่อ-สกุล,สถานะ,เกรดเฉลี่ย,สายอาชีพ\n" +
+                "1662110777101,6621107771,นักศึกษาที่หนึ่ง,GRADUATED,3.75,AI Engineer\n" +
+                "1662110777209,6621107772,นักศึกษาที่สอง,ON_LEAVE,2.50,Data Analyst\n" +
+                "1662110777306,6621107773,นักศึกษาที่สาม,DISMISSED,1.80,Web Developer";
 
         when(studentRepository.existsById(anyString())).thenReturn(false);
 
@@ -272,10 +272,10 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Validation: Mixed valid and invalid rows imports valid ones and logs errors")
     void testImportCsv_partialInvalidRows_importsValidAndLogsErrors() throws Exception {
-        String csv = "studentId,nameTh\n" +
-                "6621108881,ถูกต้อง\n" +
+        String csv = "nationalId,studentId,nameTh\n" +
+                "1662110888108,6621108881,ถูกต้อง\n" +
                 "INVALID_ID,ผิดพลาด\n" +
-                "6621108882,ถูกต้องคนที่สอง";
+                "1662110888205,6621108882,ถูกต้องคนที่สอง";
 
         when(studentRepository.existsById("6621108881")).thenReturn(false);
         when(studentRepository.existsById("6621108882")).thenReturn(false);
@@ -300,7 +300,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Validation: All rows having invalid student IDs results in 400 Bad Request")
     void testImportCsv_allRowsInvalid_returns400() {
-        String csv = "studentId,nameTh\n" +
+        String csv = "nationalId,studentId,nameTh\n" +
                 "NOT_AN_ID,คนแรก\n" +
                 "SHORT,คนที่สอง";
 
@@ -314,7 +314,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Validation: Header only with no data rows returns 400 Bad Request")
     void testImportCsv_headerOnlyNoData_returns400() {
-        String csv = "studentId,nameTh,email\n";
+        String csv = "nationalId,studentId,nameTh,email\n";
 
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 controller.importCsv(csv, null, httpServletRequest, adminAuth));
@@ -325,7 +325,7 @@ class StudentCsvAdversarialTest {
     @Test
     @DisplayName("Validation: Headerless CSV starting with valid 10-digit ID is accepted")
     void testImportCsv_headerlessWithValid10DigitId_accepted() throws Exception {
-        String csv = "6621109999,สมศักดิ์ ไม่มีหัวตาราง,Somsak,somsak@bsru.ac.th,0899999999,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01";
+        String csv = "6621109999,สมศักดิ์ ไม่มีหัวตาราง,Somsak,somsak@bsru.ac.th,0899999999,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01,1662110999902";
 
         when(studentRepository.existsById("6621109999")).thenReturn(false);
         when(advisorRepository.findById("ADV-01")).thenReturn(Optional.of(new Advisor("ADV-01", "อ.วิชัย", null, null, null, null)));

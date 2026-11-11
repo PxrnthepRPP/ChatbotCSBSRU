@@ -11,4 +11,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     List<Student> findByAdvisorId(String advisorId);
     List<Student> findByYear(Integer year);
     List<Student> findByStatus(String status);
+
+    /** Another student already has this national ID */
+    boolean existsByNationalIdAndStudentIdNot(String nationalId, String studentId);
 }

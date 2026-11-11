@@ -81,6 +81,19 @@ export const logout = () => {
         activeModule: null,
     });
     sessionStorage.removeItem('authState');
+    // Unsaved form drafts (js/components/formDraft.js) may hold personal data: never leave them for the next user
+    try {
+        Object.keys(sessionStorage).filter(k => k.startsWith('formDraft:')).forEach(k => sessionStorage.removeItem(k));
+    } catch (e) { /* storage blocked */ }
+};
+
+/**
+ * After logging out: load the login page at its own URL, without the #module of the page the user
+ * was on (e.g. /#student-timetable -> /). A URL without a fragment is a full page load, and replace()
+ * keeps the logged-out page out of the Back history.
+ */
+export const goToLoginPage = () => {
+    window.location.replace(`${window.location.pathname}${window.location.search}`);
 };
 
 /**

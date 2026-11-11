@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
@@ -74,8 +75,8 @@ public class ClassSection {
     private Integer capacity;
 
     /**
-     * Teachers request sections (PENDING); students can only enroll once an admin APPROVES them.
-     * The column default makes sections created before this field existed count as approved.
+     * Legacy approval flag. Sections are usable as soon as they are saved (always APPROVED now);
+     * the column stays so old rows and the enum still map.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status", nullable = false, length = 20,
@@ -89,6 +90,25 @@ public class ClassSection {
     /** Comma-separated prerequisite course codes, e.g. 'CS101,CS102' */
     @Column(name = "prerequisite_course_codes")
     private String prerequisiteCourseCodes;
+
+    /** Teacher's name typed by hand when the teacher has no account in the system (instructor is then null) */
+    @Column(name = "instructor_name")
+    private String instructorName;
+
+    /** Who first recorded this section: a student id, an advisor id or the admin username */
+    @Column(name = "recorded_by", length = 50)
+    private String recordedBy;
+
+    @Column(name = "recorded_at")
+    private LocalDateTime recordedAt;
+
+    public ClassSection(Long id, Integer academicYear, Integer term, String courseCode, String courseName,
+                        Integer credits, String sectionNo, Integer dayOfWeek, LocalTime startTime, LocalTime endTime,
+                        String room, Advisor instructor, Integer capacity, ApprovalStatus approvalStatus,
+                        String reviewNote, String prerequisiteCourseCodes) {
+        this(id, academicYear, term, courseCode, courseName, credits, sectionNo, dayOfWeek, startTime, endTime,
+                room, instructor, capacity, approvalStatus, reviewNote, prerequisiteCourseCodes, null, null, null);
+    }
 
     public ClassSection(Long id, Integer academicYear, Integer term, String courseCode, String courseName,
                         Integer credits, String sectionNo, Integer dayOfWeek, LocalTime startTime, LocalTime endTime,

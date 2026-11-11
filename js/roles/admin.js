@@ -6,8 +6,8 @@
      shared.js              batch range, pagination, apiErrorText
      dashboard.js           overview, batch filter, charts, career CSV
      registrationPeriods.js add/drop windows (dashboard card)
-     sections.js            class-section approval (dashboard card)
-     enrollmentRequests.js  student registration requests (dashboard card)
+     sections.js            courses in the system: edit / delete (dashboard card)
+     registrationLog.js     log of student self-registrations (dashboard card)
      advisors.js            manage advisors
      students.js            manage students (+ CSV import/export)
      graduationAudit.js     graduation audit JSON download/upload

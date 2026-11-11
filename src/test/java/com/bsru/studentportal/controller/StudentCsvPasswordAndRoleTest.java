@@ -12,38 +12,68 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class StudentCsvPasswordAndRoleTest {
 
-    @Test
-    @DisplayName("Password Formula: First letter of name + 3 letters of last name + birth date in B.E.")
-    void testDefaultPasswordGeneration_withEnglishNameAndBirthDate() {
+    private static Student student(String id, String nameTh, String nameEn) {
         Student s = new Student();
-        s.setStudentId("6621207044");
-        s.setNameTh("ปิติพัฒน์ นิ่มจินดา");
-        s.setNameEn("Pitiphat Nimjinda");
-        s.setBirthDate(LocalDate.of(2003, 8, 15)); // 15/08/2546
-
-        String password = AccountService.generateDefaultStudentPassword(s, s.getStudentId());
-        // P (first of Pitiphat) + nim (3 chars of Nimjinda) + 15082546 (DDMMYYYY B.E.)
-        assertEquals("Pnim15082546", password);
+        s.setStudentId(id);
+        s.setNameTh(nameTh);
+        s.setNameEn(nameEn);
+        s.setBirthDate(LocalDate.of(2003, 8, 15));   // no longer part of the password
+        return s;
     }
 
     @Test
-    @DisplayName("Password Formula: Fallback to student ID if student is null")
-    void testDefaultPasswordGeneration_nullStudent_returnsStudentId() {
-        String password = AccountService.generateDefaultStudentPassword(null, "6621207034");
-        assertEquals("6621207034", password);
+    @DisplayName("Password Formula: first letter of first name + first letter of last name (upper case) + student id")
+    void testDefaultPassword_englishInitialsPlusStudentId() {
+        assertEquals("SJ6621100042", AccountService.generateDefaultStudentPassword(
+                student("6621100042", "สมชาย ใจดี", "Somchai Jaidee"), "6621100042"));
+        assertEquals("PN6621207044", AccountService.generateDefaultStudentPassword(
+                student("6621207044", "ปิติพัฒน์ นิ่มจินดา", "pitipat nimjinda"), "6621207044"));
     }
 
     @Test
-    @DisplayName("Password Formula: Fallback when birthDate is missing uses student ID digits")
-    void testDefaultPasswordGeneration_noBirthDate_usesStudentIdDigits() {
-        Student s = new Student();
-        s.setStudentId("6621207055");
-        s.setNameTh("สุกี้ แจ้งสมบุญ");
-        s.setNameEn("Suki Jaengsombun");
-        s.setBirthDate(null);
+    @DisplayName("Password Formula: with a national ID the password is initials + the 13-digit national ID")
+    void testDefaultPassword_initialsPlusNationalId() {
+        Student s = student("6621100042", "สมชาย ใจดี", "Somchai Jaidee");
+        s.setNationalId("1101700203450");
+        assertEquals("SJ1101700203450", AccountService.generateDefaultStudentPassword(s, "6621100042"));
+    }
 
-        String password = AccountService.generateDefaultStudentPassword(s, s.getStudentId());
-        assertEquals("Sjae21207055", password);
+    @Test
+    @DisplayName("National ID: check digit, normalising dashes, masking")
+    void testNationalIdRules() {
+        assertTrue(com.bsru.studentportal.service.NationalId.isValid("1101700203450"));
+        assertFalse(com.bsru.studentportal.service.NationalId.isValid("1101700203451"));
+        assertFalse(com.bsru.studentportal.service.NationalId.isValid("110170020345"));
+        assertEquals("1101700203450", com.bsru.studentportal.service.NationalId.normalize("1-1017-00203-45-0"));
+        assertEquals("x-xxxx-xxxxx-45-0", com.bsru.studentportal.service.NationalId.mask("1101700203450"));
+        assertNotNull(com.bsru.studentportal.service.NationalId.problem(""));
+        assertNull(com.bsru.studentportal.service.NationalId.problem("1101700203450"));
+    }
+
+    @Test
+    @DisplayName("Password Formula: titles such as Mr. / Miss / นาย are skipped")
+    void testDefaultPassword_skipsTitles() {
+        assertEquals("CC6421100074", AccountService.generateDefaultStudentPassword(
+                student("6421100074", "นายชัยวัฒน์ โค้ดดิ้ง", "Mr. Chaiwat Coding"), "6421100074"));
+        assertEquals("KP6521100088", AccountService.generateDefaultStudentPassword(
+                student("6521100088", "นางสาวกมล พรหมดี", "Miss Kamon Promdee"), "6521100088"));
+    }
+
+    @Test
+    @DisplayName("Password Formula: no English name -> Thai initials (title stuck to the name removed)")
+    void testDefaultPassword_thaiFallback() {
+        assertEquals("สจ6621100042", AccountService.generateDefaultStudentPassword(
+                student("6621100042", "นายสมชาย ใจดี", "นายสมชาย ใจดี"), "6621100042"));
+        assertEquals("สจ6621100042", AccountService.generateDefaultStudentPassword(
+                student("6621100042", "สมชาย ใจดี", null), "6621100042"));
+    }
+
+    @Test
+    @DisplayName("Password Formula: no usable name or no student -> just the student id")
+    void testDefaultPassword_fallbackToStudentId() {
+        assertEquals("6621207034", AccountService.generateDefaultStudentPassword(null, "6621207034"));
+        assertEquals("6621207034", AccountService.generateDefaultStudentPassword(
+                student("6621207034", "สมชาย", "Somchai"), "6621207034"));
     }
 
     @Test
@@ -61,8 +91,9 @@ public class StudentCsvPasswordAndRoleTest {
         // No number
         assertNotNull(AccountService.passwordProblem("Password!@#", "6621207044"));
 
-        // No special character
-        assertNotNull(AccountService.passwordProblem("Password123", "6621207044"));
+        // Special characters are optional now (every role)
+        assertNull(AccountService.passwordProblem("Password123", "6621207044"));
+        assertNull(AccountService.passwordProblem("Password123!", "6621207044"));
 
         // Contains username
         assertNotNull(AccountService.passwordProblem("6621207044Pass!", "6621207044"));

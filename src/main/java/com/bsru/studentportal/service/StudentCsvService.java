@@ -106,6 +106,7 @@ public class StudentCsvService {
         int gpaCol = -1;
         int careerPathCol = -1;
         int birthDateCol = -1;
+        int nationalIdCol = -1;
 
         boolean headerPresent = false;
         for (int i = 0; i < headers.size(); i++) {
@@ -135,6 +136,9 @@ public class StudentCsvService {
                 gpaCol = i;
             } else if (h.equals("careerpath") || h.equals("career") || h.equals("สายอาชีพ")) {
                 careerPathCol = i;
+            } else if (h.equals("nationalid") || h.equals("citizenid") || h.equals("idcard") || h.contains("บัตรประชาชน")
+                    || h.contains("ประจำตัวประชาชน")) {
+                nationalIdCol = i;
             } else if (h.equals("birthdate") || h.equals("birth_date") || h.equals("dob") || h.contains("วันเกิด") || h.contains("วันเดือนปีเกิด")) {
                 birthDateCol = i;
             }
@@ -153,6 +157,7 @@ public class StudentCsvService {
                 yearCol = headers.size() > 7 ? 7 : -1;
                 statusCol = headers.size() > 8 ? 8 : -1;
                 advisorIdCol = headers.size() > 9 ? 9 : -1;
+                nationalIdCol = headers.size() > 10 ? 10 : -1;
                 startRow = 0;
             } else {
                 throw new StudentAdminException(HttpStatus.BAD_REQUEST, "โครงสร้างไฟล์ CSV ไม่ถูกต้อง หรือไม่มีคอลัมน์ studentId");
@@ -163,6 +168,7 @@ public class StudentCsvService {
         int skippedCount = 0;
         List<String> errors = new ArrayList<>();
         Set<String> batchProcessedIds = new HashSet<>();
+        Set<String> batchNationalIds = new HashSet<>();
 
         for (int rowIdx = startRow; rowIdx < rawLines.size(); rowIdx++) {
             List<String> cols = parseCsvLine(rawLines.get(rowIdx));
@@ -180,9 +186,23 @@ public class StudentCsvService {
                 continue;
             }
 
+            // National ID: required, valid check digit, not used by another student (first password = initials + this)
+            String nationalId = NationalId.normalize((nationalIdCol >= 0 && nationalIdCol < cols.size()) ? cols.get(nationalIdCol).trim() : "");
+            String nidProblem = NationalId.problem(nationalId);
+            if (nidProblem == null && (batchNationalIds.contains(nationalId)
+                    || studentRepository.existsByNationalIdAndStudentIdNot(nationalId, sid))) {
+                nidProblem = "เลขบัตรประชาชนซ้ำกับนักศึกษาคนอื่น";
+            }
+            if (nidProblem != null) {
+                errors.add("แถวที่ " + (rowIdx + 1) + " (" + sid + "): " + nidProblem);
+                continue;
+            }
+            batchNationalIds.add(nationalId);
+
             batchProcessedIds.add(sid);
             Student s = new Student();
             s.setStudentId(sid);
+            s.setNationalId(nationalId);
 
             String nameTh = (nameThCol >= 0 && nameThCol < cols.size()) ? cols.get(nameThCol).trim() : "";
             s.setNameTh(nameTh.isEmpty() ? "นักศึกษาใหม่" : nameTh);
@@ -272,13 +292,16 @@ public class StudentCsvService {
         }
 
         if (importedCount == 0 && skippedCount == 0) {
-            throw new StudentAdminException(HttpStatus.BAD_REQUEST, "ไม่มีข้อมูลนักศึกษาที่ถูกต้องในไฟล์ CSV");
+            throw new StudentAdminException(HttpStatus.BAD_REQUEST, "ไม่มีข้อมูลนักศึกษาที่ถูกต้องในไฟล์ CSV"
+                    + (errors.isEmpty() ? "" : ": " + String.join(" · ", errors.subList(0, Math.min(3, errors.size())))
+                    + (errors.size() > 3 ? " (และอีก " + (errors.size() - 3) + " แถว)" : "")));
         }
 
         int totalRows = importedCount + skippedCount;
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("success", true);
-        resp.put("message", "นำเข้าข้อมูลนักศึกษาสำเร็จ " + importedCount + " รายการ" + (skippedCount > 0 ? " (ข้าม " + skippedCount + " รายการที่ซ้ำ)" : ""));
+        resp.put("message", "นำเข้าข้อมูลนักศึกษาสำเร็จ " + importedCount + " รายการ" + (skippedCount > 0 ? " (ข้าม " + skippedCount + " รายการที่ซ้ำ)" : "")
+                + (importedCount > 0 ? " · ชื่อผู้ใช้ = รหัสนักศึกษา, รหัสผ่านเริ่มต้น = อักษรแรกของชื่อและนามสกุล (อังกฤษ พิมพ์ใหญ่) + เลขบัตรประชาชน 13 หลัก เช่น SJ1101700203450" : ""));
         resp.put("total", totalRows);
         resp.put("totalRows", totalRows);
         resp.put("importedCount", importedCount);

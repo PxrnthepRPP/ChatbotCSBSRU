@@ -3,12 +3,13 @@
    ============================================================ */
 
 import { confirmDialog } from '../../components/confirmDialog.js';
-import { esc, showToast } from '../../utils.js';
+import { esc, showToast, titleCaseEn } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { MOCK_ADVISORS, MOCK_STUDENTS_POOL } from './mockData.js';
 import { apiErrorText } from './shared.js';
 import { renderManageStudents, toPoolStudent } from './students.js';
 import { renderAdminDashboard } from './dashboard.js';
+import { attachFormDraft } from '../../components/formDraft.js';
 
 export function renderManageAdvisors() {
     const rows = MOCK_ADVISORS.map((a, i) => `
@@ -176,7 +177,7 @@ function openAdvisorModal(mode, idx) {
         const data = {
             id: document.getElementById('mfId').value.trim(),
             nameTh: document.getElementById('mfNameTh').value.trim(),
-            nameEn: document.getElementById('mfNameEn').value.trim(),
+            nameEn: titleCaseEn(document.getElementById('mfNameEn').value.trim()),
             email: document.getElementById('mfEmail').value.trim(),
             phone: document.getElementById('mfPhone').value.trim(),
             department: document.getElementById('mfDept').value.trim(),
@@ -185,10 +186,14 @@ function openAdvisorModal(mode, idx) {
         if (!data.id || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
         if (mode === 'edit') { MOCK_ADVISORS[idx] = data; }
         else { MOCK_ADVISORS.push(data); }
+        advisorDraft.clear();   // saved: the draft is no longer needed
         crudModal.classList.remove('open');
         renderManageAdvisors();
         renderAdminDashboard();
     });
-    
+
+    // Unsaved input survives closing the form by mistake; cleared once saved
+    const advisorDraft = attachFormDraft(modalBody, mode === 'edit' ? `advisor:edit:${a.id}` : 'advisor:add');
+
     crudModal.classList.add('open');
 }

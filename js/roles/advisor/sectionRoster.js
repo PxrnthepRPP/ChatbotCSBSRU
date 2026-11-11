@@ -333,7 +333,7 @@ export function openSectionStudentsModal(section, students) {
                             </div>
                             <div class="roster-empty-sub">
                                 ${totalCount === 0
-                                    ? 'เมื่อนักศึกษาส่งคำขอลงทะเบียนหรือได้รับการอนุมัติ รายชื่อจะแสดงในหน้านี้อัตโนมัติ'
+                                    ? 'เมื่อนักศึกษาลงทะเบียนวิชานี้ รายชื่อจะแสดงในหน้านี้อัตโนมัติ'
                                     : 'ลองเปลี่ยนตัวกรองสถานะ หรือค้นหาด้วยรหัสนักศึกษาและชื่ออีกครั้ง'}
                             </div>
                             ${hasActiveFilter ? '<button type="button" class="btn btn-sm btn-ghost" id="advRosterResetFiltersBtn" style="margin-top:6px">ล้างตัวกรองทั้งหมด</button>' : ''}

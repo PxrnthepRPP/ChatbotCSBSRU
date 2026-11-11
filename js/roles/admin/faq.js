@@ -10,6 +10,7 @@ import { esc, showToast } from '../../utils.js';
 import { fetchAPI, API_BASE_URL } from '../../api.js';
 import { loadComponentCSS } from '../../css-loader.js';
 import { apiErrorText } from './shared.js';
+import { attachFormDraft } from '../../components/formDraft.js';
 
 let faqs = [];
 let faqCategory = 'all';
@@ -219,6 +220,10 @@ export function openFaqEditor(prefill = {}) {
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     overlay.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
     overlay.querySelector(prefill.question ? '#faqA' : '#faqQ').focus();
+    // Unsaved input survives closing the form by mistake; a new FAQ started from a chat question
+    // gets its own draft so it never takes another question's text
+    const faqDraft = attachFormDraft(overlay.querySelector('.modal-body'),
+        isEdit ? `faq:edit:${prefill.id}` : `faq:add:${prefill.question || ''}`);
 
     overlay.querySelector('#faqSave').addEventListener('click', async () => {
         const body = {
@@ -244,6 +249,7 @@ export function openFaqEditor(prefill = {}) {
             const idx = faqs.findIndex(f => f.id === saved.id);
             if (idx >= 0) faqs[idx] = saved; else faqs.push(saved);
             faqLoaded = true;
+            faqDraft.clear();
             close();
             showToast('success', isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มคำถามที่พบบ่อยแล้ว');
             const container = document.getElementById('manageFaqContent');

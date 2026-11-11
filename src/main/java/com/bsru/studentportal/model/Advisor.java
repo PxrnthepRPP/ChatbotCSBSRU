@@ -44,4 +44,11 @@ public class Advisor {
         this.department = department;
         this.canAdmin = false;
     }
+
+    /** English name in one style however it was typed: "somchai JAIDEE" -> "Somchai Jaidee" */
+    @jakarta.persistence.PrePersist
+    @jakarta.persistence.PreUpdate
+    public void normalizeNames() {
+        this.nameEn = com.bsru.studentportal.service.NameFormat.titleCaseEn(this.nameEn);
+    }
 }

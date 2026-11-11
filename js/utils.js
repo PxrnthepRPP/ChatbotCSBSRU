@@ -187,3 +187,24 @@ export function showToast(type, message, action) {
 
 export { fetchAPI, uploadFileAPI, viewPdfAttachmentAPI, API_BASE_URL, loginAPI, logoutAPI } from './api.js';
 
+
+/**
+ * English names in one style whatever case was typed: each word starts with a capital, the rest is
+ * lower case ("somchai JAIDEE" -> "Somchai Jaidee"). Same rule as the backend (NameFormat.titleCaseEn);
+ * only A–Z letters change, Thai text is left as it is.
+ */
+export function titleCaseEn(name) {
+    if (name == null) return name;
+    let wordStart = true;
+    let out = '';
+    for (const c of String(name)) {
+        if (/[A-Za-z]/.test(c)) {
+            out += wordStart ? c.toUpperCase() : c.toLowerCase();
+            wordStart = false;
+        } else {
+            out += c;
+            wordStart = !/[\p{L}\p{N}]/u.test(c);
+        }
+    }
+    return out;
+}

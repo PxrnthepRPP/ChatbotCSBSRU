@@ -43,8 +43,8 @@ public class SectionEnrollment {
     private LocalDateTime enrolledAt;
 
     /**
-     * Students send a registration request (PENDING) that an admin CONFIRMS or REJECTS.
-     * The column default makes enrollments made before this field existed count as confirmed.
+     * Registration is confirmed as soon as the student saves it (CONFIRMED). PENDING/REJECTED are
+     * legacy values from the old admin-approval flow, kept so old rows still map.
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'CONFIRMED' not null")

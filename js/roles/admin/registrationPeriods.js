@@ -1,6 +1,7 @@
 import { showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
+import { attachFormDraft } from '../../components/formDraft.js';
 
 /* ============================================================
    REGISTRATION PERIODS — when students may add/drop courses
@@ -50,7 +51,7 @@ export async function renderRegistrationCard({ cached = false } = {}) {
                     <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีช่วงลงทะเบียน</td></tr>'}</tbody>
                 </table>
             </div>
-            <div class="batch-filter-bar" style="margin-top:12px;flex-wrap:wrap;gap:8px;align-items:flex-end">
+            <div class="batch-filter-bar" id="regNewForm" style="margin-top:12px;flex-wrap:wrap;gap:8px;align-items:flex-end">
                 <strong style="font-size:0.85rem;width:100%">สร้างช่วงลงทะเบียนภาคเรียนใหม่</strong>
                 <label class="reg-field">ปีการศึกษา<input type="number" class="app-input" id="regNewYear" placeholder="เช่น 2569" style="width:120px"></label>
                 <label class="reg-field">ภาคเรียน<select class="batch-select" id="regNewTerm"><option value="1">ภาค 1</option><option value="2">ภาค 2</option><option value="3">ภาคฤดูร้อน</option></select></label>
@@ -60,10 +61,11 @@ export async function renderRegistrationCard({ cached = false } = {}) {
             </div>
         </div>`;
 
-    const save = async (body, successMessage) => {
+    const save = async (body, successMessage, onSaved) => {
         try {
             await fetchAPI('/registration-periods', 'PUT', body, 8000);
             showToast('success', successMessage);
+            onSaved?.();   // before re-rendering, so the new form does not pick the old draft up again
             renderRegistrationCard();
         } catch (err) {
             showToast('error', apiErrorText(err));
@@ -86,6 +88,8 @@ export async function renderRegistrationCard({ cached = false } = {}) {
         });
     });
 
+    // The new-semester form keeps what was typed until it is created (formDraft)
+    const newPeriodDraft = attachFormDraft(container.querySelector('#regNewForm'), 'registration-period:new');
     container.querySelector('#regCreateBtn').addEventListener('click', () => {
         const year = Number(document.getElementById('regNewYear').value);
         if (!year) {
@@ -98,6 +102,6 @@ export async function renderRegistrationCard({ cached = false } = {}) {
             opensAt: document.getElementById('regNewOpens').value || null,
             closesAt: document.getElementById('regNewCloses').value || null,
             forceClosed: false,
-        }, `สร้างช่วงลงทะเบียนภาคเรียนใหม่แล้ว`);
+        }, `สร้างช่วงลงทะเบียนภาคเรียนใหม่แล้ว`, () => newPeriodDraft.clear());
     });
 }

@@ -269,6 +269,61 @@
     color: var(--amber-600);
 }
 
+/* ── Self-registration form: suggestions of courses already in the system ── */
+.app-form-span-2 {
+    grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+    .app-form-span-2 {
+        grid-column: auto;
+    }
+}
+
+.tt-suggest-box {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    min-width: min(480px, 90vw);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 30;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--g-200, #e5e7eb);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.tt-suggest-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: none;
+    border-top: 1px solid var(--g-100);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.tt-suggest-item:hover,
+.tt-suggest-item:focus {
+    background: var(--g-50);
+}
+
+[data-theme="dark"] .tt-suggest-box {
+    background: var(--bg-card, #1f2937);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .tt-suggest-item:hover,
+[data-theme="dark"] .tt-suggest-item:focus {
+    background: rgba(255, 255, 255, 0.06);
+}
+
 /* ── Exam Schedule Cards ── */
 .tt-exam-list {
     display: grid;

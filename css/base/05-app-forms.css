@@ -239,3 +239,34 @@
     color: var(--g-900);
 }
 
+
+/* ── Restored form draft (js/components/formDraft.js) ── */
+.form-draft-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--blue-100, #dbeafe);
+    background: var(--blue-50, #eff6ff);
+    color: var(--blue-700, #1d4ed8);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+[data-theme="dark"] .form-draft-notice {
+    border-color: rgba(96, 165, 250, 0.35);
+    background: rgba(59, 130, 246, 0.12);
+    color: #bfdbfe;
+}
+
+.app-form-grid > .form-draft-notice {
+    grid-column: 1 / -1;
+}
+
+.batch-filter-bar > .form-draft-notice {
+    width: 100%;
+}

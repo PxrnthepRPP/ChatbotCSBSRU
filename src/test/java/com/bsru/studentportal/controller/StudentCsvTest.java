@@ -73,9 +73,9 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: Valid CSV rows import new students and skip existing ones")
     void testImportCsv_validRows_importsNewStudentsAndSkipsDuplicates() throws Exception {
-        String csv = "studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId\n"
-                + "6621109901,สมชาย เรียนดี,Somchai Reandee,somchai@bsru.ac.th,0812345671,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n"
-                + "6621109902,สมหญิง มุ่งมั่น,Somying Mungmun,somying@bsru.ac.th,0812345672,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01";
+        String csv = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId\n"
+                + "1662110990107,6621109901,สมชาย เรียนดี,Somchai Reandee,somchai@bsru.ac.th,0812345671,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n"
+                + "1662110990204,6621109902,สมหญิง มุ่งมั่น,Somying Mungmun,somying@bsru.ac.th,0812345672,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01";
 
         // 6621109901 is new, 6621109902 already exists in database
         when(studentRepository.existsById("6621109901")).thenReturn(false);
@@ -130,7 +130,7 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: Non-admin caller receives 403 Forbidden")
     void testImportCsv_nonAdmin_throws403Forbidden() {
-        String csv = "studentId,nameTh\n6621109901,สมชาย เรียนดี";
+        String csv = "nationalId,studentId,nameTh\n1662110990107,6621109901,สมชาย เรียนดี";
 
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 studentAdminController.importCsv(csv, null, httpServletRequest, studentAuth)
@@ -143,7 +143,7 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: UTF-8 BOM is stripped cleanly before parsing")
     void testImportCsv_withUtf8Bom_stripsBomAndImports() throws Exception {
-        String csvWithBom = "\uFEFFstudentId,nameTh\n6621109905,ทดสอบ บีโอเอ็ม";
+        String csvWithBom = "\uFEFFnationalId,studentId,nameTh\n1662110990506,6621109905,ทดสอบ บีโอเอ็ม";
 
         when(studentRepository.existsById("6621109905")).thenReturn(false);
 
@@ -158,7 +158,7 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: JSON payload wrapping csvData succeeds")
     void testImportCsv_jsonWrappedData_succeeds() throws Exception {
-        String jsonPayload = "{\"csvData\": \"studentId,nameTh\\n6621109908,นายเจสัน ข้อมูล\"}";
+        String jsonPayload = "{\"csvData\": \"nationalId,studentId,nameTh\\n1662110990808,6621109908,นายเจสัน ข้อมูล\"}";
 
         when(studentRepository.existsById("6621109908")).thenReturn(false);
 

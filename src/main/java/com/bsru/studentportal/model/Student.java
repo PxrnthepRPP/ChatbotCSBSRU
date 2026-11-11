@@ -78,6 +78,29 @@ public class Student {
     @Column(nullable = false, columnDefinition = "boolean default false not null")
     private boolean simulated;
 
+    /**
+     * Thai national ID (13 digits). Personal data: never serialised as is — every response carries only
+     * nationalIdMasked; the admin reads the full number through GET /api/students/{id}/national-id.
+     * Part of the student's first password (initials + this number).
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "national_id", length = 13, unique = true)
+    private String nationalId;
+
+    /** Shown instead of the number, e.g. x-xxxx-xxxxx-45-0 (null when not recorded) */
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nationalIdMasked", access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public String getNationalIdMasked() {
+        return com.bsru.studentportal.service.NationalId.mask(nationalId);
+    }
+
+    /**
+     * Not stored: the first password, filled in only on the response to the admin who just created
+     * the student so it can be handed over. Never sent anywhere else.
+     */
+    @jakarta.persistence.Transient
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String initialPassword;
+
     // ---- Profile (shown on the student's "ประวัตินักศึกษา" page and in the advisor's history view) ----
     private String email;
 
@@ -103,8 +126,15 @@ public class Student {
      * Auto-derive enrollmentYear / admissionYear from the first 2 digits of studentId (batch) if not set.
      * e.g. "6621100042" → batch "66" → enrollmentYear = 2566
      */
+    /** English name in one style however it was typed: "somchai JAIDEE" -> "Somchai Jaidee" */
+    @jakarta.persistence.PreUpdate
+    public void preUpdate() {
+        this.nameEn = com.bsru.studentportal.service.NameFormat.titleCaseEn(this.nameEn);
+    }
+
     @PrePersist
     public void prePersist() {
+        this.nameEn = com.bsru.studentportal.service.NameFormat.titleCaseEn(this.nameEn);
         if (this.enrollmentYear == null && this.admissionYear != null) {
             this.enrollmentYear = this.admissionYear;
         }

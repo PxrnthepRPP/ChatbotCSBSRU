@@ -55,7 +55,7 @@ public class AccountService {
             throw new AccountException(HttpStatus.LOCKED,
                     "บัญชีถูกล็อกชั่วคราวเพราะใส่รหัสผ่านผิดหลายครั้ง กรุณาลองใหม่ในอีก " + minutes + " นาที");
         }
-        if (password == null || !passwordEncoder.matches(password, account.getPasswordHash())) {
+        if (password == null || !passwordMatches(account, password)) {
             account.setFailedAttempts(account.getFailedAttempts() + 1);
             String message = BAD_LOGIN;
             if (account.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
@@ -79,7 +79,7 @@ public class AccountService {
     public void changePassword(String username, String currentPassword, String newPassword) {
         UserAccount account = accounts.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new AccountException(HttpStatus.NOT_FOUND, "ไม่พบบัญชีผู้ใช้"));
-        if (currentPassword == null || !passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+        if (currentPassword == null || !passwordMatches(account, currentPassword)) {
             throw new AccountException(HttpStatus.BAD_REQUEST, "รหัสผ่านปัจจุบันไม่ถูกต้อง");
         }
         String problem = passwordProblem(newPassword, account.getUsername());
@@ -92,13 +92,28 @@ public class AccountService {
         accounts.save(account);
     }
 
-    /** Admin reset: the password becomes the student id and must be changed at the next login */
+    /**
+     * Exact match, or — for a student still on the default password (upper-case initials + student id) —
+     * the same password with the letters typed in lower or mixed case (sj6621100042, Sj6621100042).
+     */
+    private boolean passwordMatches(UserAccount account, String password) {
+        if (passwordEncoder.matches(password, account.getPasswordHash())) return true;
+        boolean onDefaultPassword = account.isMustChangePassword() && "ROLE_STUDENT".equals(account.getRole());
+        String upper = password.toUpperCase();
+        return onDefaultPassword && !upper.equals(password) && passwordEncoder.matches(upper, account.getPasswordHash());
+    }
+
+    /** Admin reset: the password goes back to the default (see generateDefaultStudentPassword) and must be changed */
     @Transactional
-    public void resetStudentPassword(String studentId) {
+    public String resetStudentPassword(String studentId) {
         if (!studentRepository.existsById(studentId)) {
             throw new AccountException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId);
         }
         Student s = studentRepository.findById(studentId).orElse(null);
+        if (s == null || s.getNationalId() == null || s.getNationalId().isBlank()) {
+            throw new AccountException(HttpStatus.BAD_REQUEST,
+                    "นักศึกษารหัส " + studentId + " ยังไม่มีเลขบัตรประชาชน กรุณาแก้ไขข้อมูลนักศึกษาเพิ่มเลขบัตรประชาชนก่อนรีเซ็ตรหัสผ่าน");
+        }
         String initialPassword = generateDefaultStudentPassword(s, studentId);
         UserAccount account = accounts.findByUsernameIgnoreCase(studentId)
                 .orElseGet(() -> newAccount(studentId, "ROLE_STUDENT", initialPassword, true));
@@ -107,77 +122,66 @@ public class AccountService {
         account.setFailedAttempts(0);
         account.setLockedUntil(null);
         accounts.save(account);
-    }
-
-    /** New student created by an admin or advisor: default password based on name/surname/birthdate, must be changed */
-    @Transactional
-    public void createStudentAccount(String studentId) {
-        if (accounts.findByUsernameIgnoreCase(studentId).isEmpty()) {
-            Student s = studentRepository.findById(studentId).orElse(null);
-            String initialPassword = generateDefaultStudentPassword(s, studentId);
-            accounts.save(newAccount(studentId, "ROLE_STUDENT", initialPassword, true));
-        }
+        return initialPassword;
     }
 
     /**
-     * Generates a default initial password using:
-     * - First letter of first name (uppercase)
-     * - 3 letters of last name (lowercase)
-     * - Birth date in DDMMYYYY (Buddhist Era)
-     * Example: Somchai Jaidee, born 15/08/2546 -> Sjai15082546
+     * New student created by an admin (form or CSV): username = student id, default password from
+     * generateDefaultStudentPassword, must be changed at the first login.
+     * Returns the password, or null when the student already had an account (left untouched).
+     */
+    @Transactional
+    public String createStudentAccount(String studentId) {
+        if (accounts.findByUsernameIgnoreCase(studentId).isPresent()) return null;
+        Student s = studentRepository.findById(studentId).orElse(null);
+        String initialPassword = generateDefaultStudentPassword(s, studentId);
+        accounts.save(newAccount(studentId, "ROLE_STUDENT", initialPassword, true));
+        return initialPassword;
+    }
+
+    /** Titles written before a name, skipped when taking the initials */
+    private static final java.util.Set<String> NAME_TITLES = java.util.Set.of(
+            "MR", "MRS", "MS", "MISS", "DR", "นาย", "นาง", "นางสาว", "น.ส.", "ด.ช.", "ด.ญ.", "เด็กชาย", "เด็กหญิง");
+    private static final java.util.List<String> THAI_TITLE_PREFIXES = java.util.List.of(
+            "นางสาว", "เด็กชาย", "เด็กหญิง", "นาย", "นาง", "น.ส.", "ด.ช.", "ด.ญ.");
+
+    /**
+     * Default first password of a student: first letter of the first name + first letter of the last
+     * name (upper case) followed by the 13-digit national ID, e.g. Somchai Jaidee 1101700203450 -> SJ1101700203450.
+     * Uses the English name; titles (Mr., นาย, ...) are skipped. Without an English first and last name
+     * it uses the Thai name (สจ1101700203450). The national ID keeps the password private (the student id
+     * is public); a student recorded without one (older data) falls back to the student id.
+     * At the first login the letters may be typed in either case (see authenticate).
      */
     public static String generateDefaultStudentPassword(Student s, String studentId) {
-        if (s == null) return studentId != null ? studentId : "DefaultPass123!";
+        String id = studentId != null ? studentId : (s != null ? s.getStudentId() : "");
+        if (s == null) return id;
+        if (s.getNationalId() != null && !s.getNationalId().isBlank()) id = s.getNationalId();
+        String initials = initials(s.getNameEn(), true);
+        if (initials == null) initials = initials(s.getNameTh(), false);
+        return (initials == null ? "" : initials) + id;
+    }
 
-        char firstChar = 'S';
-        String name = s.getNameEn() != null && !s.getNameEn().isBlank() ? s.getNameEn().trim() : "";
-        if (name.isEmpty() && s.getNameTh() != null && !s.getNameTh().isBlank()) {
-            name = s.getNameTh().trim();
-        }
-        String[] nameParts = name.split("\\s+");
-        String firstName = nameParts.length > 0 ? nameParts[0] : "";
-        String lastName = nameParts.length > 1 ? nameParts[1] : "";
-
-        for (char c : firstName.toCharArray()) {
-            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-                firstChar = Character.toUpperCase(c);
-                break;
-            }
-        }
-
-        StringBuilder lastPart = new StringBuilder();
-        for (char c : lastName.toCharArray()) {
-            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-                lastPart.append(Character.toLowerCase(c));
-                if (lastPart.length() >= 3) break;
-            }
-        }
-        if (lastPart.length() < 3) {
-            for (char c : firstName.toCharArray()) {
-                if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) && Character.toUpperCase(c) != firstChar) {
-                    lastPart.append(Character.toLowerCase(c));
-                    if (lastPart.length() >= 3) break;
+    /** Upper-case first letters of the first two name words, or null when there are not two */
+    private static String initials(String fullName, boolean english) {
+        if (fullName == null || fullName.isBlank()) return null;
+        java.util.List<Character> letters = new java.util.ArrayList<>();
+        for (String word : fullName.trim().split("\\s+")) {
+            String w = word.trim();
+            if (NAME_TITLES.contains(w.replace(".", "").toUpperCase()) || NAME_TITLES.contains(w)) continue;
+            if (!english) {
+                // Thai titles are often written stuck to the name: นายสมชาย
+                for (String t : THAI_TITLE_PREFIXES) {
+                    if (w.startsWith(t) && w.length() > t.length()) { w = w.substring(t.length()); break; }
                 }
             }
-            while (lastPart.length() < 3) {
-                lastPart.append("cs");
+            for (char c : w.toCharArray()) {
+                boolean ok = english ? ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) : (c >= 'ก' && c <= 'ฮ');
+                if (ok) { letters.add(Character.toUpperCase(c)); break; }
             }
-            if (lastPart.length() > 3) lastPart.setLength(3);
+            if (letters.size() == 2) break;
         }
-
-        String datePart;
-        if (s.getBirthDate() != null) {
-            int d = s.getBirthDate().getDayOfMonth();
-            int m = s.getBirthDate().getMonthValue();
-            int y = s.getBirthDate().getYear() + 543;
-            datePart = String.format("%02d%02d%04d", d, m, y);
-        } else {
-            datePart = studentId != null && studentId.length() >= 8
-                    ? studentId.substring(studentId.length() - 8)
-                    : (studentId != null ? studentId : "25460101");
-        }
-
-        return firstChar + lastPart.toString() + datePart;
+        return letters.size() == 2 ? "" + letters.get(0) + letters.get(1) : null;
     }
 
     @Transactional
@@ -200,7 +204,10 @@ public class AccountService {
                 .forEach(s -> ensure(s.getStudentId(), "ROLE_STUDENT", DEMO_PASSWORD, false));
     }
 
-    /** Advanced Password Policy validation. Returns null when acceptable. */
+    /**
+     * Password policy for every role: at least 8 characters with an upper-case letter, a lower-case
+     * letter and a digit, and not containing the username. Returns null when acceptable.
+     */
     public static String passwordProblem(String password, String username) {
         if (password == null || password.length() < 8) return "รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร";
         if (!password.matches(".*[A-Z].*")) {
@@ -212,9 +219,7 @@ public class AccountService {
         if (!password.matches(".*\\d.*")) {
             return "รหัสผ่านใหม่ต้องมีตัวเลข (0-9) อย่างน้อย 1 ตัว";
         }
-        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
-            return "รหัสผ่านใหม่ต้องมีอักขระพิเศษอย่างน้อย 1 ตัว (เช่น !@#$%^&*)";
-        }
+        // Special characters (!@#...) are allowed but not required
         if (username != null && !username.isBlank() && password.toLowerCase().contains(username.toLowerCase())) {
             return "รหัสผ่านต้องไม่มีชื่อผู้ใช้หรือรหัสนักศึกษา";
         }

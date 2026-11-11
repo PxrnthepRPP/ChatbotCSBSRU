@@ -1,10 +1,10 @@
 package com.bsru.studentportal.controller;
 
 import com.bsru.studentportal.dto.EnrollmentRequest;
-import com.bsru.studentportal.dto.EnrollmentReviewRequest;
 import com.bsru.studentportal.dto.RegistrationCartRequest;
 import com.bsru.studentportal.dto.RegistrationPeriodRequest;
 import com.bsru.studentportal.dto.SectionRequest;
+import com.bsru.studentportal.dto.SelfRegistrationRequest;
 import com.bsru.studentportal.security.CurrentUser;
 import com.bsru.studentportal.service.TimetableService;
 import com.bsru.studentportal.service.TimetableService.Actor;
@@ -16,7 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,9 +30,9 @@ import java.util.Map;
 
 /**
  * Timetable API.
- * Students: read their own timetable, add/drop courses while registration is open.
+ * Students: read their own timetable, register courses themselves (no approval) and drop them while registration is open.
  * Teachers (advisors): manage the sections they teach and who is enrolled in them.
- * Admins: everything, including opening and closing registration.
+ * Admins: everything, including opening and closing registration and the registration log.
  */
 @RestController
 @RequestMapping("/api")
@@ -76,14 +75,31 @@ public class TimetableController {
         return ResponseEntity.ok(timetableService.setStudentSection(actor(auth), studentId, body.get("studentSection")));
     }
 
-    @GetMapping("/enrollments/pending")
-    public ResponseEntity<?> pendingRequests(Authentication auth) {
-        return ResponseEntity.ok(timetableService.pendingRequests(actor(auth)));
+    /** Admin: every registration (newest first), optionally only one semester */
+    @GetMapping("/enrollments")
+    public ResponseEntity<?> registrationLog(@RequestParam(required = false) Integer academicYear,
+                                             @RequestParam(required = false) Integer term, Authentication auth) {
+        return ResponseEntity.ok(timetableService.registrationLog(actor(auth), academicYear, term));
     }
 
-    @PatchMapping("/enrollments/review")
-    public ResponseEntity<?> reviewRequests(@RequestBody EnrollmentReviewRequest request, Authentication auth) {
-        return ResponseEntity.ok(Map.of("updated", timetableService.reviewRequests(actor(auth), request)));
+    /** Student registers a course by typing it in; confirmed straight away. 409 + the existing section when already recorded. */
+    @PostMapping("/students/{studentId}/self-registration")
+    public ResponseEntity<?> selfRegister(@PathVariable String studentId, @RequestBody SelfRegistrationRequest request,
+                                          Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(timetableService.selfRegister(actor(auth), studentId, request));
+    }
+
+    /** Courses recorded before that match a code prefix or part of a name, to fill in the registration form */
+    @GetMapping("/courses/suggestions")
+    public ResponseEntity<?> courseSuggestions(@RequestParam(required = false) String q) {
+        return ResponseEntity.ok(timetableService.courseSuggestions(q));
+    }
+
+    /** Sections of one course already recorded in a semester (duplicate warning in the form) */
+    @GetMapping("/sections/lookup")
+    public ResponseEntity<?> sectionsOfCourse(@RequestParam Integer academicYear, @RequestParam Integer term,
+                                              @RequestParam String courseCode) {
+        return ResponseEntity.ok(timetableService.sectionsOfCourse(academicYear, term, courseCode));
     }
 
     @DeleteMapping("/students/{studentId}/enrollments/{sectionId}")
@@ -122,13 +138,6 @@ public class TimetableController {
     public ResponseEntity<?> deleteSection(@PathVariable Long sectionId, Authentication auth) {
         timetableService.deleteSection(actor(auth), sectionId);
         return ResponseEntity.noContent().build();
-    }
-
-    /** Admin decision on a teacher's request: {"status": "APPROVED" | "REJECTED", "note": "..."} */
-    @PatchMapping("/sections/{sectionId}/review")
-    public ResponseEntity<?> reviewSection(@PathVariable Long sectionId, @RequestBody Map<String, String> body,
-                                           Authentication auth) {
-        return ResponseEntity.ok(timetableService.reviewSection(actor(auth), sectionId, body.get("status"), body.get("note")));
     }
 
     @GetMapping("/sections/{sectionId}/students")
