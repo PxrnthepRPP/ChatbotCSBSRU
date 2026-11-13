@@ -2,6 +2,7 @@ package com.bsru.studentportal.controller;
 
 import com.bsru.studentportal.dto.StudentProfileRequest;
 import com.bsru.studentportal.dto.StudentRequest;
+import com.bsru.studentportal.model.Student;
 import com.bsru.studentportal.repository.AdvisingNoteRepository;
 import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.StudentRepository;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -41,7 +43,6 @@ public class StudentAdminController {
     private final StudentAdminService studentAdminService;
     private final AccountService accountService;
     private final StudentRepository studentRepository;
-    private final AdvisorRepository advisorRepository;
     private final AdvisingNoteRepository advisingNoteRepository;
     private final StudentCsvService studentCsvService;
 
@@ -56,7 +57,6 @@ public class StudentAdminController {
         this.studentAdminService = studentAdminService;
         this.accountService = accountService;
         this.studentRepository = studentRepository;
-        this.advisorRepository = advisorRepository;
         this.advisingNoteRepository = advisingNoteRepository;
         this.studentCsvService = studentCsvService != null
                 ? studentCsvService
@@ -100,15 +100,15 @@ public class StudentAdminController {
     @GetMapping("/{studentId}/national-id")
     public ResponseEntity<?> nationalId(@PathVariable String studentId, Authentication auth) {
         requireAdmin(auth);
-        com.bsru.studentportal.model.Student s = studentRepository.findById(studentId)
+        Student s = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentAdminException(HttpStatus.NOT_FOUND, "ไม่พบนักศึกษารหัส " + studentId));
-        Map<String, Object> body = new java.util.HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("studentId", studentId);
         body.put("nationalId", s.getNationalId());
         return ResponseEntity.ok(body);
     }
 
-    /** Admin: the student's password goes back to the default (initials + student id) and must be changed at the next login */
+    /** Admin: the student's password goes back to the default (initials + national ID) and must be changed at the next login */
     @PostMapping("/{studentId}/reset-password")
     public ResponseEntity<?> resetPassword(@PathVariable String studentId, Authentication auth) {
         requireAdmin(auth);

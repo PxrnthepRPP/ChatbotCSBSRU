@@ -16,10 +16,14 @@ import com.bsru.studentportal.model.CourseGrade;
 import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.ClassSectionRepository;
 import com.bsru.studentportal.repository.CourseGradeRepository;
+import com.bsru.studentportal.repository.InstructorGradeRepository;
 import com.bsru.studentportal.repository.RegistrationPeriodRepository;
 import com.bsru.studentportal.repository.SectionEnrollmentRepository;
+import com.bsru.studentportal.repository.SectionGradeSubmissionRepository;
 import com.bsru.studentportal.repository.StudentRepository;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -60,7 +65,7 @@ public class TimetableService {
     /** Student groups; a class section is offered to exactly one group */
     public static final List<String> STUDENT_GROUPS = List.of("D1", "D2");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
-    private static final java.util.regex.Pattern COURSE_CODE = java.util.regex.Pattern.compile("^[A-Z0-9]{1,20}$");
+    private static final Pattern COURSE_CODE = Pattern.compile("^[A-Z0-9]{1,20}$");
     /** Enrollments that take a seat and appear in the timetable */
     private static final Set<EnrollmentStatus> ACTIVE = EnumSet.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED);
     private static final Comparator<ClassSection> SECTION_ORDER =
@@ -102,7 +107,7 @@ public class TimetableService {
 
     public record RegistrationCheck(String studentSection, int academicYear, int term, List<CartItem> items,
                                     int totalCredits, boolean ok) {
-        @com.fasterxml.jackson.annotation.JsonProperty("valid")
+        @JsonProperty("valid")
         public boolean valid() {
             return ok;
         }
@@ -145,13 +150,12 @@ public class TimetableService {
     private static final Set<String> NON_PASSING_GRADES = Set.of("F", "W", "I", "U", "ยังไม่ออกผล");
 
     private final ClassSectionRepository sectionRepository;
-    private final com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository;
-    private final com.bsru.studentportal.repository.SectionGradeSubmissionRepository gradeSubmissionRepository;
+    private final InstructorGradeRepository instructorGradeRepository;
+    private final SectionGradeSubmissionRepository gradeSubmissionRepository;
     private final SectionEnrollmentRepository enrollmentRepository;
     private final RegistrationPeriodRepository periodRepository;
     private final StudentRepository studentRepository;
     private final AdvisorRepository advisorRepository;
-    private final NotificationService notificationService;
     private final CourseGradeRepository courseGradeRepository;
 
     public TimetableService(ClassSectionRepository sectionRepository,
@@ -174,16 +178,16 @@ public class TimetableService {
                 notificationService, courseGradeRepository, null, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     public TimetableService(ClassSectionRepository sectionRepository,
                             SectionEnrollmentRepository enrollmentRepository,
                             RegistrationPeriodRepository periodRepository,
                             StudentRepository studentRepository,
                             AdvisorRepository advisorRepository,
                             NotificationService notificationService,
-                            @org.springframework.beans.factory.annotation.Autowired(required = false) CourseGradeRepository courseGradeRepository,
-                            @org.springframework.beans.factory.annotation.Autowired(required = false) com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository,
-                            @org.springframework.beans.factory.annotation.Autowired(required = false) com.bsru.studentportal.repository.SectionGradeSubmissionRepository gradeSubmissionRepository) {
+                            @Autowired(required = false) CourseGradeRepository courseGradeRepository,
+                            @Autowired(required = false) InstructorGradeRepository instructorGradeRepository,
+                            @Autowired(required = false) SectionGradeSubmissionRepository gradeSubmissionRepository) {
         this.instructorGradeRepository = instructorGradeRepository;
         this.gradeSubmissionRepository = gradeSubmissionRepository;
         this.sectionRepository = sectionRepository;
@@ -191,7 +195,8 @@ public class TimetableService {
         this.periodRepository = periodRepository;
         this.studentRepository = studentRepository;
         this.advisorRepository = advisorRepository;
-        this.notificationService = notificationService;
+        // notificationService is still accepted for wiring compatibility; registration no longer has an
+        // admin review step, so this service sends no notifications.
         this.courseGradeRepository = courseGradeRepository;
     }
 
