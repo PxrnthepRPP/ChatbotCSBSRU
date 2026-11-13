@@ -47,8 +47,6 @@ class AcademicPrerequisiteTest {
     @Mock
     private AdvisorRepository advisorRepository;
     @Mock
-    private NotificationService notificationService;
-    @Mock
     private CourseGradeRepository courseGradeRepository;
 
     private TimetableService timetableService;
@@ -67,7 +65,6 @@ class AcademicPrerequisiteTest {
                 periodRepository,
                 studentRepository,
                 advisorRepository,
-                notificationService,
                 courseGradeRepository
         );
 

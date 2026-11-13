@@ -57,7 +57,6 @@ public class AcademicMilestone6AdversarialStressTest {
         @Mock private RegistrationPeriodRepository periodRepository;
         @Mock private StudentRepository studentRepository;
         @Mock private AdvisorRepository advisorRepository;
-        @Mock private NotificationService notificationService;
         @Mock private CourseGradeRepository courseGradeRepository;
 
         private TimetableService timetableService;
@@ -75,7 +74,6 @@ public class AcademicMilestone6AdversarialStressTest {
                     periodRepository,
                     studentRepository,
                     advisorRepository,
-                    notificationService,
                     courseGradeRepository
             );
 

@@ -162,9 +162,8 @@ public class TimetableService {
                             SectionEnrollmentRepository enrollmentRepository,
                             RegistrationPeriodRepository periodRepository,
                             StudentRepository studentRepository,
-                            AdvisorRepository advisorRepository,
-                            NotificationService notificationService) {
-        this(sectionRepository, enrollmentRepository, periodRepository, studentRepository, advisorRepository, notificationService, null);
+                            AdvisorRepository advisorRepository) {
+        this(sectionRepository, enrollmentRepository, periodRepository, studentRepository, advisorRepository, null);
     }
 
     public TimetableService(ClassSectionRepository sectionRepository,
@@ -172,10 +171,9 @@ public class TimetableService {
                             RegistrationPeriodRepository periodRepository,
                             StudentRepository studentRepository,
                             AdvisorRepository advisorRepository,
-                            NotificationService notificationService,
                             CourseGradeRepository courseGradeRepository) {
         this(sectionRepository, enrollmentRepository, periodRepository, studentRepository, advisorRepository,
-                notificationService, courseGradeRepository, null, null);
+                courseGradeRepository, null, null);
     }
 
     @Autowired
@@ -184,7 +182,6 @@ public class TimetableService {
                             RegistrationPeriodRepository periodRepository,
                             StudentRepository studentRepository,
                             AdvisorRepository advisorRepository,
-                            NotificationService notificationService,
                             @Autowired(required = false) CourseGradeRepository courseGradeRepository,
                             @Autowired(required = false) InstructorGradeRepository instructorGradeRepository,
                             @Autowired(required = false) SectionGradeSubmissionRepository gradeSubmissionRepository) {
@@ -195,8 +192,6 @@ public class TimetableService {
         this.periodRepository = periodRepository;
         this.studentRepository = studentRepository;
         this.advisorRepository = advisorRepository;
-        // notificationService is still accepted for wiring compatibility; registration no longer has an
-        // admin review step, so this service sends no notifications.
         this.courseGradeRepository = courseGradeRepository;
     }
 
