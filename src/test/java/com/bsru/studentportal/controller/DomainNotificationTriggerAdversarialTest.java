@@ -4,17 +4,11 @@ import com.bsru.studentportal.dto.PetitionRequest;
 import com.bsru.studentportal.dto.PetitionStatusUpdateRequest;
 import com.bsru.studentportal.model.AcademicPetition;
 import com.bsru.studentportal.model.Advisor;
-import com.bsru.studentportal.model.ClassSection;
-import com.bsru.studentportal.model.SectionEnrollment;
-import com.bsru.studentportal.model.SectionEnrollment.EnrollmentStatus;
 import com.bsru.studentportal.model.Student;
 import com.bsru.studentportal.repository.*;
 import com.bsru.studentportal.service.AcademicRecordService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.NotificationService;
-import com.bsru.studentportal.service.TimetableService;
-import com.bsru.studentportal.service.TimetableService.Actor;
-import com.bsru.studentportal.service.TimetableService.TimetableException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,8 +23,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,16 +59,7 @@ class DomainNotificationTriggerAdversarialTest {
     @Mock
     private GraduationAuditService graduationAuditService;
 
-    // TimetableService Mocks
-    @Mock
-    private ClassSectionRepository sectionRepository;
-    @Mock
-    private SectionEnrollmentRepository enrollmentRepository;
-    @Mock
-    private RegistrationPeriodRepository periodRepository;
-
     private ApiController apiController;
-    private TimetableService timetableService;
 
     private Authentication studentAuth;
     private Authentication advisorAuth;
@@ -94,15 +77,6 @@ class DomainNotificationTriggerAdversarialTest {
                 petitionRepository,
                 academicRecordService,
                 graduationAuditService,
-                notificationService
-        );
-
-        timetableService = new TimetableService(
-                sectionRepository,
-                enrollmentRepository,
-                periodRepository,
-                studentRepository,
-                advisorRepository,
                 notificationService
         );
 
