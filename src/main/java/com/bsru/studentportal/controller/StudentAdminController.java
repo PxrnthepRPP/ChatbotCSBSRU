@@ -144,14 +144,6 @@ public class StudentAdminController {
         return processCsvImport(rawBody, file, request, null);
     }
 
-    public ResponseEntity<?> importCsvForAdvisor(
-            String rawBody,
-            MultipartFile file,
-            HttpServletRequest request,
-            String advisorId) throws Exception {
-        return processCsvImport(rawBody, file, request, advisorId);
-    }
-
     public ResponseEntity<?> processCsvImport(
             String rawBody,
             MultipartFile file,
