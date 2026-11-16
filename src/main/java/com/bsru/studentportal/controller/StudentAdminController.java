@@ -80,7 +80,8 @@ public class StudentAdminController {
     }
 
     @PutMapping("/{studentId}")
-    public ResponseEntity<?> update(@PathVariable String studentId, @RequestBody StudentRequest request, Authentication auth) {
+    public ResponseEntity<?> update(@PathVariable String studentId, @RequestBody StudentRequest request,
+            Authentication auth) {
         requireAdmin(auth);
         return ResponseEntity.ok(studentAdminService.update(studentId, request));
     }
@@ -88,7 +89,7 @@ public class StudentAdminController {
     /** The student edits their own profile (an admin may edit anyone's) */
     @PutMapping("/{studentId}/profile")
     public ResponseEntity<?> updateProfile(@PathVariable String studentId, @RequestBody StudentProfileRequest request,
-                                           Authentication auth) {
+            Authentication auth) {
         boolean self = CurrentUser.studentId(auth).map(studentId::equals).orElse(false);
         if (!self && !CurrentUser.isAdmin(auth)) {
             throw new StudentAdminException(HttpStatus.FORBIDDEN, "แก้ไขได้เฉพาะข้อมูลส่วนตัวของตนเอง");
@@ -96,7 +97,10 @@ public class StudentAdminController {
         return ResponseEntity.ok(studentAdminService.updateProfile(studentId, request));
     }
 
-    /** Admin only: the full national ID (every other response carries only the masked form) */
+    /**
+     * Admin only: the full national ID (every other response carries only the
+     * masked form)
+     */
     @GetMapping("/{studentId}/national-id")
     public ResponseEntity<?> nationalId(@PathVariable String studentId, Authentication auth) {
         requireAdmin(auth);
@@ -108,7 +112,10 @@ public class StudentAdminController {
         return ResponseEntity.ok(body);
     }
 
-    /** Admin: the student's password goes back to the default (initials + national ID) and must be changed at the next login */
+    /**
+     * Admin: the student's password goes back to the default (initials + national
+     * ID) and must be changed at the next login
+     */
     @PostMapping("/{studentId}/reset-password")
     public ResponseEntity<?> resetPassword(@PathVariable String studentId, Authentication auth) {
         requireAdmin(auth);
@@ -118,8 +125,9 @@ public class StudentAdminController {
         } catch (AccountException e) {
             throw new StudentAdminException(e.getStatus(), e.getMessage());
         }
-        return ResponseEntity.ok(Map.of("message", "รีเซ็ตรหัสผ่านของ " + studentId + " แล้ว รหัสผ่านใหม่คือ " + password
-                + " (ต้องเปลี่ยนเมื่อเข้าสู่ระบบ)", "initialPassword", password));
+        return ResponseEntity
+                .ok(Map.of("message", "รีเซ็ตรหัสผ่านของ " + studentId + " แล้ว รหัสผ่านใหม่คือ " + password
+                        + " (ต้องเปลี่ยนเมื่อเข้าสู่ระบบ)", "initialPassword", password));
     }
 
     @DeleteMapping("/{studentId}")
@@ -132,9 +140,10 @@ public class StudentAdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // ------------------------------------------------------------------ CSV Bulk Import & Export
+    // ------------------------------------------------------------------ CSV Bulk
+    // Import & Export
 
-    @PostMapping(value = "/import-csv", consumes = {"*/*"})
+    @PostMapping(value = "/import-csv", consumes = { "*/*" })
     public ResponseEntity<?> importCsv(
             @RequestBody(required = false) String rawBody,
             @RequestParam(value = "file", required = false) MultipartFile file,
@@ -153,7 +162,7 @@ public class StudentAdminController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping(value = {"/export-csv", "/csv"}, produces = "text/csv; charset=UTF-8")
+    @GetMapping(value = { "/export-csv", "/csv" }, produces = "text/csv; charset=UTF-8")
     public ResponseEntity<byte[]> exportCsv(Authentication auth) throws Exception {
         requireAdmin(auth);
         byte[] csvData = studentCsvService.exportCsv();
