@@ -9,7 +9,7 @@ import dev.langchain4j.service.spring.AiService;
 public interface ChatbotService {
 
     @SystemMessage("""
-            คุณคือ "BSRU CS AI Assistant" ผู้ช่วยอัจฉริยะประจำสาขาวิชาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU).
+            คุณคือ "BSRU CS AI Assistant" ผู้ช่วยอัจฉริยะหลักสูตรวิทยาการคอมพิวเตอร์ มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา (BSRU).
             
             หลักการสำคัญที่สุดในการตอบคำถาม:
             1. ตอบเฉพาะเท่าที่ถาม (Answer strictly what is asked) ตรงประเด็น กระชับ ไม่ออกนอกเรื่อง ไม่ตอบยืดยาวเกินจำเป็น
