@@ -17,7 +17,6 @@ import com.bsru.studentportal.repository.RegistrationPeriodRepository;
 import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import com.bsru.studentportal.service.AdvisorInsightService;
-import com.bsru.studentportal.service.NotificationService;
 import com.bsru.studentportal.service.StudentAdminService;
 import com.bsru.studentportal.service.TimetableService;
 import com.bsru.studentportal.service.TimetableService.Actor;
@@ -86,7 +85,6 @@ public class AcademicPrerequisiteAndAdvisingNotesAdversarialTest {
         @Mock private RegistrationPeriodRepository periodRepository;
         @Mock private StudentRepository studentRepository;
         @Mock private AdvisorRepository advisorRepository;
-        @Mock private NotificationService notificationService;
         @Mock private CourseGradeRepository courseGradeRepository;
 
         private TimetableService timetableService;
@@ -105,7 +103,6 @@ public class AcademicPrerequisiteAndAdvisingNotesAdversarialTest {
                     periodRepository,
                     studentRepository,
                     advisorRepository,
-                    notificationService,
                     courseGradeRepository
             );
 

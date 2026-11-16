@@ -735,7 +735,7 @@ export function initChatbot() {
                 </div>
                 <div>
                     <h4>สวัสดีครับ! 👋 ผมคือ BSRU CS AI Assistant</h4>
-                    <p>ผู้ช่วยอัจฉริยะสาขาวิทยาการคอมพิวเตอร์ BSRU</p>
+                    <p>ผู้ช่วยอัจฉริยะหลักสูตรวิทยาการคอมพิวเตอร์ BSRU</p>
                 </div>
             </div>
             <div class="cw-welcome-body">

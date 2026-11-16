@@ -44,7 +44,6 @@ class StudentSelfRegistrationTest {
     @Mock private RegistrationPeriodRepository periodRepository;
     @Mock private StudentRepository studentRepository;
     @Mock private AdvisorRepository advisorRepository;
-    @Mock private NotificationService notificationService;
 
     private TimetableService service;
     private final String studentId = "6621100042";
@@ -55,7 +54,7 @@ class StudentSelfRegistrationTest {
     @BeforeEach
     void setUp() {
         service = new TimetableService(sectionRepository, enrollmentRepository, periodRepository,
-                studentRepository, advisorRepository, notificationService);
+                studentRepository, advisorRepository);
         Student s = new Student();
         s.setStudentId(studentId);
         s.setNameTh("สมชาย ใจดี");
