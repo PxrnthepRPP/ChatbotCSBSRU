@@ -41,7 +41,7 @@ class KnowledgeControllerAdversarialTest {
     @BeforeEach
     void setUp() {
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6621100042",
+                "6621207042",
                 "password",
                 List.of(new SimpleGrantedAuthority("ROLE_STUDENT"))
         );

@@ -39,7 +39,7 @@ public class ChatInsightsAdminController {
         return chatLogService.people(q);
     }
 
-    /** One person's chats only, e.g. ?key=student:6421100042 */
+    /** One person's chats only, e.g. ?key=student:6421207042 */
     @GetMapping("/people/log")
     public List<ChatLogEntry> personLog(@RequestParam String key) {
         return chatLogService.personLog(key);
@@ -57,7 +57,7 @@ public class ChatInsightsAdminController {
         return chatLogService.accessSettings();
     }
 
-    /** Body: {"personKey": "student:6421100042", "allowed": true | false | null (null = follow the role)} */
+    /** Body: {"personKey": "student:6421207042", "allowed": true | false | null (null = follow the role)} */
     @PutMapping("/access/people")
     public ChatLogService.AccessSettings setPerson(@RequestBody HashMap<String, Object> body) {
         Object allowed = body.get("allowed");

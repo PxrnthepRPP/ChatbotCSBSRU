@@ -298,7 +298,7 @@ function initApp() {
         } else {
             const studentId = state.isImpersonating
                 ? state.impersonatedStudent.studentId
-                : (state.user.studentId || '6621100042');
+                : (state.user.studentId || '6621207042');
             initStudentDashboard(studentId);
         }
 

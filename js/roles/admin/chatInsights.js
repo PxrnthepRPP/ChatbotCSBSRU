@@ -188,7 +188,7 @@ export async function renderChatInsights() {
     container.querySelector('#ciOverrideAdd')?.addEventListener('click', () => {
         const key = container.querySelector('#ciOverrideKey').value.trim();
         const value = container.querySelector('#ciOverrideValue').value === 'true';
-        if (!key) return showToast('error', 'กรุณาใส่ผู้ใช้ เช่น student:6421100042');
+        if (!key) return showToast('error', 'กรุณาใส่ผู้ใช้ เช่น student:6421207042');
         setPersonAccess(key.includes(':') ? key : (/^\d{10}$/.test(key) ? `student:${key}` : `advisor:${key}`), value);
     });
 
@@ -223,7 +223,7 @@ function accessCard(access) {
                         <span>${esc(ROLE_LABEL[role] || role)}</span></label>`).join('')}
             </div>
             <div class="ci-override-add">
-                <input type="text" id="ciOverrideKey" class="ci-input" placeholder="รหัสนักศึกษา / รหัสอาจารย์ เช่น 6421100042 หรือ ADV-01" aria-label="ผู้ใช้ที่จะตั้งสิทธิ์">
+                <input type="text" id="ciOverrideKey" class="ci-input" placeholder="รหัสนักศึกษา / รหัสอาจารย์ เช่น 6421207042 หรือ ADV-01" aria-label="ผู้ใช้ที่จะตั้งสิทธิ์">
                 <select id="ciOverrideValue" class="batch-select" aria-label="สิทธิ์"><option value="true">อนุญาต</option><option value="false">ไม่อนุญาต</option></select>
                 <button type="button" class="btn btn-sm btn-orange" id="ciOverrideAdd">ตั้งสิทธิ์รายคน</button>
             </div>

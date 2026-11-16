@@ -24,8 +24,8 @@ public class StudentCsvPasswordAndRoleTest {
     @Test
     @DisplayName("Password Formula: first letter of first name + first letter of last name (upper case) + student id")
     void testDefaultPassword_englishInitialsPlusStudentId() {
-        assertEquals("SJ6621100042", AccountService.generateDefaultStudentPassword(
-                student("6621100042", "สมชาย ใจดี", "Somchai Jaidee"), "6621100042"));
+        assertEquals("SJ6621207042", AccountService.generateDefaultStudentPassword(
+                student("6621207042", "สมชาย ใจดี", "Somchai Jaidee"), "6621207042"));
         assertEquals("PN6621207044", AccountService.generateDefaultStudentPassword(
                 student("6621207044", "ปิติพัฒน์ นิ่มจินดา", "pitipat nimjinda"), "6621207044"));
     }
@@ -33,9 +33,9 @@ public class StudentCsvPasswordAndRoleTest {
     @Test
     @DisplayName("Password Formula: with a national ID the password is initials + the 13-digit national ID")
     void testDefaultPassword_initialsPlusNationalId() {
-        Student s = student("6621100042", "สมชาย ใจดี", "Somchai Jaidee");
+        Student s = student("6621207042", "สมชาย ใจดี", "Somchai Jaidee");
         s.setNationalId("1101700203450");
-        assertEquals("SJ1101700203450", AccountService.generateDefaultStudentPassword(s, "6621100042"));
+        assertEquals("SJ1101700203450", AccountService.generateDefaultStudentPassword(s, "6621207042"));
     }
 
     @Test
@@ -53,19 +53,19 @@ public class StudentCsvPasswordAndRoleTest {
     @Test
     @DisplayName("Password Formula: titles such as Mr. / Miss / นาย are skipped")
     void testDefaultPassword_skipsTitles() {
-        assertEquals("CC6421100074", AccountService.generateDefaultStudentPassword(
-                student("6421100074", "นายชัยวัฒน์ โค้ดดิ้ง", "Mr. Chaiwat Coding"), "6421100074"));
-        assertEquals("KP6521100088", AccountService.generateDefaultStudentPassword(
-                student("6521100088", "นางสาวกมล พรหมดี", "Miss Kamon Promdee"), "6521100088"));
+        assertEquals("CC6421207074", AccountService.generateDefaultStudentPassword(
+                student("6421207074", "นายชัยวัฒน์ โค้ดดิ้ง", "Mr. Chaiwat Coding"), "6421207074"));
+        assertEquals("KP6521207088", AccountService.generateDefaultStudentPassword(
+                student("6521207088", "นางสาวกมล พรหมดี", "Miss Kamon Promdee"), "6521207088"));
     }
 
     @Test
     @DisplayName("Password Formula: no English name -> Thai initials (title stuck to the name removed)")
     void testDefaultPassword_thaiFallback() {
-        assertEquals("สจ6621100042", AccountService.generateDefaultStudentPassword(
-                student("6621100042", "นายสมชาย ใจดี", "นายสมชาย ใจดี"), "6621100042"));
-        assertEquals("สจ6621100042", AccountService.generateDefaultStudentPassword(
-                student("6621100042", "สมชาย ใจดี", null), "6621100042"));
+        assertEquals("สจ6621207042", AccountService.generateDefaultStudentPassword(
+                student("6621207042", "นายสมชาย ใจดี", "นายสมชาย ใจดี"), "6621207042"));
+        assertEquals("สจ6621207042", AccountService.generateDefaultStudentPassword(
+                student("6621207042", "สมชาย ใจดี", null), "6621207042"));
     }
 
     @Test

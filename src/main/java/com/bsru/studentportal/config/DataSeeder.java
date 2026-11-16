@@ -69,10 +69,10 @@ public class DataSeeder implements CommandLineRunner {
             Advisor adv3 = new Advisor("ADV-03", "ศ.ดร.อนันต์ ยอดเยี่ยม", "Prof. Dr. Anan Yodyeam", "anan.y@bsru.ac.th", "083-456-7890", "สาขาวิทยาการคอมพิวเตอร์");
             List.of(adv1, adv2, adv3).forEach(advisorRepository::save);
 
-            Student s1 = createStudent("6621100042", "นายสมชาย ใจดี", "Mr. Somchai Jaidee", 3, 3.42, "กำลังศึกษา", "Software Engineer", "งานตรงสาย (IT & CS)", "Agoda", "30,000 - 45,000 บาท", adv1);
-            Student s2 = createStudent("6621100015", "นางสาววิภาดา แก้วใส", "Miss Wiphada Kaewsai", 3, 3.82, "กำลังศึกษา", "Data Scientist", "งานตรงสาย (IT & CS)", "SCB TechX", "30,000 - 45,000 บาท", adv2);
-            Student s3 = createStudent("6721100088", "นายกิตติศักดิ์ พรหมดี", "Mr. Kittisak Promdee", 2, 2.95, "กำลังศึกษา", "DevOps Engineer", "งานตรงสาย (IT & CS)", "KBTG", "30,000 - 45,000 บาท", adv1);
-            Student s4 = createStudent("6821100003", "นางสาวกานต์รวี เจริญผล", "Miss Kanrawee Charoenphol", 1, 3.60, "กำลังศึกษา", "AI & ML Specialist", "งานตรงสาย (IT & CS)", "LINE MAN Wongnai", "45,000 - 60,000 บาท", adv3);
+            Student s1 = createStudent("6621207042", "นายสมชาย ใจดี", "Mr. Somchai Jaidee", 3, 3.42, "กำลังศึกษา", "Software Engineer", "งานตรงสาย (IT & CS)", "Agoda", "30,000 - 45,000 บาท", adv1);
+            Student s2 = createStudent("6621207015", "นางสาววิภาดา แก้วใส", "Miss Wiphada Kaewsai", 3, 3.82, "กำลังศึกษา", "Data Scientist", "งานตรงสาย (IT & CS)", "SCB TechX", "30,000 - 45,000 บาท", adv2);
+            Student s3 = createStudent("6721207088", "นายกิตติศักดิ์ พรหมดี", "Mr. Kittisak Promdee", 2, 2.95, "กำลังศึกษา", "DevOps Engineer", "งานตรงสาย (IT & CS)", "KBTG", "30,000 - 45,000 บาท", adv1);
+            Student s4 = createStudent("6821207003", "นางสาวกานต์รวี เจริญผล", "Miss Kanrawee Charoenphol", 1, 3.60, "กำลังศึกษา", "AI & ML Specialist", "งานตรงสาย (IT & CS)", "LINE MAN Wongnai", "45,000 - 60,000 บาท", adv3);
             List.of(s1, s2, s3, s4).forEach(studentRepository::save);
 
             AcademicPetition p1 = new AcademicPetition("PET-2569-001", "คำร้องขอเทียบโอน", "ขอเทียบโอนรายวิชา SC17351", "ขอเทียบโอนรายวิชาจากมหาวิทยาลัยเดิมเนื่องจากมีเนื้อหาครอบคลุม", "transcript_verified.pdf", LocalDateTime.now().minusDays(2), "อนุมัติ", "เอกสารครบถ้วน อนุมัติการเทียบโอน", s1);
@@ -240,11 +240,11 @@ public class DataSeeder implements CommandLineRunner {
     /** Fixed sample profile details (the web page used to make up a new birthday and phone on every visit) */
     private static final Map<String, String[]> SAMPLE_PROFILES = Map.of(
             // studentId -> email (BSRU student mail is <id>@bsru.ac.th), phone, birth date (ISO), religion, address
-            "6621100042", new String[]{"6621100042@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
-            "6621100015", new String[]{"6621100015@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
-            "6721100088", new String[]{"6721100088@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
-            "6821100003", new String[]{"6821100003@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
-            "6721100120", new String[]{"6721100120@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
+            "6621207042", new String[]{"6621207042@bsru.ac.th", "0812345678", "2003-04-07", "พุทธ", "123 ถ.อิสรภาพ แขวงหิรัญรูจี เขตธนบุรี กรุงเทพฯ 10600"},
+            "6621207015", new String[]{"6621207015@bsru.ac.th", "0823456789", "2003-08-15", "พุทธ", "45/12 ถ.จรัญสนิทวงศ์ แขวงบางยี่ขัน เขตบางพลัด กรุงเทพฯ 10700"},
+            "6721207088", new String[]{"6721207088@bsru.ac.th", "0834567890", "2004-01-22", "พุทธ", "88 ถ.เพชรเกษม แขวงบางหว้า เขตภาษีเจริญ กรุงเทพฯ 10160"},
+            "6821207003", new String[]{"6821207003@bsru.ac.th", "0845678901", "2005-06-03", "คริสต์", "9 ซ.วุฒากาศ 12 แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600"},
+            "6721207120", new String[]{"6721207120@bsru.ac.th", "0856789012", "2004-11-30", "พุทธ", "120 ถ.ราชพฤกษ์ แขวงบางจาก เขตภาษีเจริญ กรุงเทพฯ 10160"});
 
     /** Profile fields for students that do not have them yet (faculty, admission year, contact details) */
     private void fillProfileDefaults() {
@@ -269,10 +269,10 @@ public class DataSeeder implements CommandLineRunner {
     /**
      * Fictional sample advisee of ADV-01 whose grades are falling (F / D, GPA 1.38) and who registered a
      * heavy, clashing timetable, so the advisor risk check has a real case to show.
-     * Grades come from graduation/6721100120.json; created once.
+     * Grades come from graduation/6721207120.json; created once.
      */
     private void seedSampleAtRiskStudent() {
-        String id = "6721100120";
+        String id = "6721207120";
         if (studentRepository.existsById(id)) return;
         Advisor advisor = advisorRepository.findById(CurrentUser.DEMO_ADVISOR_ID).orElse(null);
         if (advisor == null) return;
@@ -345,7 +345,7 @@ public class DataSeeder implements CommandLineRunner {
         s.setNameTh(nameTh);
         s.setNameEn(nameEn);
         // Sample data must stay true as the calendar moves: a student still enrolled is in the year
-        // that follows from the batch in their ID (6621100042 → admitted 2566 → year 4 in 2569)
+        // that follows from the batch in their ID (6621207042 → admitted 2566 → year 4 in 2569)
         s.setYear("จบการศึกษา".equals(status) ? year : yearLevelFromId(id, year));
         s.setGpa(gpa);
         s.setStatus(status);

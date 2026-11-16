@@ -90,7 +90,7 @@ export function currentAcademicYearBE(today = new Date()) {
     return today.getFullYear() + 543 - (today.getMonth() < 5 ? 1 : 0);
 }
 
-/** B.E. admission year from the 2-digit batch prefix of a student ID ("6621100042" → 2566) */
+/** B.E. admission year from the 2-digit batch prefix of a student ID ("6621207042" → 2566) */
 export function admissionYearFromId(studentId) {
     const batch = parseInt(String(studentId || '').slice(0, 2), 10);
     return Number.isFinite(batch) ? 2500 + batch : null;

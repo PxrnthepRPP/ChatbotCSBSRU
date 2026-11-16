@@ -9,13 +9,13 @@ import java.util.Optional;
 public final class CurrentUser {
 
     /**
-     * The demo "student" login is student 6621100042 (same mapping as AuthController).
+     * The demo "student" login is student 6621207042 (same mapping as AuthController).
      * APP_DEMO_STUDENT_ID points it at another existing student, e.g. on a database seeded before the IDs moved.
      */
     public static final String DEMO_STUDENT_ID = demoStudentId(System.getenv("APP_DEMO_STUDENT_ID"));
 
     static String demoStudentId(String configured) {
-        return configured != null && configured.trim().matches("\\d{10}") ? configured.trim() : "6621100042";
+        return configured != null && configured.trim().matches("\\d{10}") ? configured.trim() : "6621207042";
     }
 
     private CurrentUser() {}

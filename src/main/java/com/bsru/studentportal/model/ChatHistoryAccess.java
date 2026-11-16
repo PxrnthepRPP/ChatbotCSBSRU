@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 /**
  * Who may look back at their own earlier chats. A row is either a role default
- * ("role:STUDENT") or a per-person override ("person:student:6421100042"); the override wins.
+ * ("role:STUDENT") or a per-person override ("person:student:6421207042"); the override wins.
  * Nobody sees anyone else's chats through this (the admin reads them on the admin page).
  */
 @Entity

@@ -142,7 +142,7 @@ function openAddSimulatedModal() {
     const field = (label, input) => `<div class="modal-field"><label>${label} ${REQ}</label>${input}</div>`;
     const overlay = showAdvisorModal('เพิ่มนักศึกษาจำลอง', `
         <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">ข้อมูลจำลองใช้แสดงในแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบและผลการเรียน · จะอยู่ในความดูแลของคุณ · ช่องที่มี ${REQ} ต้องกรอก</p>
-        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6921100001">')}
+        ${field('รหัสนักศึกษา (10 หลัก)', '<input id="simId" maxlength="10" placeholder="เช่น 6921207001">')}
         ${field('คำนำหน้า', `<select id="simPrefix"><option value="">-- เลือกคำนำหน้า --</option>${NAME_PREFIXES.map(p => `<option value="${p.th}">${p.th} (${p.en})</option>`).join('')}</select>`)}
         ${field('ชื่อ (ไทย)', '<input id="simFirstTh" placeholder="เช่น ทดลอง">')}
         ${field('นามสกุล (ไทย)', '<input id="simLastTh" placeholder="เช่น ใจดี">')}

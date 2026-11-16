@@ -46,7 +46,7 @@ class StudentSelfRegistrationTest {
     @Mock private AdvisorRepository advisorRepository;
 
     private TimetableService service;
-    private final String studentId = "6621100042";
+    private final String studentId = "6621207042";
     private final Actor student = new Actor(Actor.Kind.STUDENT, studentId);
     private final Advisor teacher = new Advisor("ADV-01", "อ.วิชัย", "Wichai", "w@bsru.ac.th", "0", "CS");
     private final List<SectionEnrollment> enrollments = new ArrayList<>();
