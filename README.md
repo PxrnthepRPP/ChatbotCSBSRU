@@ -22,7 +22,6 @@
 | 🤖 [**`AI_SETUP.md`**](AI_SETUP.md) | **ผู้ติดตั้งระบบ / เพื่อนร่วมทีม** | คู่มือตั้งค่า Gemini API Key, โมเดล AI, การนำเข้าฐานความรู้ RAG และข้อมูลทดสอบที่มากับระบบ |
 | 🚀 [**`USER_GUIDE.md`**](docs/USER_GUIDE.md) | **ผู้ใช้งาน / ผู้ทดสอบระบบ (User & Tester)** | ขั้นตอนการติดตั้งอย่างละเอียด, บัญชีทดสอบ (Credentials), คู่มือทดสอบฟังก์ชันทุกเมนู และตารางแก้ปัญหา (Troubleshooting) |
 | 📑 [**`DOCUMENTATION.md`**](docs/DOCUMENTATION.md) | **นักพัฒนา / วิศวกร (Developer & Technical)** | สถาปัตยกรรมเชิงลึก, Spring Security 6 & JWT Lifecycle, LangChain4j RAG Pipeline, REST API Specs และ Database DDL Schema |
-| 📝 [**`WORKLOG.md`**](WORKLOG.md) | **ทีมพัฒนา (Maintainers)** | บันทึกประวัติการพัฒนา การเปลี่ยนแปลงรายรอบ และสถานะล่าสุดของระบบ |
 
 ---
 
@@ -166,7 +165,7 @@ http://localhost/ChatbotCSBSRU/
 - `6621207042` (ปี 4) เป็นบัญชีตัวอย่างหลักของปุ่ม `student` (เปลี่ยนรหัสเป้าหมายได้ผ่าน `APP_DEMO_STUDENT_ID` ใน `.env`) มีผลการเรียน ตารางเรียน และใบตรวจจบครบ ส่วน `6721207120` และ `6621207034` เป็นนักศึกษาตัวอย่างที่มีผลการเรียนเสี่ยงสูง
 - นักศึกษาที่เป็น **ข้อมูลจำลอง** (ป้าย "จำลอง" ในหน้าจัดการนักศึกษา) ใช้แสดงสถิติแดชบอร์ดเท่านั้น ไม่มีบัญชีเข้าสู่ระบบ
 - นักศึกษาที่แอดมินเพิ่มใหม่ (ทีละคนหรือนำเข้า CSV) หรือถูกรีเซ็ตรหัสผ่าน:
-  - **ชื่อผู้ใช้** = รหัสนักศึกษา 10 หลัก (ตัวเลขเท่านั้น)
+  - **ชื่อผู้ใช้** = รหัสนักศึกษา 10 หลัก (รูปแบบ `<YY>21207<NNN>` ตัวเลขเท่านั้น)
   - **รหัสผ่านเริ่มต้น** = อักษรแรกของชื่อ + อักษรแรกของนามสกุล (ภาษาอังกฤษ พิมพ์ใหญ่) ตามด้วยเลขบัตรประชาชน 13 หลัก เช่น `Somchai Jaidee` เลขบัตร `1101700203450` → `SJ1101700203450` (ตอนเข้าครั้งแรกพิมพ์ตัวเล็ก/ใหญ่ได้ ถ้าไม่มีชื่ออังกฤษใช้อักษรไทยแทน)
   - เมื่อเข้าสู่ระบบครั้งแรก ระบบจะบังคับให้ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข โดยไม่บังคับอักขระพิเศษ)
   - แอดมินต้องกรอกเลขบัตรประชาชน 13 หลักที่ถูกต้องตามหลักตรวจสอบเมื่อเพิ่มนักศึกษาจริง (CSV ต้องมีคอลัมน์ `nationalId`) และเลขเต็มถูกซ่อนไว้ ยกเว้นแอดมินกดดูในหน้าแก้ไข
@@ -181,7 +180,6 @@ http://localhost/ChatbotCSBSRU/
 ChatbotCSBSRU/
 ├── README.md                 # หน้านี้: สรุปภาพรวมและ Quick Start
 ├── AI_SETUP.md               # คู่มือตั้งค่า Gemini AI, RAG และข้อมูลทดสอบสำหรับเครื่องอื่น
-├── WORKLOG.md                # บันทึกการทำงานและการอัปเดตระบบแต่ละรอบ
 ├── start-backend.bat         # ดับเบิลคลิกเพื่อเริ่ม Backend (เรียก start-backend.ps1)
 ├── start-backend.ps1         # สคริปต์เริ่ม Backend สำหรับ PowerShell (อ่าน .env อัตโนมัติ)
 ├── .env.example              # ตัวอย่าง Environment Variables (คัดลอกเป็น .env — ไม่ commit)
@@ -192,7 +190,7 @@ ChatbotCSBSRU/
 │
 ├── index.html                # ── Frontend Entry Point
 ├── assets/                   #    รูปภาพและโลโก้
-├── css/                      #    Modular CSS Design System (base/, components/, roles/, theme-dark)
+├── css/                      #    Modular CSS Design System (base/, components/, roles/, theme-dark; รองรับ Responsive & Dark Mode)
 ├── js/                       #    ES6 JavaScript Modules (main, api, auth, utils, components/, roles/)
 │
 ├── src/main/                 # ── Backend: Java 21 & Spring Boot 3 Source Code & Resources
