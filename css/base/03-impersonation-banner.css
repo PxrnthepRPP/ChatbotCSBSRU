@@ -92,7 +92,8 @@ body.impersonating .dashboard {
 
 body.impersonating .sidebar {
     top: var(--imp-banner-h);
-    height: calc(100vh - var(--imp-banner-h))
+    bottom: 0;
+    height: auto;
 }
 
 body.impersonating .topbar {

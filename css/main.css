@@ -8,7 +8,7 @@
    cascade order — do not reorder, and keep new rules in the matching part. */
 @import url("base/01-tokens.css");
 @import url("base/02-reset.css");
-@import url("base/03-impersonation-banner.css");
+@import url("base/03-impersonation-banner.css?v=3.10");
 @import url("base/04-login.css");
 @import url("base/05-app-forms.css");
 @import url("base/06-graduation-audit.css");
@@ -19,6 +19,6 @@
 @import url("base/11-batch-filter.css");
 @import url("base/12-buttons.css");
 @import url("base/13-modal.css?v=3.1");
-@import url("base/14-responsive.css?v=3.8");
+@import url("base/14-responsive.css?v=3.11");
 @import url("base/15-toast.css");
 @import url("base/16-print.css");
