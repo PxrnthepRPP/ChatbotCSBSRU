@@ -65,15 +65,21 @@ function downloadRosterCsv(section, rows) {
     URL.revokeObjectURL(url);
 }
 
-/** Full-screen roster view for a course section */
+/** Section roster modal using the portal's standard modal + app-form-panel theme */
 export function openSectionStudentsModal(section, students) {
     let overlay = document.getElementById('advSectionRosterModal');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'advSectionRosterModal';
-        overlay.className = 'modal-overlay roster-overlay';
+        overlay.className = 'modal-overlay';
         overlay.setAttribute('data-own-escape', '');
         document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && overlay.classList.contains('open')) {
                 overlay.classList.remove('open');
@@ -81,7 +87,7 @@ export function openSectionStudentsModal(section, students) {
             }
         });
     } else {
-        overlay.classList.add('roster-overlay');
+        overlay.className = 'modal-overlay';
     }
 
     const list = Array.isArray(students) ? students : [];
@@ -124,169 +130,71 @@ export function openSectionStudentsModal(section, students) {
         });
     };
 
+    const metaLine = [
+        section.dayName ? `${esc(section.dayName)} ${esc(section.startTime)}–${esc(section.endTime)}` : '',
+        section.room ? `ห้อง ${esc(section.room)}` : '',
+        section.credits ? `${esc(section.credits)} หน่วยกิต` : '',
+        section.instructorName ? esc(section.instructorName) : '',
+    ].filter(Boolean).join(' · ');
+
     overlay.innerHTML = `
-        <div class="roster-shell" style="width:100vw;height:100vh">
-            <!-- ═══ Hero Header ═══ -->
-            <header class="roster-hero">
-                <div class="roster-hero-inner">
-                    <div class="roster-hero-main">
-                        <div class="roster-eyebrow">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            <span>รายชื่อนักศึกษาในกลุ่มเรียน · Class Roster</span>
+        <div class="modal-card" style="max-width:940px;width:94vw;max-height:88vh;overflow:auto">
+            <div class="modal-header">
+                <h3>รายชื่อนักศึกษา ${esc(section.courseCode)} กลุ่ม ${esc(section.sectionNo)} (${esc(section.term)}/${esc(section.academicYear)})</h3>
+                <button type="button" class="modal-close" id="advSectionRosterClose" aria-label="ปิด">✕</button>
+            </div>
+            <div class="modal-body" style="max-height:none">
+                <div class="app-form-panel" style="margin-top:0">
+                    <div class="app-form-header">
+                        <div>
+                            <div class="app-form-title">👥 ${esc(section.courseCode)} ${esc(section.courseName)} · Sec ${esc(section.sectionNo)} · ภาค ${esc(section.term)}/${esc(section.academicYear)}</div>
+                            <div class="app-form-subtitle" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                                <span class="badge badge-blue">ที่นั่ง ${esc(seatSummaryValue)} · ${esc(seatSummarySub)}</span>
+                                <span class="badge badge-green">ยืนยันแล้ว ${confirmedCount} คน</span>
+                                <span class="badge badge-amber">รอยืนยัน ${pendingCount} คน</span>
+                            </div>
                         </div>
-                        <div class="roster-title-row">
-                            <span class="roster-course-code">${esc(section.courseCode)}</span>
-                            <h3 class="roster-course-name">${esc(section.courseName)}</h3>
-                            <span class="roster-sec-pill">กลุ่ม ${esc(section.sectionNo)}</span>
-                        </div>
-                        <div class="roster-meta-list">
-                            <span class="roster-meta-chip">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                ภาคเรียน ${esc(section.term)}/${esc(section.academicYear)}
-                            </span>
-                            <span class="roster-meta-chip">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                ${esc(section.dayName)} ${esc(section.startTime)}–${esc(section.endTime)}
-                            </span>
-                            <span class="roster-meta-chip">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                ห้อง ${esc(section.room || '-')}
-                            </span>
-                            ${section.credits ? `
-                            <span class="roster-meta-chip">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                                ${esc(section.credits)} หน่วยกิต
-                            </span>` : ''}
-                            ${section.instructorName ? `
-                            <span class="roster-meta-chip">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                ${esc(section.instructorName)}
-                            </span>` : ''}
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                            <button type="button" class="btn btn-sm btn-ghost" id="advSectionRosterExport" ${totalCount === 0 ? 'disabled title="ยังไม่มีรายชื่อให้ส่งออก"' : 'title="ส่งออกรายชื่อเป็นไฟล์ CSV (รองรับ Excel)"'} style="padding:4px 10px;font-size:0.8rem">📥 ส่งออก CSV</button>
+                            <button type="button" class="btn btn-sm btn-ghost" id="advSectionRosterClosePanel" style="padding:4px 10px;font-size:0.8rem">✕ ปิด</button>
                         </div>
                     </div>
-                    <div class="roster-hero-actions">
-                        <button type="button" class="roster-btn-export" id="advSectionRosterExport" ${totalCount === 0 ? 'disabled title="ยังไม่มีรายชื่อให้ส่งออก"' : 'title="ส่งออกรายชื่อเป็นไฟล์ CSV (รองรับ Excel)"'}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            ส่งออก CSV
-                        </button>
-                        <button type="button" class="roster-btn-close" id="advSectionRosterClose">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            ปิดหน้าต่าง
-                            <span class="roster-kbd">Esc</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+                    ${metaLine ? `<p style="font-size:0.8rem;color:var(--text-muted);margin:4px 0 10px">${metaLine}</p>` : ''}
 
-            <!-- ═══ Main Content Body ═══ -->
-            <div class="roster-body">
-                <div class="roster-container">
-                    <!-- KPI Summary Strip -->
-                    <div class="roster-kpi-grid">
-                        <div class="roster-kpi-card">
-                            <div class="roster-kpi-icon brand">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10"/><path d="M7 12h6"/></svg>
-                            </div>
-                            <div class="roster-kpi-content">
-                                <div class="roster-kpi-label">จำนวนที่นั่งในกลุ่มเรียน</div>
-                                <div class="roster-kpi-value-row">
-                                    <span class="roster-kpi-value">${esc(seatSummaryValue)}</span>
-                                    <span class="roster-kpi-sub">${esc(seatSummarySub)}</span>
-                                </div>
-                                ${capacity ? `<div class="roster-seat-bar"><div class="roster-seat-fill ${seatFillTone}" style="width:${seatPct}%"></div></div>` : ''}
-                            </div>
+                    <div class="batch-filter-bar" style="margin-bottom:12px;gap:8px;flex-wrap:wrap">
+                        <div class="audit-view-btn-group" role="tablist" aria-label="กรองตามสถานะลงทะเบียน">
+                            <button type="button" class="audit-view-btn active" data-status-tab="ALL">ทั้งหมด (${totalCount})</button>
+                            <button type="button" class="audit-view-btn" data-status-tab="ENROLLED">ยืนยันแล้ว (${confirmedCount})</button>
+                            <button type="button" class="audit-view-btn" data-status-tab="PENDING">รอยืนยัน (${pendingCount})</button>
                         </div>
-
-                        <div class="roster-kpi-card is-clickable is-active" data-kpi-filter="ALL" role="button" tabindex="0" title="คลิกเพื่อแสดงนักศึกษาทั้งหมด">
-                            <div class="roster-kpi-icon blue">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            </div>
-                            <div class="roster-kpi-content">
-                                <div class="roster-kpi-label">นักศึกษาทั้งหมด</div>
-                                <div class="roster-kpi-value-row">
-                                    <span class="roster-kpi-value">${totalCount}</span>
-                                    <span class="roster-kpi-sub">คน</span>
-                                </div>
-                            </div>
+                        ${batches.length > 1 ? `
+                        <select class="batch-select" id="advRosterBatchFilter" aria-label="กรองตามรุ่นรหัสนักศึกษา">
+                            <option value="ALL">ทุกรุ่น (${totalCount})</option>
+                            ${batches.map(b => `<option value="${esc(b)}">รุ่น ${esc(b)}</option>`).join('')}
+                        </select>` : ''}
+                        <div class="toolbar-search" style="flex:1;min-width:200px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="advRosterSearchInput" placeholder="ค้นหารหัสนักศึกษา, ชื่อ-นามสกุล, อีเมล...">
                         </div>
-
-                        <div class="roster-kpi-card is-clickable" data-kpi-filter="ENROLLED" role="button" tabindex="0" title="คลิกเพื่อกรองเฉพาะนักศึกษาที่ยืนยันแล้ว">
-                            <div class="roster-kpi-icon green">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            </div>
-                            <div class="roster-kpi-content">
-                                <div class="roster-kpi-label">ยืนยันการลงทะเบียนแล้ว</div>
-                                <div class="roster-kpi-value-row">
-                                    <span class="roster-kpi-value">${confirmedCount}</span>
-                                    <span class="roster-kpi-sub">คน</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="roster-kpi-card is-clickable" data-kpi-filter="PENDING" role="button" tabindex="0" title="คลิกเพื่อกรองเฉพาะคำขอที่รอยืนยัน">
-                            <div class="roster-kpi-icon amber">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            </div>
-                            <div class="roster-kpi-content">
-                                <div class="roster-kpi-label">รอยืนยันการลงทะเบียน</div>
-                                <div class="roster-kpi-value-row">
-                                    <span class="roster-kpi-value">${pendingCount}</span>
-                                    <span class="roster-kpi-sub">คน</span>
-                                </div>
-                            </div>
+                        <div class="filter-result-count" id="advRosterCountText">
+                            แสดง <strong>${totalCount}</strong> จาก ${totalCount} คน
                         </div>
                     </div>
 
-                    <!-- Filter & Search Toolbar -->
-                    <div class="roster-toolbar">
-                        <div class="roster-toolbar-left">
-                            <div class="roster-seg-group" role="tablist" aria-label="กรองตามสถานะลงทะเบียน">
-                                <button type="button" class="roster-seg-btn active" data-status-tab="ALL">
-                                    ทั้งหมด <span class="roster-seg-count">${totalCount}</span>
-                                </button>
-                                <button type="button" class="roster-seg-btn" data-status-tab="ENROLLED">
-                                    ยืนยันแล้ว <span class="roster-seg-count">${confirmedCount}</span>
-                                </button>
-                                <button type="button" class="roster-seg-btn" data-status-tab="PENDING">
-                                    รอยืนยัน <span class="roster-seg-count">${pendingCount}</span>
-                                </button>
-                            </div>
-                            ${batches.length > 1 ? `
-                            <select class="roster-batch-select" id="advRosterBatchFilter" aria-label="กรองตามรุ่นรหัสนักศึกษา">
-                                <option value="ALL">ทุกรุ่น (${totalCount})</option>
-                                ${batches.map(b => `<option value="${esc(b)}">รุ่น ${esc(b)}</option>`).join('')}
-                            </select>` : ''}
-                        </div>
-
-                        <div class="roster-toolbar-right">
-                            <div class="roster-result-text" id="advRosterCountText">
-                                แสดง <strong>${totalCount}</strong> จาก ${totalCount} คน
-                            </div>
-                            <div class="roster-search-box">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <input type="text" id="advRosterSearchInput" placeholder="ค้นหารหัสนักศึกษา, ชื่อ-นามสกุล, อีเมล...">
-                                <button type="button" class="roster-search-clear" id="advRosterSearchClear" title="ล้างคำค้นหา">✕</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Student Roster Table Card -->
-                    <div class="roster-table-card">
-                        <div class="roster-table-scroll">
-                            <table class="roster-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width:64px;text-align:center">#</th>
-                                        <th style="width:160px">รหัสนักศึกษา</th>
-                                        <th>ชื่อ-นามสกุล</th>
-                                        <th style="width:200px">รุ่น / ชั้นปี</th>
-                                        <th class="hide-mobile" style="width:260px">ช่องทางติดต่อ</th>
-                                        <th style="width:160px">สถานะลงทะเบียน</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="advRosterTableBody"></tbody>
-                            </table>
-                        </div>
+                    <div class="table-wrap" style="margin-bottom:0">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:52px;text-align:center">#</th>
+                                    <th>รหัสนักศึกษา</th>
+                                    <th>ชื่อ-นามสกุล</th>
+                                    <th>รุ่น / ชั้นปี</th>
+                                    <th class="hide-mobile">ช่องทางติดต่อ</th>
+                                    <th>สถานะลงทะเบียน</th>
+                                </tr>
+                            </thead>
+                            <tbody id="advRosterTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -361,46 +269,28 @@ export function openSectionStudentsModal(section, students) {
                 st.studentSection ? `Sec ${esc(st.studentSection)}` : '',
             ].filter(Boolean).join(' · ');
 
-            const emailItem = st.email
-                ? `<a class="roster-contact-item" href="mailto:${esc(st.email)}" title="ส่งอีเมล">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        <span>${esc(st.email)}</span>
-                   </a>`
-                : '';
-            const phoneItem = st.phone
-                ? `<a class="roster-contact-item" href="tel:${esc(st.phone)}" title="โทรศัพท์">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        <span>${esc(st.phone)}</span>
-                   </a>`
-                : '';
-            const contactHtml = (emailItem || phoneItem)
-                ? `<div class="roster-contact-list">${emailItem}${phoneItem}</div>`
-                : '<span style="color:var(--text-muted)">-</span>';
-
             const stBadge = st.status === 'PENDING'
-                ? '<span class="roster-status-pill pending">รอยืนยัน</span>'
-                : '<span class="roster-status-pill enrolled">ยืนยันแล้ว</span>';
+                ? '<span class="badge badge-amber">รอยืนยัน</span>'
+                : '<span class="badge badge-green">ยืนยันแล้ว</span>';
+
+            const contactParts = [
+                st.email ? `<a href="mailto:${esc(st.email)}" style="color:var(--brand-500)">${esc(st.email)}</a>` : '',
+                st.phone ? `<a href="tel:${esc(st.phone)}" style="color:var(--text-muted)">${esc(st.phone)}</a>` : '',
+            ].filter(Boolean).join('<br>');
 
             return `
                 <tr>
-                    <td style="text-align:center"><span class="roster-row-num">${idx + 1}</span></td>
-                    <td><span class="roster-sid-code">${esc(st.studentId || '-')}</span></td>
+                    <td style="text-align:center;color:var(--text-muted)">${idx + 1}</td>
+                    <td><strong>${esc(st.studentId || '-')}</strong></td>
                     <td>
-                        <div class="roster-student-cell">
-                            <div class="roster-avatar">${esc(studentInitial(st))}</div>
-                            <div>
-                                <div class="roster-name-th">${esc(st.nameTh || '-')}</div>
-                                ${st.nameEn ? `<div class="roster-name-en">${esc(st.nameEn)}</div>` : ''}
-                            </div>
-                        </div>
+                        <div>${esc(st.nameTh || '-')}</div>
+                        ${st.nameEn ? `<div style="font-size:0.75rem;color:var(--text-muted)">${esc(st.nameEn)}</div>` : ''}
                     </td>
                     <td>
-                        <div class="roster-cohort-stack">
-                            ${batch ? `<span class="batch-tag batch-${esc(batch)}">รุ่น ${esc(batch)}</span>` : ''}
-                            ${yearSecParts ? `<span class="roster-year-pill">${yearSecParts}</span>` : (!batch ? '<span style="color:var(--text-muted)">-</span>' : '')}
-                        </div>
+                        ${batch ? `<span class="batch-tag batch-${esc(batch)}">รุ่น ${esc(batch)}</span> ` : ''}
+                        ${yearSecParts ? `<span style="font-size:0.8rem;color:var(--text-muted)">${yearSecParts}</span>` : (!batch ? '<span style="color:var(--text-muted)">-</span>' : '')}
                     </td>
-                    <td class="hide-mobile">${contactHtml}</td>
+                    <td class="hide-mobile" style="font-size:0.8rem">${contactParts || '<span style="color:var(--text-muted)">-</span>'}</td>
                     <td>${stBadge}</td>
                 </tr>`;
         }).join('');
@@ -409,6 +299,7 @@ export function openSectionStudentsModal(section, students) {
     renderRows();
 
     overlay.querySelector('#advSectionRosterClose')?.addEventListener('click', closeRoster);
+    overlay.querySelector('#advSectionRosterClosePanel')?.addEventListener('click', closeRoster);
     overlay.querySelector('#advSectionRosterExport')?.addEventListener('click', () => {
         const rowsToExport = getFiltered();
         downloadRosterCsv(section, rowsToExport.length > 0 ? rowsToExport : list);
