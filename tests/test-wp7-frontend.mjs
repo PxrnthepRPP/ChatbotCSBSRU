@@ -147,12 +147,12 @@ check('advisor petitions page (พิจารณาคำร้องนัก�
     assert.ok(!advisorJs.includes('renderAdvisorPetitions'), 'renderAdvisorPetitions must be removed from js/roles/advisor.js');
 });
 
-check('advisor course section roster opens in full-screen modal instead of inline appended div', () => {
+check('advisor course section roster opens in system modal instead of inline appended div', () => {
     const advisorJs = readAdvisorSources();
     assert.ok(!advisorJs.includes('advSectionStudents'), 'Inline appended #advSectionStudents div must be removed');
-    assert.ok(advisorJs.includes('openSectionStudentsModal'), 'Full-screen openSectionStudentsModal must exist');
-    assert.ok(advisorJs.includes('advSectionRosterModal'), 'Full-screen #advSectionRosterModal overlay must exist');
-    assert.ok(advisorJs.includes('100vw') && advisorJs.includes('100vh'), 'Roster modal must use 100vw x 100vh full-screen dimensions');
+    assert.ok(advisorJs.includes('openSectionStudentsModal'), 'openSectionStudentsModal must exist');
+    assert.ok(advisorJs.includes('advSectionRosterModal'), '#advSectionRosterModal overlay must exist');
+    assert.ok(advisorJs.includes('modal-card') && advisorJs.includes('app-form-panel'), 'Roster modal must use system .modal-card and .app-form-panel theme');
 });
 
 const { BSRU_ACTIVITY_CRITERIA } = await import('../js/roles/student/activityView.js');
