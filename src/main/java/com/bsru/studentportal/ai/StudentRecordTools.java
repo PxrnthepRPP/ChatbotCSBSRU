@@ -61,6 +61,7 @@ public class StudentRecordTools {
     private final AcademicRecordService academicRecords;
     private final GraduationAuditService graduationAudits;
     private final TimetableService timetableService;
+    private final com.bsru.studentportal.service.StudentActivityService activityService;
 
     @Tool("ดูข้อมูลประวัติของนักศึกษาที่กำลังคุยอยู่: ชื่อ รหัส ชั้นปี GPA สะสม สถานะ และอาจารย์ที่ปรึกษา")
     public String getMyProfile(@ToolMemoryId String memoryId) {
@@ -286,6 +287,14 @@ public class StudentRecordTools {
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    @Tool("ดูประวัติและสรุปผลการเข้าร่วมกิจกรรมนักศึกษาของตนเองทั้ง 17 ประเภทตามเกณฑ์จริงของ มบส.: จำนวนครั้งที่ทำไป, เกณฑ์ขั้นต่ำของแต่ละหมวด, หมวดที่ผ่านแล้ว, หมวดที่ยังไม่ผ่าน, จำนวนชั่วโมงจิตสาธารณะสะสม, และรายการกิจกรรมทั้งหมดที่นักศึกษาบันทึกไว้")
+    public String getMyActivities(@ToolMemoryId String memoryId) {
+        Optional<String> studentId = studentIdFrom(memoryId);
+        if (studentId.isEmpty())
+            return NOT_A_STUDENT;
+        return activityService.getActivitySummaryForAi(studentId.get());
     }
 
     /**

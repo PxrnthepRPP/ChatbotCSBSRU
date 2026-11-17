@@ -11,6 +11,7 @@ import { showPetitionToast } from './petitionsView.js';
 import {
     DAY_NAMES_TH, bindInstructorPicker, dayOptionsHTML, formField, instructorPickerHTML, loadAdvisors,
     bindCourseCodeInput, isValidCourseCode, readInstructor, setInstructor, timeRangeHTML,
+    bindTimeRangeHalfHour, isHalfHour, snapToHalfHour,
 } from '../../components/courseForm.js';
 
 /* ============================================================
@@ -515,6 +516,7 @@ export function renderTimetable(studentId) {
         const submitBtn = $('ttRegSubmitBtn');
         bindInstructorPicker(form, 'ttReg');
         bindCourseCodeInput($('ttRegCode'));
+        bindTimeRangeHalfHour(form, 'ttReg');
 
         $('ttToggleAddCourse').addEventListener('click', () => {
             cartOpen = panel.style.display === 'none';
@@ -569,8 +571,8 @@ export function renderTimetable(studentId) {
             $('ttRegName').value = c.courseName || '';
             $('ttRegCredits').value = c.credits || 3;
             $('ttRegDay').value = String(c.dayOfWeek ?? 0);
-            $('ttRegStart').value = c.startTime || '';
-            $('ttRegEnd').value = c.endTime || '';
+            $('ttRegStart').value = snapToHalfHour(c.startTime || '');
+            $('ttRegEnd').value = snapToHalfHour(c.endTime || '');
             $('ttRegRoom').value = c.room || '';
             setInstructor(form, 'ttReg', c);
         }
@@ -659,6 +661,16 @@ export function renderTimetable(studentId) {
                 if (!isValidCourseCode(body.courseCode)) {
                     $('ttRegCode').classList.add('is-invalid');
                     showPetitionToast('error', 'รหัสวิชาใส่ได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น เช่น CS3101');
+                    return;
+                }
+                if (!isHalfHour(body.startTime)) {
+                    $('ttRegStart').classList.add('is-invalid');
+                    showPetitionToast('error', 'เวลาเริ่มต้องเป็นชั่วโมงเต็มหรือครึ่งชั่วโมงเท่านั้น (:00 หรือ :30)');
+                    return;
+                }
+                if (!isHalfHour(body.endTime)) {
+                    $('ttRegEnd').classList.add('is-invalid');
+                    showPetitionToast('error', 'เวลาสิ้นสุดต้องเป็นชั่วโมงเต็มหรือครึ่งชั่วโมงเท่านั้น (:00 หรือ :30)');
                     return;
                 }
                 if (body.startTime >= body.endTime) {

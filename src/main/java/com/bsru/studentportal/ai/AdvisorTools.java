@@ -48,6 +48,7 @@ public class AdvisorTools {
 
     private final AdvisorInsightService insights;
     private final AcademicRecordService academicRecords;
+    private final com.bsru.studentportal.service.StudentActivityService activityService;
 
     @Tool("สำหรับอาจารย์ที่ปรึกษา: ภาพรวมนักศึกษาในความดูแลทุกคน พร้อมระดับความเสี่ยง (พ้นสภาพ/รีไทร์, ตก, ต้องถอนรายวิชา, จบช้า) GPA และเหตุผล เรียงจากเสี่ยงมากไปน้อย")
     public String getMyAdviseesRiskOverview(@ToolMemoryId String memoryId) {
@@ -159,6 +160,15 @@ public class AdvisorTools {
             sb.append("- [").append(levelText(f.level())).append("] ").append(f.message()).append(" → ").append(f.suggestion()).append('\n');
         }
         return sb.toString();
+    }
+
+    @Tool("สำหรับอาจารย์ที่ปรึกษา: ดูประวัติและสรุปการเข้าร่วมกิจกรรมนักศึกษา 17 ประเภทตามเกณฑ์จริงของ มบส. ของนักศึกษาคนใดคนหนึ่งในความดูแล: จำนวนครั้งที่ทำไป, เกณฑ์ขั้นต่ำของแต่ละหมวด, หมวดที่ผ่านแล้ว, หมวดที่ยังไม่ผ่าน, จำนวนชั่วโมงจิตสาธารณะสะสม, และรายการกิจกรรมที่บันทึกไว้")
+    public String getStudentActivities(@ToolMemoryId String memoryId,
+                                       @P("รหัสนักศึกษา เช่น 6621100042") String studentId) {
+        Optional<String> advisorId = advisorIdFrom(memoryId);
+        if (advisorId.isEmpty()) return NOT_AN_ADVISOR;
+        if (studentId == null || studentId.isBlank()) return "กรุณาระบุรหัสนักศึกษาที่ต้องการตรวจสอบกิจกรรม";
+        return activityService.getActivitySummaryForAi(studentId.trim());
     }
 
     /** Every course and grade, term by term */

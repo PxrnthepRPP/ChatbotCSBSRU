@@ -3,8 +3,10 @@ import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 import { attachFormDraft } from '../../components/formDraft.js';
+import { isCardCollapsed, renderCardCollapseBtn, bindCardCollapse } from '../../components/collapsibleCard.js';
 import {
     bindCourseCodeInput, bindInstructorPicker, dayOptionsHTML, isValidCourseCode, formField, instructorPickerHTML, loadAdvisors, readInstructor, timeRangeHTML,
+    bindTimeRangeHalfHour, isHalfHour,
 } from '../../components/courseForm.js';
 
 /* ============================================================
@@ -75,6 +77,7 @@ export async function renderAdminSectionsCard({ cached = false } = {}) {
         </tr>`).join('');
 
     const option = (value, label, selected) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`;
+    const collapsed = isCardCollapsed('admin-sections-card');
 
     const editForm = !editing ? '' : `
         <div class="app-form-panel" id="secEditPanel" style="margin-bottom:16px">
@@ -105,32 +108,43 @@ export async function renderAdminSectionsCard({ cached = false } = {}) {
         </div>`;
 
     container.innerHTML = `
-        <div class="card">
-            <div class="card-title">📚 รายวิชาในระบบ <span class="badge badge-blue" style="font-size:0.75rem">${sections.length} กลุ่มเรียน</span></div>
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
-                รายวิชาที่นักศึกษา อาจารย์ หรือผู้ดูแลระบบบันทึกไว้ ใช้ได้ทันทีโดยไม่ต้องอนุมัติ ·
-                ผู้ดูแลระบบแก้ไขข้อมูลให้ถูกต้องได้ (วัน เวลา ห้อง อาจารย์ จะเปลี่ยนในตารางเรียนของนักศึกษาทุกคนในกลุ่มนั้น) ·
-                นักศึกษารุ่นต่อไปจะเห็นวิชาเหล่านี้เป็นตัวเลือกแนะนำตอนลงทะเบียน
-            </p>
-            ${editForm}
-            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
-                <label>ภาคเรียน</label>
-                <select class="batch-select" id="secTermFilter" aria-label="กรองตามภาคเรียน">
-                    ${option('all', 'ทุกภาคเรียน', adminSectionTermFilter)}
-                    ${terms.map(t => option(t, t, adminSectionTermFilter)).join('')}
-                </select>
-                <input type="search" class="app-input" id="secSearch" placeholder="ค้นหารหัส/ชื่อวิชา/อาจารย์" value="${esc(adminSectionSearch)}" style="max-width:260px">
-                <span class="filter-result-count">แสดง ${shown.length} รายการ</span>
+        <div class="card" id="adminSectionsCardInner">
+            <div class="collapsible-card-header ${collapsed ? 'collapsed' : ''}">
+                <div class="card-title-left" data-collapse-target="admin-sections-card" title="คลิกเพื่อย่อ/ขยายเนื้อหา">
+                    <span>📚 รายวิชาในระบบ</span>
+                    <span class="badge badge-blue" style="font-size:0.75rem">${sections.length} กลุ่มเรียน</span>
+                </div>
+                <div class="card-header-actions">
+                    <select class="card-header-select" id="secTermFilterHeader" aria-label="กรองตามภาคเรียน">
+                        ${option('all', `ทุกภาคเรียน (${sections.length})`, adminSectionTermFilter)}
+                        ${terms.map(t => option(t, `ภาค ${t}`, adminSectionTermFilter)).join('')}
+                    </select>
+                    ${renderCardCollapseBtn('admin-sections-card')}
+                </div>
             </div>
-            <div class="table-wrap">
-                <table class="data-table" id="adminSectionsTable">
-                    <thead><tr><th>วิชา</th><th>ภาค</th><th class="hide-mobile">Sec</th><th>วัน-เวลา</th><th class="hide-mobile">ห้อง</th><th class="hide-mobile">อาจารย์</th><th>นักศึกษา</th><th class="hide-mobile">บันทึกโดย</th><th></th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">ไม่มีรายวิชาตามเงื่อนไขที่เลือก</td></tr>'}</tbody>
-                </table>
+            <div class="collapsible-card-body ${collapsed ? 'collapsed' : ''}" id="admin-sections-card-body">
+                <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                    รายวิชาที่นักศึกษา อาจารย์ หรือผู้ดูแลระบบบันทึกไว้ ใช้ได้ทันทีโดยไม่ต้องอนุมัติ ·
+                    ผู้ดูแลระบบแก้ไขข้อมูลให้ถูกต้องได้ (วัน เวลา ห้อง อาจารย์ จะเปลี่ยนในตารางเรียนของนักศึกษาทุกคนในกลุ่มนั้น) ·
+                    นักศึกษารุ่นต่อไปจะเห็นวิชาเหล่านี้เป็นตัวเลือกแนะนำตอนลงทะเบียน
+                </p>
+                ${editForm}
+                <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                    <input type="search" class="app-input" id="secSearch" placeholder="ค้นหารหัส/ชื่อวิชา/อาจารย์" value="${esc(adminSectionSearch)}" style="max-width:260px">
+                    <span class="filter-result-count">แสดง ${shown.length} รายการ</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="adminSectionsTable">
+                        <thead><tr><th>วิชา</th><th>ภาค</th><th class="hide-mobile">Sec</th><th>วัน-เวลา</th><th class="hide-mobile">ห้อง</th><th class="hide-mobile">อาจารย์</th><th>นักศึกษา</th><th class="hide-mobile">บันทึกโดย</th><th></th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted)">ไม่มีรายวิชาตามเงื่อนไขที่เลือก</td></tr>'}</tbody>
+                    </table>
+                </div>
             </div>
         </div>`;
 
-    container.querySelector('#secTermFilter').addEventListener('change', e => {
+    bindCardCollapse(container, 'admin-sections-card');
+
+    container.querySelector('#secTermFilterHeader')?.addEventListener('change', e => {
         adminSectionTermFilter = e.target.value;
         renderAdminSectionsCard({ cached: true });
     });
@@ -149,6 +163,7 @@ export async function renderAdminSectionsCard({ cached = false } = {}) {
         const panel = container.querySelector('#secEditPanel');
         bindInstructorPicker(panel, 'secEdit');
         bindCourseCodeInput(panel.querySelector('#secEditCode'));
+        bindTimeRangeHalfHour(panel, 'secEdit');
         // Unsaved edits survive closing the panel or leaving the page; cleared once saved
         const sectionDraft = attachFormDraft(panel.querySelector('#secEditForm'), `section:edit:${editing.sectionId}`);
         const close = () => { editingSectionId = null; renderAdminSectionsCard({ cached: true }); };
@@ -177,6 +192,10 @@ export async function renderAdminSectionsCard({ cached = false } = {}) {
             }
             if (!isValidCourseCode(body.courseCode)) {
                 showToast('error', 'รหัสวิชาใส่ได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น เช่น CS3101');
+                return;
+            }
+            if (!isHalfHour(body.startTime) || !isHalfHour(body.endTime)) {
+                showToast('error', 'เวลาเรียนต้องเป็นชั่วโมงเต็มหรือครึ่งชั่วโมงเท่านั้น (:00 หรือ :30)');
                 return;
             }
             if (body.startTime >= body.endTime) {

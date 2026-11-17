@@ -7,6 +7,7 @@ import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { openGradeEditor } from '../../components/gradeEditor.js';
 import { apiErrorText } from './shared.js';
+import { isCardCollapsed, renderCardCollapseBtn, bindCardCollapse } from '../../components/collapsibleCard.js';
 
 /* ============================================================
    GRADES: deadline for teachers, release to students (per course, every Sec together)
@@ -60,30 +61,43 @@ export async function renderAdminGradesCard() {
             </tr>`;
     }).join('');
 
+    const collapsed = isCardCollapsed('admin-grades-card');
+
     container.innerHTML = `
-        <div class="card">
-            <div class="card-title">📝 เกรดรายวิชา: วันส่งเกรด และประกาศผล</div>
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
-                อาจารย์ใส่และส่งเกรดได้จนถึงวันส่งของแต่ละวิชา หลังจากนั้นเฉพาะผู้ดูแลระบบแก้ได้ ·
-                ประกาศผลทีละวิชา (ทุก Sec พร้อมกัน) กดประกาศทันทีหรือตั้งวันเวลาล่วงหน้า · นักศึกษาเห็นเกรดและนำไปคิด GPA เมื่อประกาศแล้วเท่านั้น
-            </p>
-            <div class="batch-filter-bar" style="margin-bottom:12px">
-                <label>ภาคเรียน</label>
-                <select class="batch-select" id="gradesTermSelect">${terms.map(t => {
-                    const [y, tm] = t.split('/');
-                    return `<option value="${t}" ${t === adminGradesTerm ? 'selected' : ''}>${tm}/${y}</option>`;
-                }).join('')}</select>
+        <div class="card" id="adminGradesCardInner">
+            <div class="collapsible-card-header ${collapsed ? 'collapsed' : ''}">
+                <div class="card-title-left" data-collapse-target="admin-grades-card" title="คลิกเพื่อย่อ/ขยายเนื้อหา">
+                    <span>📝 เกรดรายวิชา: วันส่งเกรด และประกาศผล</span>
+                    <span class="badge badge-amber" style="font-size:0.75rem">${shown.length} วิชา</span>
+                </div>
+                <div class="card-header-actions">
+                    <select class="card-header-select" id="gradesTermSelectHeader" aria-label="เลือกภาคเรียน">
+                        ${terms.map(t => {
+                            const [y, tm] = t.split('/');
+                            return `<option value="${t}" ${t === adminGradesTerm ? 'selected' : ''}>ภาค ${tm}/${y}</option>`;
+                        }).join('')}
+                    </select>
+                    ${renderCardCollapseBtn('admin-grades-card')}
+                </div>
             </div>
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>วิชา</th><th>Sec · อาจารย์ · สถานะส่ง</th><th>วันส่งเกรด</th><th>ประกาศผล</th><th></th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีรายวิชา</td></tr>'}</tbody>
-                </table>
+            <div class="collapsible-card-body ${collapsed ? 'collapsed' : ''}" id="admin-grades-card-body">
+                <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                    อาจารย์ใส่และส่งเกรดได้จนถึงวันส่งของแต่ละวิชา หลังจากนั้นเฉพาะผู้ดูแลระบบแก้ได้ ·
+                    ประกาศผลทีละวิชา (ทุก Sec พร้อมกัน) กดประกาศทันทีหรือตั้งวันเวลาล่วงหน้า · นักศึกษาเห็นเกรดและนำไปคิด GPA เมื่อประกาศแล้วเท่านั้น
+                </p>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>วิชา</th><th>Sec · อาจารย์ · สถานะส่ง</th><th>วันส่งเกรด</th><th>ประกาศผล</th><th></th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีรายวิชา</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div id="adminGradeEditor"></div>
             </div>
-            <div id="adminGradeEditor"></div>
         </div>`;
 
-    container.querySelector('#gradesTermSelect')?.addEventListener('change', e => {
+    bindCardCollapse(container, 'admin-grades-card');
+
+    container.querySelector('#gradesTermSelectHeader')?.addEventListener('change', e => {
         adminGradesTerm = e.target.value;
         renderAdminGradesCard();
     });
