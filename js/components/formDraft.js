@@ -68,7 +68,7 @@ function apply(fields, values) {
 
 /**
  * Turn on drafts for the form inside `root`. Call it after the form is rendered and its own event
- * handlers are bound. `key` names the form and the record, e.g. "student:add" or "student:edit:6621100042".
+ * handlers are bound. `key` names the form and the record, e.g. "student:add" or "student:edit:6621207042".
  * If a draft exists it is filled back in and a notice with "ล้างฉบับร่าง" is shown at the top of `root`.
  * Returns { clear } — call clear() after the form was saved successfully.
  */

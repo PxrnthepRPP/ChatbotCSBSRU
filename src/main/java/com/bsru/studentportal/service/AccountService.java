@@ -94,7 +94,7 @@ public class AccountService {
 
     /**
      * Exact match, or — for a student still on the default password (upper-case initials + student id) —
-     * the same password with the letters typed in lower or mixed case (sj6621100042, Sj6621100042).
+     * the same password with the letters typed in lower or mixed case (sj6621207042, Sj6621207042).
      */
     private boolean passwordMatches(UserAccount account, String password) {
         if (passwordEncoder.matches(password, account.getPasswordHash())) return true;

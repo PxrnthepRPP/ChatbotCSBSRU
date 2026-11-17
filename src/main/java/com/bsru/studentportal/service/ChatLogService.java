@@ -178,7 +178,7 @@ public class ChatLogService {
     public void setPersonAccess(String personKey, Boolean allowed) {
         String person = personKey(personKey == null ? "" : personKey.trim());
         if (!person.matches("(student|advisor|staff|guest):[A-Za-z0-9._-]{1,64}")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "รูปแบบผู้ใช้ไม่ถูกต้อง เช่น student:6421100042 หรือ advisor:ADV-01");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "รูปแบบผู้ใช้ไม่ถูกต้อง เช่น student:6421207042 หรือ advisor:ADV-01");
         }
         if (allowed == null) accessRepository.deleteById("person:" + person);
         else accessRepository.save(new ChatHistoryAccess("person:" + person, allowed, LocalDateTime.now()));

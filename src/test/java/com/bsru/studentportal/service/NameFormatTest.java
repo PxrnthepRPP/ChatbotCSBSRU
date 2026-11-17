@@ -26,7 +26,7 @@ class NameFormatTest {
     @DisplayName("Student and advisor entities apply it whenever they are saved")
     void entitiesNormaliseOnSave() {
         Student s = new Student();
-        s.setStudentId("6921100001");
+        s.setStudentId("6921207001");
         s.setNameEn("mr. SOMCHAI jaidee");
         s.prePersist();
         assertEquals("Mr. Somchai Jaidee", s.getNameEn());

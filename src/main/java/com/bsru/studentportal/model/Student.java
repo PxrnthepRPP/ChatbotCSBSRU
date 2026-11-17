@@ -124,7 +124,7 @@ public class Student {
 
     /**
      * Auto-derive enrollmentYear / admissionYear from the first 2 digits of studentId (batch) if not set.
-     * e.g. "6621100042" → batch "66" → enrollmentYear = 2566
+     * e.g. "6621207042" → batch "66" → enrollmentYear = 2566
      */
     /** English name in one style however it was typed: "somchai JAIDEE" -> "Somchai Jaidee" */
     @jakarta.persistence.PreUpdate

@@ -65,7 +65,7 @@ class StudentCsvTest {
         adminAuth = new UsernamePasswordAuthenticationToken(
                 "admin", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
         studentAuth = new UsernamePasswordAuthenticationToken(
-                "6621100042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+                "6621207042", "n/a", List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
 
         httpServletRequest = new MockHttpServletRequest();
     }
@@ -74,12 +74,12 @@ class StudentCsvTest {
     @DisplayName("CSV Import: Valid CSV rows import new students and skip existing ones")
     void testImportCsv_validRows_importsNewStudentsAndSkipsDuplicates() throws Exception {
         String csv = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId\n"
-                + "1662110990107,6621109901,สมชาย เรียนดี,Somchai Reandee,somchai@bsru.ac.th,0812345671,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n"
-                + "1662110990204,6621109902,สมหญิง มุ่งมั่น,Somying Mungmun,somying@bsru.ac.th,0812345672,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01";
+                + "1662110990107,6621207901,สมชาย เรียนดี,Somchai Reandee,somchai@bsru.ac.th,0812345671,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01\n"
+                + "1662110990204,6621207902,สมหญิง มุ่งมั่น,Somying Mungmun,somying@bsru.ac.th,0812345672,วิทยาศาสตร์,วิทยาการคอมพิวเตอร์,1,STUDYING,ADV-01";
 
-        // 6621109901 is new, 6621109902 already exists in database
-        when(studentRepository.existsById("6621109901")).thenReturn(false);
-        when(studentRepository.existsById("6621109902")).thenReturn(true);
+        // 6621207901 is new, 6621207902 already exists in database
+        when(studentRepository.existsById("6621207901")).thenReturn(false);
+        when(studentRepository.existsById("6621207902")).thenReturn(true);
         when(advisorRepository.findById("ADV-01")).thenReturn(Optional.of(new Advisor("ADV-01", "อ.วิชัย", "Wichai", null, null, null)));
 
         ResponseEntity<?> response = studentAdminController.importCsv(csv, null, httpServletRequest, adminAuth);
@@ -96,12 +96,12 @@ class StudentCsvTest {
         // Verify new student was saved and account provisioned
         ArgumentCaptor<Student> captor = ArgumentCaptor.forClass(Student.class);
         verify(studentRepository, times(1)).save(captor.capture());
-        assertEquals("6621109901", captor.getValue().getStudentId());
+        assertEquals("6621207901", captor.getValue().getStudentId());
         assertEquals("สมชาย เรียนดี", captor.getValue().getNameTh());
         assertEquals("กำลังศึกษา", captor.getValue().getStatus());
 
-        verify(accountService, times(1)).createStudentAccount("6621109901");
-        verify(accountService, never()).createStudentAccount("6621109902");
+        verify(accountService, times(1)).createStudentAccount("6621207901");
+        verify(accountService, never()).createStudentAccount("6621207902");
     }
 
     @Test
@@ -130,7 +130,7 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: Non-admin caller receives 403 Forbidden")
     void testImportCsv_nonAdmin_throws403Forbidden() {
-        String csv = "nationalId,studentId,nameTh\n1662110990107,6621109901,สมชาย เรียนดี";
+        String csv = "nationalId,studentId,nameTh\n1662110990107,6621207901,สมชาย เรียนดี";
 
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
                 studentAdminController.importCsv(csv, null, httpServletRequest, studentAuth)
@@ -143,9 +143,9 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: UTF-8 BOM is stripped cleanly before parsing")
     void testImportCsv_withUtf8Bom_stripsBomAndImports() throws Exception {
-        String csvWithBom = "\uFEFFnationalId,studentId,nameTh\n1662110990506,6621109905,ทดสอบ บีโอเอ็ม";
+        String csvWithBom = "\uFEFFnationalId,studentId,nameTh\n1662110990506,6621207905,ทดสอบ บีโอเอ็ม";
 
-        when(studentRepository.existsById("6621109905")).thenReturn(false);
+        when(studentRepository.existsById("6621207905")).thenReturn(false);
 
         ResponseEntity<?> response = studentAdminController.importCsv(csvWithBom, null, httpServletRequest, adminAuth);
 
@@ -158,9 +158,9 @@ class StudentCsvTest {
     @Test
     @DisplayName("CSV Import: JSON payload wrapping csvData succeeds")
     void testImportCsv_jsonWrappedData_succeeds() throws Exception {
-        String jsonPayload = "{\"csvData\": \"nationalId,studentId,nameTh\\n1662110990808,6621109908,นายเจสัน ข้อมูล\"}";
+        String jsonPayload = "{\"csvData\": \"nationalId,studentId,nameTh\\n1662110990808,6621207908,นายเจสัน ข้อมูล\"}";
 
-        when(studentRepository.existsById("6621109908")).thenReturn(false);
+        when(studentRepository.existsById("6621207908")).thenReturn(false);
 
         ResponseEntity<?> response = studentAdminController.importCsv(jsonPayload, null, httpServletRequest, adminAuth);
 
@@ -174,7 +174,7 @@ class StudentCsvTest {
     @DisplayName("CSV Export: Produces text/csv with UTF-8 BOM bytes 0xEF, 0xBB, 0xBF")
     void testExportCsv_containsUtf8BomAndHeaders() throws Exception {
         Student s1 = new Student();
-        s1.setStudentId("6621100042");
+        s1.setStudentId("6621207042");
         s1.setNameTh("สมชาย ใจดี");
         s1.setNameEn("Somchai Jaidee");
         s1.setEmail("somchai@bsru.ac.th");
@@ -201,7 +201,7 @@ class StudentCsvTest {
 
         String content = new String(bytes, StandardCharsets.UTF_8);
         assertTrue(content.contains("studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath"));
-        assertTrue(content.contains("6621100042"));
+        assertTrue(content.contains("6621207042"));
         assertTrue(content.contains("สมชาย ใจดี"));
         assertTrue(content.contains("Software Developer"));
     }

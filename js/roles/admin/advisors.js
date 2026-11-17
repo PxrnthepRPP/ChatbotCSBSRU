@@ -17,13 +17,12 @@ export function renderManageAdvisors() {
             <td><strong>${esc(a.id)}</strong></td>
             <td>${esc(a.nameTh)}</td>
             <td class="hide-mobile">${esc(a.email)}</td>
-            <td class="hide-mobile">${esc(a.department)}</td>
             <td style="text-align:center">${a.studentsCount}</td>
             <td style="text-align:center">
-                <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-                    <input type="checkbox" class="advisor-admin-toggle" data-id="${esc(a.id)}" data-idx="${i}" ${a.canAdmin ? 'checked' : ''}>
-                    <span style="font-size:0.75rem" class="${a.canAdmin ? 'badge badge-purple' : 'badge badge-gray'}">${a.canAdmin ? 'มีสิทธิ์แอดมิน' : 'ทั่วไป'}</span>
-                </label>
+                <select class="batch-select advisor-admin-toggle" data-id="${esc(a.id)}" data-idx="${i}" aria-label="สิทธิ์แอดมินของ ${esc(a.nameTh)}" style="min-width:130px;padding:5px 10px;font-size:0.8rem">
+                    <option value="false" ${!a.canAdmin ? 'selected' : ''}>ทั่วไป</option>
+                    <option value="true" ${a.canAdmin ? 'selected' : ''}>มีสิทธิ์แอดมิน</option>
+                </select>
             </td>
             <td>
                 <div class="action-btns">
@@ -42,7 +41,7 @@ export function renderManageAdvisors() {
             </div>
             <div class="table-wrap">
                 <table class="data-table">
-                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th class="hide-mobile">Email</th><th class="hide-mobile">สาขา</th><th style="text-align:center">นศ.ที่ดูแล</th><th style="text-align:center">สิทธิ์แอดมิน</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th class="hide-mobile">Email</th><th style="text-align:center">นศ.ที่ดูแล</th><th style="text-align:center">สิทธิ์แอดมิน</th><th>จัดการ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
@@ -52,17 +51,17 @@ export function renderManageAdvisors() {
     renderCohortAdvisorsCard();
     document.getElementById('addAdvisorBtn').addEventListener('click', () => openAdvisorModal('add'));
     document.querySelectorAll('.edit-advisor-btn').forEach(b => b.addEventListener('click', () => openAdvisorModal('edit', parseInt(b.dataset.idx))));
-    document.querySelectorAll('.advisor-admin-toggle').forEach(chk => chk.addEventListener('change', async () => {
-        const id = chk.dataset.id;
-        const newStatus = chk.checked;
-        const idx = parseInt(chk.dataset.idx);
+    document.querySelectorAll('.advisor-admin-toggle').forEach(sel => sel.addEventListener('change', async () => {
+        const id = sel.dataset.id;
+        const newStatus = sel.value === 'true';
+        const idx = parseInt(sel.dataset.idx);
         try {
             await fetchAPI(`/advisors/${encodeURIComponent(id)}/admin-privilege`, 'PUT', { canAdmin: newStatus }, 8000);
             if (MOCK_ADVISORS[idx]) MOCK_ADVISORS[idx].canAdmin = newStatus;
             showToast('success', newStatus ? `มอบสิทธิ์แอดมินให้อาจารย์ ${esc(MOCK_ADVISORS[idx]?.nameTh || id)} แล้ว` : `ยกเลิกสิทธิ์แอดมินของ ${esc(MOCK_ADVISORS[idx]?.nameTh || id)} แล้ว`);
             renderManageAdvisors();
         } catch (err) {
-            chk.checked = !newStatus;
+            sel.value = String(!newStatus);
             showToast('error', esc(apiErrorText(err)));
         }
     }));
@@ -166,7 +165,6 @@ function openAdvisorModal(mode, idx) {
         <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfNameEn" value="${esc(a.nameEn || '')}"></div>
         <div class="modal-field"><label>Email</label><input id="mfEmail" value="${esc(a.email || '')}"></div>
         <div class="modal-field"><label>โทรศัพท์</label><input id="mfPhone" value="${esc(a.phone || '')}"></div>
-        <div class="modal-field"><label>สาขา</label><input id="mfDept" value="${esc(a.department || 'วิทยาการคอมพิวเตอร์')}"></div>
     `;
     
     const saveBtn = document.getElementById('modalSave');
@@ -180,7 +178,7 @@ function openAdvisorModal(mode, idx) {
             nameEn: titleCaseEn(document.getElementById('mfNameEn').value.trim()),
             email: document.getElementById('mfEmail').value.trim(),
             phone: document.getElementById('mfPhone').value.trim(),
-            department: document.getElementById('mfDept').value.trim(),
+            department: a.department || 'วิทยาการคอมพิวเตอร์',
             studentsCount: a.studentsCount || 0,
         };
         if (!data.id || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');

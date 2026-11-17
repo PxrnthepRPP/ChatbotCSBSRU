@@ -27,7 +27,7 @@ public class GradeEntryController {
         return ResponseEntity.ok(gradeEntryService.sectionGrades(actor(auth), sectionId));
     }
 
-    /** Body: {"grades": {"6421100042": "A", "6521100088": ""}} — "" clears a grade */
+    /** Body: {"grades": {"6421207042": "A", "6521207088": ""}} — "" clears a grade */
     @PutMapping("/sections/{sectionId}/grades")
     public ResponseEntity<?> saveGrades(@PathVariable Long sectionId, @RequestBody Map<String, Map<String, String>> body,
                                         Authentication auth) {

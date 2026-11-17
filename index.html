@@ -17,10 +17,10 @@
 
     <script>
         // Apply the saved theme before the page paints, so dark mode never flashes white
-        try { if (localStorage.getItem('bsru_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
+        try { if (localStorage.getItem('bsru_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) { }
     </script>
-    <link rel="stylesheet" href="css/main.css?v=3.2">
-    <link rel="stylesheet" href="css/theme-dark.css?v=3.2">
+    <link rel="stylesheet" href="css/main.css?v=3.11">
+    <link rel="stylesheet" href="css/theme-dark.css?v=3.11">
     <link rel="stylesheet" href="css/components/notifications.css?v=3.0">
     <!-- Role-specific & component CSS are loaded dynamically by JS -->
     <script>
@@ -39,7 +39,7 @@
             if (sbo) sbo.classList.remove('visible');
         }
         window.toggleMobileSidebar = toggleMobileSidebar;
-        window.closeMobileSidebar = closeMobileSidebar;
+        window.closeMobileSidebar = closeMobilebar;
     </script>
 </head>
 
@@ -79,8 +79,20 @@
             <div class="shape shape-3"></div>
         </div>
         <button type="button" class="login-theme-toggle theme-toggle-link" data-theme-toggle title="สลับธีมสว่าง / มืด">
-            <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-            <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+            </svg>
+            <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
         </button>
         <div class="login-card" id="loginCard">
             <div class="login-header">
@@ -119,11 +131,16 @@
                 <!-- Demo-account shortcuts: shown only when the backend says so (dev profile) -->
                 <div id="demoAccounts" hidden>
                     <div class="role-hints" role="group" aria-label="บัญชีทดลอง">
-                        <button type="button" class="role-hint" data-demo-user="admin"><span class="rh-badge rh-admin">ADMIN</span> <code>admin</code></button>
-                        <button type="button" class="role-hint" data-demo-user="advisor"><span class="rh-badge rh-advisor">ADVISOR</span> <code>advisor</code></button>
-                        <button type="button" class="role-hint" data-demo-user="student"><span class="rh-badge rh-student">STUDENT</span> <code>student</code></button>
+                        <button type="button" class="role-hint" data-demo-user="admin"><span
+                                class="rh-badge rh-admin">ADMIN</span> <code>admin</code></button>
+                        <button type="button" class="role-hint" data-demo-user="advisor"><span
+                                class="rh-badge rh-advisor">ADVISOR</span> <code>advisor</code></button>
+                        <button type="button" class="role-hint" data-demo-user="student"><span
+                                class="rh-badge rh-student">STUDENT</span> <code>student</code></button>
                     </div>
-                    <p class="role-hint-note" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">บัญชีทดลองสำหรับโหมดพัฒนา: กดที่ป้ายเพื่อกรอกให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
+                    <p class="role-hint-note"
+                        style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin:-4px 0 10px">
+                        บัญชีทดลองสำหรับโหมดพัฒนา: กดที่ป้ายเพื่อกรอกให้อัตโนมัติ (รหัสผ่าน <code>password</code>)</p>
                 </div>
 
                 <button type="submit" class="login-btn" id="loginBtn">
@@ -147,7 +164,7 @@
         <!-- ===== SIDEBAR ===== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="ปิดเมนู" onclick="window.closeMobileSidebar(event)">✕</button>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="ปิดเมนู">✕</button>
                 <div class="sidebar-logo">
                     <img src="assets/images/cs-bsru-logo-v2.png" alt="CS BSRU Logo">
                 </div>
@@ -168,8 +185,21 @@
 
             <div class="sidebar-footer">
                 <a href="#" class="nav-link theme-toggle-link" data-theme-toggle title="สลับธีมสว่าง / มืด">
-                    <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                    <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                    </svg>
+                    <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
                     <span class="theme-icon-light">โหมดมืด</span>
                     <span class="theme-icon-dark">โหมดสว่าง</span>
                 </a>
@@ -194,28 +224,32 @@
 
         <!-- Unified Application Topbar -->
         <header class="topbar" id="topbar">
-            <button class="hamburger" id="hamburgerBtn" aria-label="เปิดเมนู" onclick="window.toggleMobileSidebar(event)">
+            <button class="hamburger" id="hamburgerBtn" aria-label="เปิดเมนู">
                 <span></span><span></span><span></span>
             </button>
             <div class="topbar-title" id="topbarTitle" aria-hidden="true">Dashboard</div>
             <div class="topbar-actions">
                 <!-- Notification Center Bell -->
                 <div class="notif-container" id="notifContainer">
-                    <button class="notif-bell-btn" id="notifBellBtn" type="button" aria-label="การแจ้งเตือน" aria-haspopup="true" aria-expanded="false" title="การแจ้งเตือน">
-                        <svg class="notif-bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="notif-bell-btn" id="notifBellBtn" type="button" aria-label="การแจ้งเตือน"
+                        aria-haspopup="true" aria-expanded="false" title="การแจ้งเตือน">
+                        <svg class="notif-bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                         </svg>
                         <span class="notif-badge" id="notifBadge" style="display:none;" aria-live="polite">0</span>
                     </button>
                     <!-- Notification Dropdown -->
-                    <div class="notif-dropdown" id="notifDropdown" style="display:none;" role="region" aria-label="ศูนย์การแจ้งเตือน">
+                    <div class="notif-dropdown" id="notifDropdown" style="display:none;" role="region"
+                        aria-label="ศูนย์การแจ้งเตือน">
                         <div class="notif-dropdown-header">
                             <div class="notif-header-title">
                                 <span>การแจ้งเตือน</span>
                                 <span class="notif-header-unread-count" id="notifHeaderUnreadCount"></span>
                             </div>
-                            <button type="button" class="notif-mark-all-btn notif-read-all-btn" id="notifReadAllBtn" title="ทำเครื่องหมายว่าอ่านทั้งหมด">
+                            <button type="button" class="notif-mark-all-btn notif-read-all-btn" id="notifReadAllBtn"
+                                title="ทำเครื่องหมายว่าอ่านทั้งหมด">
                                 ทำเครื่องหมายอ่านทั้งหมด
                             </button>
                         </div>
@@ -313,7 +347,8 @@
 
             <section class="module" id="mod-advisor-courses" style="display:none;">
                 <div class="module-header">
-                    <h1>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam Announcements</span></h1>
+                    <h1>📚 จัดการรายวิชา & ประกาศสอบ <span class="header-en">Course Management & Exam
+                            Announcements</span></h1>
                 </div>
                 <div id="advisorCoursesContent" class="module-body"></div>
             </section>
@@ -403,30 +438,35 @@
                 <div class="cw-header-actions">
                     <!-- Clear Chat button -->
                     <button class="cw-clear-btn" id="cwClearBtn" title="ล้างประวัติการสนทนา" aria-label="ล้างแชท">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
                             <line x1="10" y1="11" x2="10" y2="17"></line>
                             <line x1="14" y1="11" x2="14" y2="17"></line>
                         </svg>
                     </button>
                     <!-- Expand / Collapse button -->
                     <button class="cw-expand-btn" id="cwExpandBtn" title="ขยายหน้าต่าง" aria-label="ขยายหน้าต่าง">
-                        <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 3 21 3 21 9"/>
-                            <polyline points="9 21 3 21 3 15"/>
-                            <line x1="21" y1="3" x2="14" y2="10"/>
-                            <line x1="3" y1="21" x2="10" y2="14"/>
+                        <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 3 21 3 21 9" />
+                            <polyline points="9 21 3 21 3 15" />
+                            <line x1="21" y1="3" x2="14" y2="10" />
+                            <line x1="3" y1="21" x2="10" y2="14" />
                         </svg>
-                        <svg class="icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="4 14 10 14 10 20"/>
-                            <polyline points="20 10 14 10 14 4"/>
-                            <line x1="10" y1="14" x2="3" y2="21"/>
-                            <line x1="21" y1="3" x2="14" y2="10"/>
+                        <svg class="icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4 14 10 14 10 20" />
+                            <polyline points="20 10 14 10 14 4" />
+                            <line x1="10" y1="14" x2="3" y2="21" />
+                            <line x1="21" y1="3" x2="14" y2="10" />
                         </svg>
                     </button>
                     <button class="cw-close-btn" id="cwCloseBtn" title="ปิดหน้าต่างแชท" aria-label="ปิดแชท">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>

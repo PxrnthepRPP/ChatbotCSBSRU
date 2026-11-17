@@ -138,12 +138,12 @@ class RbacSecurityIntegrationTest {
         otherAdvisor.setNameTh("อาจารย์ท่านอื่น");
 
         demoStudent = new Student();
-        demoStudent.setStudentId("6621100042");
+        demoStudent.setStudentId("6621207042");
         demoStudent.setNameTh("สมชาย นักศึกษา");
         demoStudent.setAdvisor(demoAdvisor);
 
         otherStudent = new Student();
-        otherStudent.setStudentId("6621100099");
+        otherStudent.setStudentId("6621207099");
         otherStudent.setNameTh("สมศรี นักศึกษาอื่น");
         otherStudent.setAdvisor(otherAdvisor);
     }
@@ -282,7 +282,7 @@ class RbacSecurityIntegrationTest {
         @Test
         @DisplayName("Student caller GET /api/petitions returns HTTP 200 with own advisee list only")
         void student_PetitionsList_Returns200() throws Exception {
-            when(petitionRepository.findByStudentStudentIdOrderBySubmittedAtDesc("6621100042"))
+            when(petitionRepository.findByStudentStudentIdOrderBySubmittedAtDesc("6621207042"))
                     .thenReturn(Collections.emptyList());
 
             mockMvc.perform(get("/api/petitions")
@@ -293,7 +293,7 @@ class RbacSecurityIntegrationTest {
         @Test
         @DisplayName("Student submitting petition for own studentId succeeds with HTTP 201 Created")
         void student_SubmitPetitionForOwnId_Returns201() throws Exception {
-            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(demoStudent));
+            when(studentRepository.findById("6621207042")).thenReturn(Optional.of(demoStudent));
             when(petitionRepository.findPetitionIdsStartingWith(anyString())).thenReturn(Collections.emptyList());
 
             AcademicPetition saved = new AcademicPetition();
@@ -304,7 +304,7 @@ class RbacSecurityIntegrationTest {
             when(petitionRepository.save(any(AcademicPetition.class))).thenReturn(saved);
 
             PetitionRequest req = new PetitionRequest();
-            req.setStudentId("6621100042");
+            req.setStudentId("6621207042");
             req.setTitle("คำร้องขอลงทะเบียนล่าช้า");
             req.setType("REGISTRATION");
 
@@ -320,7 +320,7 @@ class RbacSecurityIntegrationTest {
         @DisplayName("Student submitting petition with other studentId (spoofing) returns HTTP 403 Forbidden")
         void student_SubmitPetitionForOtherId_Returns403() throws Exception {
             PetitionRequest req = new PetitionRequest();
-            req.setStudentId("6621100099"); // Spoofed ID (caller is 6621100042)
+            req.setStudentId("6621207099"); // Spoofed ID (caller is 6621207042)
             req.setTitle("คำร้องขอแก้เกรด");
             req.setType("GRADE_CHANGE");
 
@@ -435,7 +435,7 @@ class RbacSecurityIntegrationTest {
         void student_UploadAttachmentToOtherStudentPetition_Returns403() throws Exception {
             AcademicPetition petition = new AcademicPetition();
             petition.setId("PET-2569-099");
-            petition.setStudent(otherStudent); // Owned by 6621100099
+            petition.setStudent(otherStudent); // Owned by 6621207099
             when(petitionRepository.findById("PET-2569-099")).thenReturn(Optional.of(petition));
 
             MockMultipartFile file = new MockMultipartFile(
@@ -444,7 +444,7 @@ class RbacSecurityIntegrationTest {
 
             mockMvc.perform(multipart("/api/petitions/PET-2569-099/attachment")
                             .file(file)
-                            .header("Authorization", "Bearer " + studentToken)) // Caller is 6621100042
+                            .header("Authorization", "Bearer " + studentToken)) // Caller is 6621207042
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("ไม่อนุญาตให้อัปโหลดไฟล์แนบสำหรับคำร้องของผู้อื่น")));
         }
@@ -460,26 +460,26 @@ class RbacSecurityIntegrationTest {
         @Test
         @DisplayName("Unauthenticated request to GET /api/students/{id} returns HTTP 401 Unauthorized")
         void unauthenticated_StudentProfile_Returns401() throws Exception {
-            mockMvc.perform(get("/api/students/6621100042"))
+            mockMvc.perform(get("/api/students/6621207042"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("Student viewing own profile returns HTTP 200 OK")
         void student_ViewOwnProfile_Returns200() throws Exception {
-            when(studentRepository.findById("6621100042")).thenReturn(Optional.of(demoStudent));
+            when(studentRepository.findById("6621207042")).thenReturn(Optional.of(demoStudent));
 
-            mockMvc.perform(get("/api/students/6621100042")
+            mockMvc.perform(get("/api/students/6621207042")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.studentId").value("6621100042"));
+                    .andExpect(jsonPath("$.studentId").value("6621207042"));
         }
 
         @Test
         @DisplayName("Student viewing another student's profile returns HTTP 403 Forbidden")
         void student_ViewOtherProfile_Returns403() throws Exception {
-            mockMvc.perform(get("/api/students/6621100099")
-                            .header("Authorization", "Bearer " + studentToken)) // Caller is 6621100042
+            mockMvc.perform(get("/api/students/6621207099")
+                            .header("Authorization", "Bearer " + studentToken)) // Caller is 6621207042
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("Students can only view their own profile")));
         }
@@ -488,20 +488,20 @@ class RbacSecurityIntegrationTest {
         @DisplayName("Student viewing own grades returns HTTP 200 OK")
         void student_ViewOwnGrades_Returns200() throws Exception {
             AcademicRecordService.GradeReport report = new AcademicRecordService.GradeReport(
-                    "6621100042", Collections.emptyList(), 0, null
+                    "6621207042", Collections.emptyList(), 0, null
             );
-            when(academicRecordService.gradesOf("6621100042")).thenReturn(report);
+            when(academicRecordService.gradesOf("6621207042")).thenReturn(report);
 
-            mockMvc.perform(get("/api/students/6621100042/grades")
+            mockMvc.perform(get("/api/students/6621207042/grades")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.studentId").value("6621100042"));
+                    .andExpect(jsonPath("$.studentId").value("6621207042"));
         }
 
         @Test
         @DisplayName("Student viewing another student's grades returns HTTP 403 Forbidden")
         void student_ViewOtherGrades_Returns403() throws Exception {
-            mockMvc.perform(get("/api/students/6621100099/grades")
+            mockMvc.perform(get("/api/students/6621207099/grades")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("Students can only view their own grades")));
@@ -512,21 +512,21 @@ class RbacSecurityIntegrationTest {
         void student_ViewOwnGraduationAudit_Returns200() throws Exception {
             ObjectMapper om = new ObjectMapper();
             GraduationAuditService.AuditResult auditResult = new GraduationAuditService.AuditResult(
-                    om.readTree("{\"studentId\":\"6621100042\",\"summary\":{}}"),
+                    om.readTree("{\"studentId\":\"6621207042\",\"summary\":{}}"),
                     Collections.emptyList()
             );
-            when(graduationAuditService.auditOf("6621100042")).thenReturn(Optional.of(auditResult));
+            when(graduationAuditService.auditOf("6621207042")).thenReturn(Optional.of(auditResult));
 
-            mockMvc.perform(get("/api/students/6621100042/graduation-audit")
+            mockMvc.perform(get("/api/students/6621207042/graduation-audit")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.studentId").value("6621100042"));
+                    .andExpect(jsonPath("$.studentId").value("6621207042"));
         }
 
         @Test
         @DisplayName("Student viewing another student's graduation audit returns HTTP 403 Forbidden")
         void student_ViewOtherGraduationAudit_Returns403() throws Exception {
-            mockMvc.perform(get("/api/students/6621100099/graduation-audit")
+            mockMvc.perform(get("/api/students/6621207099/graduation-audit")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("Students can only view their own graduation audit")));
@@ -564,7 +564,7 @@ class RbacSecurityIntegrationTest {
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + studentToken)
                             .contentType("text/csv")
-                            .content("nationalId,studentId,nameTh\n1662110000107,6621100001,Test"))
+                            .content("nationalId,studentId,nameTh\n1662110000107,6621207001,Test"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("เฉพาะผู้ดูแลระบบเท่านั้น")));
         }
@@ -595,7 +595,7 @@ class RbacSecurityIntegrationTest {
             when(studentRepository.save(any(Student.class))).thenAnswer(i -> i.getArgument(0));
 
             String csvContent = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
-                    "1662110000107,6621100001,ทดสอบ ระบบ,Test System,test@bsru.ac.th,0812345678,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
+                    "1662110000107,6621207001,ทดสอบ ระบบ,Test System,test@bsru.ac.th,0812345678,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
 
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + adminToken)
@@ -631,7 +631,7 @@ class RbacSecurityIntegrationTest {
             when(studentRepository.save(any(Student.class))).thenAnswer(i -> i.getArgument(0));
 
             String csvContent = "nationalId,studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n" +
-                    "1662110000204,6621100002,ทดสอบ ผ่านอาจารย์แอดมิน,Test Admin Advisor,test2@bsru.ac.th,0812345679,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
+                    "1662110000204,6621207002,ทดสอบ ผ่านอาจารย์แอดมิน,Test Admin Advisor,test2@bsru.ac.th,0812345679,วิทยาศาสตร์และเทคโนโลยี,วิทยาการคอมพิวเตอร์,1,กำลังศึกษา,ADV-01,3.50,Software Engineer";
 
             mockMvc.perform(post("/api/students/import-csv")
                             .header("Authorization", "Bearer " + advisorWithAdminToken)
@@ -650,7 +650,7 @@ class RbacSecurityIntegrationTest {
             mockMvc.perform(post("/api/students")
                             .header("Authorization", "Bearer " + advisorWithAdminToken)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"studentId\":\"6621100042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
+                            .content("{\"studentId\":\"6621207042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
                     .andExpect(status().isCreated());
         }
 
@@ -660,7 +660,7 @@ class RbacSecurityIntegrationTest {
             mockMvc.perform(post("/api/students")
                             .header("Authorization", "Bearer " + advisorToken)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"studentId\":\"6621100042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
+                            .content("{\"studentId\":\"6621207042\",\"nameTh\":\"สมชาย นักศึกษา\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.error", containsString("เฉพาะผู้ดูแลระบบเท่านั้น")));
         }

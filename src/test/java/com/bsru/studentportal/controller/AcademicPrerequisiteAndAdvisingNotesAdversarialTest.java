@@ -89,7 +89,7 @@ public class AcademicPrerequisiteAndAdvisingNotesAdversarialTest {
 
         private TimetableService timetableService;
 
-        private final String studentId = "6621100042";
+        private final String studentId = "6621207042";
         private final Actor studentActor = new Actor(Actor.Kind.STUDENT, studentId);
         private Student student;
         private Advisor advisor;
@@ -368,8 +368,8 @@ public class AcademicPrerequisiteAndAdvisingNotesAdversarialTest {
 
         private AdvisorController advisorController;
 
-        private final String adviseeId = "6621100042";
-        private final String otherStudentId = "6621100099";
+        private final String adviseeId = "6621207042";
+        private final String otherStudentId = "6621207099";
         private final String advisorId = "ADV-01";
         private final String otherAdvisorId = "ADV-02";
 
