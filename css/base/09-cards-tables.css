@@ -261,3 +261,120 @@
     background: linear-gradient(90deg, var(--red-500), #f87171)
 }
 
+/* ============================================================
+   COLLAPSIBLE CARD HEADERS & HEADER DROPDOWNS
+   ============================================================ */
+.collapsible-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding-bottom: 4px;
+    transition: margin-bottom var(--t-fast);
+}
+
+.collapsible-card-header.collapsed {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.card-title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--g-800);
+    cursor: pointer;
+    user-select: none;
+    transition: color var(--t-fast);
+}
+
+.card-title-left:hover {
+    color: var(--brand-600);
+}
+
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.card-header-select {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--g-200);
+    background: var(--bg-card);
+    color: var(--g-800);
+    cursor: pointer;
+    outline: none;
+    transition: all var(--t-fast);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.card-header-select:hover {
+    border-color: var(--brand-400);
+    background: var(--g-50);
+}
+
+.card-header-select:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px rgba(42, 94, 168, 0.15);
+}
+
+.card-collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid var(--g-200);
+    background: var(--bg-card);
+    color: var(--g-700);
+    cursor: pointer;
+    transition: all var(--t-fast);
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.card-collapse-btn:hover {
+    background: var(--g-100);
+    color: var(--brand-600);
+    border-color: var(--brand-400);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.card-collapse-btn .collapse-chevron {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.25s ease;
+}
+
+.card-collapse-btn.is-collapsed .collapse-chevron {
+    transform: rotate(-90deg);
+}
+
+.card-collapse-btn.is-collapsed {
+    background: var(--brand-50, #eff6ff);
+    color: var(--brand-600);
+    border-color: var(--brand-300);
+}
+
+.collapsible-card-body {
+    transition: all 0.25s ease;
+}
+
+.collapsible-card-body.collapsed {
+    display: none !important;
+}
+
+

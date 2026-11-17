@@ -3,6 +3,7 @@ import { esc, showToast } from '../../utils.js';
 import { fetchAPI } from '../../api.js';
 import { apiErrorText, fetchCached, fetchFresh } from './shared.js';
 import { renderAdminSectionsCard } from './sections.js';
+import { isCardCollapsed, renderCardCollapseBtn, bindCardCollapse } from '../../components/collapsibleCard.js';
 
 /* ============================================================
    REGISTRATION LOG — students register courses themselves and the
@@ -52,36 +53,46 @@ export async function renderRegistrationLogCard({ cached = false } = {}) {
         </tr>`).join('');
 
     const option = (value, label) => `<option value="${value}" ${logTermFilter === value ? 'selected' : ''}>${label}</option>`;
+    const collapsed = isCardCollapsed('admin-reg-log-card');
 
     container.innerHTML = `
-        <div class="card">
-            <div class="card-title">📝 บันทึกการลงทะเบียนเรียน
-                <span class="badge badge-green" style="font-size:0.75rem">${records.length} รายการ</span>
+        <div class="card" id="adminRegLogCard">
+            <div class="collapsible-card-header ${collapsed ? 'collapsed' : ''}">
+                <div class="card-title-left" data-collapse-target="admin-reg-log-card" title="คลิกเพื่อย่อ/ขยายเนื้อหา">
+                    <span>📝 บันทึกการลงทะเบียนเรียน</span>
+                    <span class="badge badge-green" style="font-size:0.75rem">${records.length} รายการ</span>
+                </div>
+                <div class="card-header-actions">
+                    <select class="card-header-select" id="logTermFilterHeader" aria-label="กรองภาคเรียน">
+                        ${option('all', `ทุกภาคเรียน (${records.length})`)}
+                        ${terms.map(t => option(t, `ภาค ${t}`)).join('')}
+                    </select>
+                    ${renderCardCollapseBtn('admin-reg-log-card')}
+                </div>
             </div>
-            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
-                นักศึกษาลงทะเบียนเองและบันทึกลงตารางเรียนทันที ไม่ต้องกดยืนยัน · ผู้ดูแลระบบดูประวัติได้ที่นี่
-                และถอนรายการที่ลงผิดได้ · ถ้าข้อมูลวิชาไม่ถูกต้อง แก้ได้ที่การ์ด "รายวิชาในระบบ" ด้านล่าง
-            </p>
-            <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
-                <label>ภาคเรียน</label>
-                <select class="batch-select" id="logTermFilter" aria-label="กรองตามภาคเรียน">
-                    ${option('all', 'ทุกภาคเรียน')}
-                    ${terms.map(t => option(t, t)).join('')}
-                </select>
-                <input type="search" class="app-input" id="logSearch" placeholder="ค้นหารหัส/ชื่อนักศึกษา หรือวิชา" value="${esc(logSearch)}" style="max-width:260px">
-                <span class="filter-result-count">${filtered.length} รายการ · ${students} คน</span>
-                <button type="button" class="btn btn-sm btn-ghost" id="logExport" ${filtered.length ? '' : 'disabled'}>⬇️ ดาวน์โหลด CSV</button>
+            <div class="collapsible-card-body ${collapsed ? 'collapsed' : ''}" id="admin-reg-log-card-body">
+                <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+                    นักศึกษาลงทะเบียนเองและบันทึกลงตารางเรียนทันที ไม่ต้องกดยืนยัน · ผู้ดูแลระบบดูประวัติได้ที่นี่
+                    และถอนรายการที่ลงผิดได้ · ถ้าข้อมูลวิชาไม่ถูกต้อง แก้ได้ที่การ์ด "รายวิชาในระบบ" ด้านล่าง
+                </p>
+                <div class="batch-filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                    <input type="search" class="app-input" id="logSearch" placeholder="ค้นหารหัส/ชื่อนักศึกษา หรือวิชา" value="${esc(logSearch)}" style="max-width:260px">
+                    <span class="filter-result-count">${filtered.length} รายการ · ${students} คน</span>
+                    <button type="button" class="btn btn-sm btn-ghost" id="logExport" ${filtered.length ? '' : 'disabled'}>⬇️ ดาวน์โหลด CSV</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>ลงทะเบียนเมื่อ</th><th>นักศึกษา</th><th>วิชา</th><th>ภาค · Sec</th><th class="hide-mobile">วัน-เวลา</th><th class="hide-mobile">อาจารย์</th><th class="hide-mobile">ห้อง</th><th></th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">ยังไม่มีการลงทะเบียนตามเงื่อนไขที่เลือก</td></tr>'}</tbody>
+                    </table>
+                </div>
+                ${filtered.length > logShown ? `<div style="text-align:center;margin-top:10px"><button type="button" class="btn btn-sm btn-ghost" id="logMore">แสดงเพิ่ม (${filtered.length - logShown} รายการ)</button></div>` : ''}
             </div>
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>ลงทะเบียนเมื่อ</th><th>นักศึกษา</th><th>วิชา</th><th>ภาค · Sec</th><th class="hide-mobile">วัน-เวลา</th><th class="hide-mobile">อาจารย์</th><th class="hide-mobile">ห้อง</th><th></th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">ยังไม่มีการลงทะเบียนตามเงื่อนไขที่เลือก</td></tr>'}</tbody>
-                </table>
-            </div>
-            ${filtered.length > logShown ? `<div style="text-align:center;margin-top:10px"><button type="button" class="btn btn-sm btn-ghost" id="logMore">แสดงเพิ่ม (${filtered.length - logShown} รายการ)</button></div>` : ''}
         </div>`;
 
-    container.querySelector('#logTermFilter').addEventListener('change', e => {
+    bindCardCollapse(container, 'admin-reg-log-card');
+
+    container.querySelector('#logTermFilterHeader')?.addEventListener('change', e => {
         logTermFilter = e.target.value;
         logShown = PAGE_SIZE;
         renderRegistrationLogCard({ cached: true });

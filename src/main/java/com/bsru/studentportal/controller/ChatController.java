@@ -467,6 +467,15 @@ public class ChatController {
                 } catch (Exception ignored) {}
             }
 
+            if (q.contains("กิจกรรม") || q.contains("จิตสาธารณะ") || q.contains("ชั่วโมง") || q.contains("ชมรม") || q.contains("ปัจฉิม") || q.contains("วันพิราลัย")) {
+                try {
+                    String actSummary = studentRecordTools.getMyActivities(contextSessionId);
+                    if (actSummary != null && !actSummary.isBlank()) {
+                        sb.append("--- ข้อมูลประวัติและสรุปการเข้าร่วมกิจกรรมจริงของนักศึกษา ---\n").append(actSummary).append("\n");
+                    }
+                } catch (Exception ignored) {}
+            }
+
             if (q.contains("ตาราง") || q.contains("เรียน") || q.contains("วัน") || q.contains("เวลา") || q.contains("ห้อง") || q.contains("ลงทะเบียน") || q.contains("ชน")) {
                 try {
                     String timetable = studentRecordTools.getMyTimetable(contextSessionId);
@@ -652,7 +661,15 @@ public class ChatController {
             return "คุณสามารถตรวจสอบผลการเรียนรายภาคเรียนและเกรดเฉลี่ยสะสม (GPA) ได้ที่เมนู **'ผลการเรียน'** โดยระบบจะแสดงรายการวิชาที่ผ่าน หน่วยกิตสะสม และกราฟแนวโน้มผลการเรียนครับ";
         } else if (q.contains("ตารางเรียน") || q.contains("ตารางสอบ") || q.contains("schedule")) {
             return "ตารางเรียนและตารางสอบภาคเรียนปัจจุบัน สามารถดูได้ที่เมนู **'ตารางเรียน'** ในรูปแบบ Matrix Grid รายสัปดาห์ พร้อมทั้งสามารถเพิ่ม/ลบรายวิชาได้ครับ";
-        } else if (q.contains("กิจกรรม") || q.contains("ปัจฉิม") || q.contains("จิตสาธารณะ") || q.contains("วันพิราลัย")) {
+        } else if (q.contains("กิจกรรม") || q.contains("ปัจฉิม") || q.contains("จิตสาธารณะ") || q.contains("วันพิราลัย") || q.contains("ชั่วโมง")) {
+            if (contextSessionId != null && contextSessionId.startsWith(StudentRecordTools.STUDENT_MEMORY_PREFIX)) {
+                try {
+                    String actSummary = studentRecordTools.getMyActivities(contextSessionId);
+                    if (actSummary != null && !actSummary.isBlank()) {
+                        return actSummary + "\n\n" + BSRU_ACTIVITY_CRITERIA_TEXT;
+                    }
+                } catch (Exception ignored) {}
+            }
             return BSRU_ACTIVITY_CRITERIA_TEXT;
         } else if (q.contains("อาจารย์") || q.contains("ที่ปรึกษา") || q.contains("advisor")) {
             return "อาจารย์ประจำสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีรายนามดังนี้ครับ:\n- ผศ.ดร.วิชัย เทคโนโลยี (หัวหน้าสาขา/อาจารย์ที่ปรึกษา)\n- อ.สุภา โปรแกรม\n- ผศ.มานะ ดาต้า\n- ผศ.ดร.ณัฐ เน็ตเวิร์ค\n- อ.พิมพ์ เว็บเทค\nสามารถดูข้อมูลการติดต่อได้ที่หน้าประวัตินักศึกษาหรือหน้าผู้ดูแลระบบครับ";
