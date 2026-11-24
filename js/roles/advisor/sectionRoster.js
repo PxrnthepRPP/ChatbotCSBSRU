@@ -215,6 +215,14 @@ export function openSectionStudentsModal(section, students) {
         syncFilterUi();
         const filtered = getFiltered();
 
+        const exportBtn = overlay.querySelector('#advSectionRosterExport');
+        if (exportBtn) {
+            exportBtn.disabled = filtered.length === 0;
+            exportBtn.title = filtered.length === 0
+                ? 'ไม่มีรายชื่อตามเงื่อนไขที่กรองให้ส่งออก'
+                : `ส่งออกรายชื่อตามที่กรอง (${filtered.length} คน) เป็นไฟล์ CSV (รองรับ Excel)`;
+        }
+
         const countEl = overlay.querySelector('#advRosterCountText');
         if (countEl) {
             countEl.innerHTML = `แสดง <strong>${filtered.length}</strong> จาก ${totalCount} คน`;
@@ -302,7 +310,8 @@ export function openSectionStudentsModal(section, students) {
     overlay.querySelector('#advSectionRosterClosePanel')?.addEventListener('click', closeRoster);
     overlay.querySelector('#advSectionRosterExport')?.addEventListener('click', () => {
         const rowsToExport = getFiltered();
-        downloadRosterCsv(section, rowsToExport.length > 0 ? rowsToExport : list);
+        if (rowsToExport.length === 0) return;
+        downloadRosterCsv(section, rowsToExport);
     });
 
     overlay.querySelectorAll('[data-status-tab]').forEach(btn => {

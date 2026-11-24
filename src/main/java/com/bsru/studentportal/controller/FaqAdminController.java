@@ -59,12 +59,18 @@ public class FaqAdminController {
                 "score", Math.round(m.score() * 100) / 100.0, "answersExactly", m.answersExactly())).toList();
     }
 
-    @GetMapping(value = "/export", produces = "text/csv")
     public ResponseEntity<byte[]> export() {
+        return export(null, null);
+    }
+
+    @GetMapping(value = "/export", produces = "text/csv")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String q) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"faq.csv\"")
                 .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-                .body(faqService.exportCsv().getBytes(StandardCharsets.UTF_8));
+                .body(faqService.exportCsv(category, q).getBytes(StandardCharsets.UTF_8));
     }
 
     /** Body: {"csv": "<file text>"} */

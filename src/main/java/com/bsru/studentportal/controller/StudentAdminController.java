@@ -31,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -162,10 +164,20 @@ public class StudentAdminController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping(value = { "/export-csv", "/csv" }, produces = "text/csv; charset=UTF-8")
     public ResponseEntity<byte[]> exportCsv(Authentication auth) throws Exception {
+        return exportCsv(null, null, auth);
+    }
+
+    @GetMapping(value = { "/export-csv", "/csv" }, produces = "text/csv; charset=UTF-8")
+    public ResponseEntity<byte[]> exportCsv(
+            @RequestParam(required = false) String batches,
+            @RequestParam(required = false) String q,
+            Authentication auth) throws Exception {
         requireAdmin(auth);
-        byte[] csvData = studentCsvService.exportCsv();
+        List<String> batchList = (batches == null || batches.isBlank())
+                ? List.of()
+                : Arrays.stream(batches.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+        byte[] csvData = studentCsvService.exportCsv(batchList, q);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"students_bsru.csv\"")

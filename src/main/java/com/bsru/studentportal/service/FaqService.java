@@ -190,9 +190,32 @@ public class FaqService {
     /** Every FAQ as CSV (UTF-8 with BOM so Excel shows Thai correctly) */
     @Transactional(readOnly = true)
     public String exportCsv() {
+        return exportCsv(null, null);
+    }
+
+    /** Filtered FAQs as CSV (UTF-8 with BOM so Excel shows Thai correctly) */
+    @Transactional(readOnly = true)
+    public String exportCsv(String category, String query) {
+        String catFilter = (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category.trim()))
+                ? category.trim()
+                : null;
+        String q = (query != null && !query.isBlank()) ? query.trim().toLowerCase(Locale.ROOT) : null;
+
         StringBuilder sb = new StringBuilder("﻿");
         sb.append(String.join(",", Arrays.stream(CSV_HEADER).map(FaqService::csvCell).toList())).append("\r\n");
         for (FaqEntry e : list()) {
+            String entryCat = (e.getCategory() == null || e.getCategory().isBlank()) ? "ทั่วไป" : e.getCategory();
+            if (catFilter != null && !catFilter.equals(entryCat)) {
+                continue;
+            }
+            if (q != null) {
+                boolean matchQ = e.getQuestion() != null && e.getQuestion().toLowerCase(Locale.ROOT).contains(q);
+                boolean matchAlt = e.getAlternatives() != null && e.getAlternatives().toLowerCase(Locale.ROOT).contains(q);
+                boolean matchA = e.getAnswer() != null && e.getAnswer().toLowerCase(Locale.ROOT).contains(q);
+                if (!matchQ && !matchAlt && !matchA) {
+                    continue;
+                }
+            }
             sb.append(String.join(",", List.of(
                     String.valueOf(e.getId()), csvCell(e.getCategory()), csvCell(e.getQuestion()),
                     csvCell(String.join(" | ", splitAlternatives(e.getAlternatives()))), csvCell(e.getAnswer()),
