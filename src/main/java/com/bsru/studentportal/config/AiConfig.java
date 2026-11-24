@@ -92,7 +92,7 @@ public class AiConfig {
                 .embeddingStore(embeddingStore)
                 .embeddingModel(embeddingModel)
                 .maxResults(3)
-                .minScore(0.5)
+                .minScore(0.68)
                 .build();
     }
 

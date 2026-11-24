@@ -332,6 +332,63 @@ class ChatControllerAdversarialTest {
         assertEquals(List.of("registration_guide.pdf"), chatResponse.getSources());
     }
 
+    @Test
+    @DisplayName("Citations: When Gemini outputs [[USED_SOURCES: none]], tag is stripped and sources list is empty")
+    void testGeminiUsedSourcesNoneStripsTagAndOmitsSources() throws Exception {
+        ReflectionTestUtils.setField(chatController, "geminiApiKey", "AIzaSyD-valid-39-character-gemini-key");
+
+        Content chunk = Content.from(TextSegment.from("รายละเอียดคู่มือ", Metadata.from("source", "unused_doc.pdf")));
+        when(contentRetriever.retrieve(any(Query.class))).thenReturn(List.of(chunk));
+        when(geminiDirectService.generateContent(anyString(), anyString()))
+                .thenReturn("สวัสดีครับ มีอะไรให้ช่วยไหมครับ\n[[USED_SOURCES: none]]");
+
+        ChatRequest req = new ChatRequest();
+        req.setMessage("สวัสดี");
+
+        ResponseEntity<?> response = chatController.chat(req, studentAuth);
+        ChatResponse chatResponse = (ChatResponse) response.getBody();
+        assertEquals("สวัสดีครับ มีอะไรให้ช่วยไหมครับ", chatResponse.getReply());
+        assertTrue(chatResponse.getSources().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Citations: When Gemini cites specific source, only that source is returned and tag is stripped")
+    void testGeminiUsedSourcesFiltersToCitedOnly() throws Exception {
+        ReflectionTestUtils.setField(chatController, "geminiApiKey", "AIzaSyD-valid-39-character-gemini-key");
+
+        Content c1 = Content.from(TextSegment.from("เกณฑ์จบ 128 หน่วยกิต", Metadata.from("source", "doc1.pdf")));
+        Content c2 = Content.from(TextSegment.from("เนื้อหาอื่น", Metadata.from("source", "doc2.pdf")));
+        when(contentRetriever.retrieve(any(Query.class))).thenReturn(List.of(c1, c2));
+        when(geminiDirectService.generateContent(anyString(), anyString()))
+                .thenReturn("เกณฑ์จบคือ 128 หน่วยกิตครับ\n[[USED_SOURCES: doc1.pdf]]");
+
+        ChatRequest req = new ChatRequest();
+        req.setMessage("เกณฑ์การจบ");
+
+        ResponseEntity<?> response = chatController.chat(req, studentAuth);
+        ChatResponse chatResponse = (ChatResponse) response.getBody();
+        assertEquals("เกณฑ์จบคือ 128 หน่วยกิตครับ", chatResponse.getReply());
+        assertEquals(List.of("doc1.pdf"), chatResponse.getSources());
+    }
+
+    @Test
+    @DisplayName("Citations: When Gemini says it has no information, sources are omitted")
+    void testGeminiNoAnswerOmitsSources() throws Exception {
+        ReflectionTestUtils.setField(chatController, "geminiApiKey", "AIzaSyD-valid-39-character-gemini-key");
+
+        Content chunk = Content.from(TextSegment.from("ข้อมูลอื่น", Metadata.from("source", "unrelated.pdf")));
+        when(contentRetriever.retrieve(any(Query.class))).thenReturn(List.of(chunk));
+        when(geminiDirectService.generateContent(anyString(), anyString()))
+                .thenReturn("ไม่พบข้อมูลดังกล่าวในระบบครับ");
+
+        ChatRequest req = new ChatRequest();
+        req.setMessage("ถามเรื่องนอกระบบ");
+
+        ResponseEntity<?> response = chatController.chat(req, studentAuth);
+        ChatResponse chatResponse = (ChatResponse) response.getBody();
+        assertTrue(chatResponse.getSources().isEmpty());
+    }
+
     // =========================================================================
     // 5. SESSION RESOLUTION INTEGRITY
     // =========================================================================
