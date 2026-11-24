@@ -10,12 +10,54 @@ let kbDraft = null;
 // KNOWLEDGE BASE MANAGEMENT (WP-3)
 // ================================================================
 let adminKnowledgeDocuments = [];
+let knowledgeSyncTimer = null;
+let knowledgeListenersBound = false;
+let knowledgeLoading = false;
+let lastKnowledgeSignature = '';
 
-/** Newest createdAt among the documents, as a Thai date ("4 พ.ย. 2569"), or "-" */
+function parseCreatedAtMs(value) {
+    if (!value) return NaN;
+    const normalized = String(value).trim().replace(/(\.\d{3})\d+/, '$1');
+    return Date.parse(normalized);
+}
+
+/** Newest createdAt among the documents, as Thai date + time ("24 พ.ย. 2569 · 13:30 น."), or "-" */
 function lastKnowledgeUpdate(docs) {
-    const times = docs.map(d => Date.parse(d.createdAt)).filter(Number.isFinite);
+    const times = docs.map(d => parseCreatedAtMs(d.createdAt)).filter(Number.isFinite);
     if (!times.length) return '-';
-    return new Date(Math.max(...times)).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    const dt = new Date(Math.max(...times));
+    const datePart = dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timePart = dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} · ${timePart} น.`;
+}
+
+function isKnowledgeViewVisible() {
+    const mod = document.getElementById('mod-manage-knowledge');
+    return !!(mod && mod.style.display !== 'none' && mod.offsetParent !== null);
+}
+
+function docsSignature(docs) {
+    return JSON.stringify((docs || []).map(d => [d.source || d.id || '', d.chunkCount ?? d.chunksCount ?? 1, d.createdAt || '']));
+}
+
+function ensureKnowledgeRealtimeSync() {
+    if (!knowledgeListenersBound && typeof window !== 'undefined') {
+        knowledgeListenersBound = true;
+        const refreshIfVisible = () => {
+            if (!document.hidden && isKnowledgeViewVisible()) {
+                loadKnowledgeDocuments({ silent: true });
+            }
+        };
+        document.addEventListener('visibilitychange', refreshIfVisible);
+        window.addEventListener('focus', refreshIfVisible);
+    }
+    if (!knowledgeSyncTimer && typeof window !== 'undefined') {
+        knowledgeSyncTimer = window.setInterval(() => {
+            if (!document.hidden && isKnowledgeViewVisible()) {
+                loadKnowledgeDocuments({ silent: true });
+            }
+        }, 5000);
+    }
 }
 
 export async function renderKnowledgeManagement() {
@@ -191,27 +233,41 @@ export async function renderKnowledgeManagement() {
         refreshBtn.addEventListener('click', () => loadKnowledgeDocuments());
     }
 
-    // Load initial data
+    // Load initial data and keep stat cards + table synced in real time
+    lastKnowledgeSignature = '';
     await loadKnowledgeDocuments();
+    ensureKnowledgeRealtimeSync();
 }
 
-async function loadKnowledgeDocuments() {
+async function loadKnowledgeDocuments({ silent = false } = {}) {
     const tbody = document.getElementById('kbDocsTbody');
-    if (!tbody) return;
+    if (!tbody || knowledgeLoading) return;
+    knowledgeLoading = true;
 
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted);"><span class="petition-spinner"></span> กำลังดึงข้อมูลจาก Vector Database...</td></tr>`;
+    if (!silent) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted);"><span class="petition-spinner"></span> กำลังดึงข้อมูลจาก Vector Database...</td></tr>`;
+    }
 
     try {
         const data = await fetchAPI('/admin/knowledge', 'GET', null, 15000);
-        adminKnowledgeDocuments = Array.isArray(data) ? data : (data?.documents || []);
-    } catch (err) {
-        console.warn('⚠️ [Admin] Could not load live knowledge documents, using fallback mock view:', err.message);
-        if (!adminKnowledgeDocuments || adminKnowledgeDocuments.length === 0) {
-            adminKnowledgeDocuments = [];
+        const nextDocs = Array.isArray(data) ? data : (data?.documents || []);
+        const nextSig = docsSignature(nextDocs);
+        if (!silent || nextSig !== lastKnowledgeSignature) {
+            adminKnowledgeDocuments = nextDocs;
+            lastKnowledgeSignature = nextSig;
+            renderKnowledgeTableRows();
         }
+    } catch (err) {
+        if (!silent) {
+            console.warn('⚠️ [Admin] Could not load live knowledge documents, using fallback mock view:', err.message);
+            if (!adminKnowledgeDocuments || adminKnowledgeDocuments.length === 0) {
+                adminKnowledgeDocuments = [];
+            }
+            renderKnowledgeTableRows();
+        }
+    } finally {
+        knowledgeLoading = false;
     }
-
-    renderKnowledgeTableRows();
 }
 
 function renderKnowledgeTableRows() {
@@ -326,7 +382,7 @@ async function handleKnowledgeIngest() {
         const fileInput = document.getElementById('kbFileInput');
         if (fileInput) fileInput.value = '';
 
-        await loadKnowledgeDocuments();
+        await loadKnowledgeDocuments({ silent: true });
     } catch (err) {
         console.error('❌ [Admin] Knowledge ingestion failed:', err);
         showToast('error', `ไม่สามารถนำเข้าเอกสารได้: ${err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'}`);
@@ -371,7 +427,9 @@ async function handleKnowledgeDelete(docId, docSource, btnElement) {
         if (deleted) {
             showToast('success', `ลบเอกสาร "${docSource}" ออกจากคลังความรู้สำเร็จ ✅`);
             adminKnowledgeDocuments = adminKnowledgeDocuments.filter(d => (d.id !== docId && d.source !== docSource && d.title !== docSource));
+            lastKnowledgeSignature = docsSignature(adminKnowledgeDocuments);
             renderKnowledgeTableRows();
+            loadKnowledgeDocuments({ silent: true });
         }
     } catch (err) {
         console.error('❌ [Admin] Failed to delete document:', err);
