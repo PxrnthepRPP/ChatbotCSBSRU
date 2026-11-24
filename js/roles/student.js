@@ -60,7 +60,7 @@ export function renderFinance() {
             <div class="finance-summary" style="flex:1"><h3>ยอดค้างชำระ</h3><div class="finance-amount">${fmt(f.currentOwed)} ฿</div><div class="finance-sub">ภาคเรียนที่ 1/2567</div></div>
             <div class="stat-card" style="flex:1"><div class="stat-icon green">💰</div><div><div class="stat-value">${fmt(f.totalPaid)}</div><div class="stat-label">ชำระแล้วทั้งหมด (฿)</div></div></div>
         </div>
-        <div class="card"><div class="card-title">🎓 ทุนการศึกษา <span class="badge badge-green">ได้รับทุน</span></div><div class="profile-detail-grid"><div class="profile-item"><span class="label">ชื่อทุน</span><span class="value">${esc(f.scholarship)}</span></div><div class="profile-item"><span class="label">จำนวน</span><span class="value">${fmt(f.scholarshipAmount)} ฿/ปี</span></div></div></div>
+        <div class="card"><div class="card-title">🎓 ทุนการศึกษา <span class="badge badge-green">ได้รับทุน</span></div><div class="scholarship-grid"><div class="scholarship-item"><span class="scholarship-label">ชื่อทุน</span><span class="scholarship-value">${esc(f.scholarship)}</span></div><div class="scholarship-item scholarship-amount"><span class="scholarship-label">จำนวน</span><span class="scholarship-value">${fmt(f.scholarshipAmount)} ฿/ปี</span></div></div></div>
         <div class="card"><div class="card-title">📋 ประวัติการชำระเงิน</div><div class="table-wrap"><table class="data-table"><thead><tr><th>ภาคเรียน</th><th>จำนวน</th><th>สถานะ</th><th class="hide-mobile">วันที่</th><th class="hide-mobile">ช่องทาง</th></tr></thead><tbody>${payRows}</tbody></table></div></div>`;
 }
 
