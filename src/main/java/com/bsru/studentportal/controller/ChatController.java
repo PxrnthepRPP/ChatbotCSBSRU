@@ -151,11 +151,17 @@ public class ChatController {
         }
 
         try {
-            String aiReply = askAiWithContext(chatKey, userMessage, rag, matchedForms,
+            String rawAiReply = askAiWithContext(chatKey, userMessage, rag, matchedForms,
                     faqService != null ? faqService.promptContext(faqMatches) : "", earlierChats);
+            ParsedAiReply parsed = parseUsedSources(rawAiReply, rag.sources());
+            String aiReply = parsed.cleanReply();
+            boolean noAnswer = aiSaysItDoesNotKnow(aiReply);
             ChatLogEntry.Source source = faqId != null ? ChatLogEntry.Source.FAQ_SUGGESTED
-                    : aiSaysItDoesNotKnow(aiReply) ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.AI;
-            return reply(identity, chatKey, userMessage, aiReply, rag.sources(), attachments, archivedQuestion, source, faqId);
+                    : noAnswer ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.AI;
+            List<String> finalSources = (noAnswer || (faqId != null && !parsed.explicitlyCited()))
+                    ? List.of()
+                    : parsed.sources();
+            return reply(identity, chatKey, userMessage, aiReply, finalSources, attachments, archivedQuestion, source, faqId);
         } catch (Exception e) {
             log.error("Gemini API call encountered an issue: ", e);
             return fallbackReply(identity, chatKey, userMessage, rag, matchedForms, attachments, archivedQuestion, bestFaq);
@@ -172,9 +178,10 @@ public class ChatController {
             return reply(identity, chatKey, userMessage, reply, List.of(), attachments, archivedQuestion,
                     ChatLogEntry.Source.FAQ_SUGGESTED, bestFaq.entry().getId());
         }
-        String reply = generateFallbackResponse(chatKey, userMessage, rag, matchedForms);
-        ChatLogEntry.Source source = DEFAULT_FALLBACK_REPLY.equals(reply) ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.FALLBACK;
-        return reply(identity, chatKey, userMessage, reply, rag.sources(), attachments, archivedQuestion, source, null);
+        FallbackOutcome outcome = generateFallbackOutcome(chatKey, userMessage, rag, matchedForms);
+        ChatLogEntry.Source source = DEFAULT_FALLBACK_REPLY.equals(outcome.reply()) ? ChatLogEntry.Source.NO_ANSWER : ChatLogEntry.Source.FALLBACK;
+        List<String> sources = outcome.usedRag() ? rag.sources() : List.of();
+        return reply(identity, chatKey, userMessage, outcome.reply(), sources, attachments, archivedQuestion, source, null);
     }
 
     /** Saves the answer (panel history, AI memory, archive, FAQ hit count) and sends it */
@@ -351,12 +358,16 @@ public class ChatController {
                 TextSegment segment = content.textSegment();
                 if (segment != null) {
                     String text = segment.text();
-                    if (text != null && !text.isBlank()) {
-                        sb.append("- ").append(text.trim()).append("\n");
-                    }
                     String source = segment.metadata() != null ? segment.metadata().getString("source") : null;
-                    if (source != null && !source.isBlank() && !sources.contains(source)) {
-                        sources.add(source);
+                    if (text != null && !text.isBlank()) {
+                        if (source != null && !source.isBlank()) {
+                            sb.append("- [แหล่งที่มา: ").append(source.trim()).append("] ").append(text.trim()).append("\n");
+                        } else {
+                            sb.append("- ").append(text.trim()).append("\n");
+                        }
+                    }
+                    if (source != null && !source.isBlank() && !sources.contains(source.trim())) {
+                        sources.add(source.trim());
                     }
                 }
             }
@@ -426,6 +437,10 @@ public class ChatController {
             6. หากนักศึกษาถามเรื่องการคำนวณ GPA ล่วงหน้า ให้แสดงวิธีคำนวณอย่างเป็นขั้นตอนตามเกณฑ์จริง (แต้มรวมเดิม + แต้มเทอมใหม่ หารด้วยหน่วยกิตรวม)
             7. หากผู้ใช้เป็นอาจารย์ที่ปรึกษา ให้ช่วยวิเคราะห์ความเสี่ยงของนักศึกษาในความดูแลรายบุคคลที่สอบถาม (พ้นสภาพ/ตก/ถอนวิชา/จบช้า) อย่างละเอียดจากข้อมูลจริง พร้อมข้อเสนอแนะเชิงช่วยเหลือที่เป็นรูปธรรม
             8. วิชาที่เกรดเป็น "ยังไม่ออกผล" ไม่นำมาคิด GPA
+            9. แหล่งอ้างอิงเอกสาร:
+               - ห้ามพิมพ์หัวข้อ "แหล่งอ้างอิง:" หรือรายชื่อไฟล์เอกสารต่อท้ายคำตอบเอง
+               - เฉพาะกรณีที่คำตอบนี้ใช้ข้อมูลจากส่วน [เอกสารอ้างอิงจากคลังความรู้สาขา (RAG)] จริงๆ เท่านั้น ให้ลงท้ายบรรทัดสุดท้ายด้วยแท็ก [[USED_SOURCES: ชื่อไฟล์1, ชื่อไฟล์2]] (ใช้ชื่อไฟล์ตรงตาม [แหล่งที่มา: ...] ที่นำมาใช้ตอบจริงเท่านั้น)
+               - หากไม่ได้ใช้ข้อมูลจากเอกสาร RAG (เช่น ตอบจากข้อมูลนักศึกษา ผลการเรียน ตารางเรียน กิจกรรม คำร้อง แบบฟอร์ม FAQ สนทนาทั่วไป หรือตอบว่าไม่พบข้อมูล) ให้ลงท้ายด้วย [[USED_SOURCES: none]]
             """);
 
         if (rag != null && rag.contextText() != null && !rag.contextText().isBlank()) {
@@ -611,8 +626,41 @@ public class ChatController {
         return new ChatIdentity(GUEST_MEMORY_PREFIX + guestId, guestId);
     }
 
-    private String generateFallbackResponse(String contextSessionId, String query,
-                                            RagRetrieval rag, List<AcademicFormInfo> matchedForms) {
+    private static final Pattern USED_SOURCES_TAG = Pattern.compile("\\[\\[USED_SOURCES\\s*:\\s*([^\\]]*)\\]\\]", Pattern.CASE_INSENSITIVE);
+
+    private record ParsedAiReply(String cleanReply, List<String> sources, boolean explicitlyCited) {}
+
+    private static ParsedAiReply parseUsedSources(String rawReply, List<String> availableSources) {
+        if (rawReply == null) {
+            return new ParsedAiReply("", List.of(), false);
+        }
+        Matcher m = USED_SOURCES_TAG.matcher(rawReply);
+        if (!m.find()) {
+            return new ParsedAiReply(rawReply.trim(), availableSources != null ? availableSources : List.of(), false);
+        }
+        String rawTagValue = m.group(1) != null ? m.group(1).trim() : "";
+        String clean = USED_SOURCES_TAG.matcher(rawReply).replaceAll("").trim();
+        if (rawTagValue.isEmpty() || "none".equalsIgnoreCase(rawTagValue) || "ไม่มี".equalsIgnoreCase(rawTagValue)) {
+            return new ParsedAiReply(clean, List.of(), true);
+        }
+        List<String> available = availableSources != null ? availableSources : List.of();
+        List<String> matched = new ArrayList<>();
+        for (String token : rawTagValue.split(",")) {
+            String t = token.trim();
+            if (t.isEmpty()) continue;
+            for (String src : available) {
+                if (src.equalsIgnoreCase(t) && !matched.contains(src)) {
+                    matched.add(src);
+                }
+            }
+        }
+        return new ParsedAiReply(clean, matched, true);
+    }
+
+    private record FallbackOutcome(String reply, boolean usedRag) {}
+
+    private FallbackOutcome generateFallbackOutcome(String contextSessionId, String query,
+                                                    RagRetrieval rag, List<AcademicFormInfo> matchedForms) {
         String q = query.toLowerCase();
 
         // หากเป็นอาจารย์ที่ปรึกษาและขอวิเคราะห์นักศึกษารายบุคคล ให้ดึงข้อมูลและการประเมินความเสี่ยงรายบุคคลจากฐานข้อมูลทันที
@@ -623,7 +671,7 @@ public class ChatController {
                 try {
                     String detail = advisorTools.getAdviseeRecord(contextSessionId, targetStudentId);
                     if (detail != null && !detail.isBlank()) {
-                        return "ผลการวิเคราะห์ความเสี่ยงและข้อมูลวิชาการรายบุคคลของนักศึกษารหัส **" + targetStudentId + "** จากฐานข้อมูลระบบ:\n\n" + detail;
+                        return new FallbackOutcome("ผลการวิเคราะห์ความเสี่ยงและข้อมูลวิชาการรายบุคคลของนักศึกษารหัส **" + targetStudentId + "** จากฐานข้อมูลระบบ:\n\n" + detail, false);
                     }
                 } catch (Exception ignored) {}
             }
@@ -633,7 +681,7 @@ public class ChatController {
         if (matchedForms != null && !matchedForms.isEmpty()) {
             String formReply = formCatalog().buildFallbackReply(query, matchedForms);
             if (formReply != null && !formReply.isBlank()) {
-                return formReply;
+                return new FallbackOutcome(formReply, false);
             }
         }
 
@@ -644,41 +692,41 @@ public class ChatController {
                 String profile = studentRecordTools.getMyProfile(contextSessionId);
                 String grades = studentRecordTools.getMyGrades(contextSessionId);
                 if (grades != null && !grades.isBlank()) {
-                    return "ผลการเรียนของคุณที่บันทึกในฐานข้อมูลระบบมีดังนี้ครับ:\n\n" + profile + "\n\n" + grades;
+                    return new FallbackOutcome("ผลการเรียนของคุณที่บันทึกในฐานข้อมูลระบบมีดังนี้ครับ:\n\n" + profile + "\n\n" + grades, false);
                 }
             } catch (Exception ignored) {}
         }
 
         if (rag != null && rag.contextText() != null && !rag.contextText().isBlank()) {
-            return "จากข้อมูลในคลังความรู้สาขา (BSRU Knowledge Base):\n" + rag.contextText();
+            return new FallbackOutcome("จากข้อมูลในคลังความรู้สาขา (BSRU Knowledge Base):\n" + rag.contextText(), true);
         }
 
         if (q.contains("คำร้อง") || q.contains("ยื่นคำร้อง") || q.contains("petition")) {
-            return "สำหรับการยื่นคำร้องวิชาการ คุณสามารถไปที่เมนู **'ยื่นคำร้องวิชาการ'** ในแถบเมนูด้านซ้าย เลือกประเภทคำร้อง กรอกรายละเอียด และแนบไฟล์ PDF เพื่อส่งพิจารณาได้ทันทีครับ\n\n📄 **ต้องการขอไฟล์แบบฟอร์มเอกสารทางการหรือไม่ครับ?** สามารถพิมพ์ขอเอกสารกับผมได้เลย เช่น **ทบ.1** (คำร้องทั่วไป), **ทบ.2** (ทำบัตรนักศึกษา), **ทบ.4** (ขอ Transcript), **ทบ.5** (ใบรับรองสถานภาพ), **ทบ.6** (พักการเรียน/คืนสภาพ), **ทบ.7** (ลาออก/ย้าย ม.), **ทบ.8–11** (เรียนสมทบ/ยกเว้น/โอนเกรด), **ทบ.12** (ถอนรายวิชา W), **ทบ.14** (ขอเปิดวิชาพิเศษ), **ทบ.15** (เปลี่ยนสาขา/คณะ), **ทบ.17** (แจ้งเรียนภาคสุดท้าย), **ใบลาป่วย/ลากิจ** หรือ **แบบฟอร์มจิตอาสา กยศ./กรอ.** ระบบจะส่งไฟล์ PDF พร้อมคำอธิบายให้ดาวน์โหลดทันทีครับ";
+            return new FallbackOutcome("สำหรับการยื่นคำร้องวิชาการ คุณสามารถไปที่เมนู **'ยื่นคำร้องวิชาการ'** ในแถบเมนูด้านซ้าย เลือกประเภทคำร้อง กรอกรายละเอียด และแนบไฟล์ PDF เพื่อส่งพิจารณาได้ทันทีครับ\n\n📄 **ต้องการขอไฟล์แบบฟอร์มเอกสารทางการหรือไม่ครับ?** สามารถพิมพ์ขอเอกสารกับผมได้เลย เช่น **ทบ.1** (คำร้องทั่วไป), **ทบ.2** (ทำบัตรนักศึกษา), **ทบ.4** (ขอ Transcript), **ทบ.5** (ใบรับรองสถานภาพ), **ทบ.6** (พักการเรียน/คืนสภาพ), **ทบ.7** (ลาออก/ย้าย ม.), **ทบ.8–11** (เรียนสมทบ/ยกเว้น/โอนเกรด), **ทบ.12** (ถอนรายวิชา W), **ทบ.14** (ขอเปิดวิชาพิเศษ), **ทบ.15** (เปลี่ยนสาขา/คณะ), **ทบ.17** (แจ้งเรียนภาคสุดท้าย), **ใบลาป่วย/ลากิจ** หรือ **แบบฟอร์มจิตอาสา กยศ./กรอ.** ระบบจะส่งไฟล์ PDF พร้อมคำอธิบายให้ดาวน์โหลดทันทีครับ", false);
         } else if (q.contains("วางแผน") || q.contains("เทอมหน้า") || q.contains("เทอมถัดไป") || q.contains("ควรลง")) {
-            return "สำหรับการวางแผนลงทะเบียนเรียนเทอมถัดไป แนะนำให้ตรวจสอบวิชาบังคับตามโครงสร้างหลักสูตรที่ยังไม่ได้เรียนในเมนู **'ตรวจสอบจบ'** ควบคู่กับตารางสอนในเมนู **'ตารางเรียน'** เพื่อเลือก Section ที่เวลาไม่ชนกันครับ หากต้องการคำแนะนำเฉพาะเจาะจง สามารถปรึกษาอาจารย์ที่ปรึกษาได้ครับ";
+            return new FallbackOutcome("สำหรับการวางแผนลงทะเบียนเรียนเทอมถัดไป แนะนำให้ตรวจสอบวิชาบังคับตามโครงสร้างหลักสูตรที่ยังไม่ได้เรียนในเมนู **'ตรวจสอบจบ'** ควบคู่กับตารางสอนในเมนู **'ตารางเรียน'** เพื่อเลือก Section ที่เวลาไม่ชนกันครับ หากต้องการคำแนะนำเฉพาะเจาะจง สามารถปรึกษาอาจารย์ที่ปรึกษาได้ครับ", false);
         } else if (q.contains("เกรด") || q.contains("ผลการเรียน") || q.contains("gpa")) {
-            return "คุณสามารถตรวจสอบผลการเรียนรายภาคเรียนและเกรดเฉลี่ยสะสม (GPA) ได้ที่เมนู **'ผลการเรียน'** โดยระบบจะแสดงรายการวิชาที่ผ่าน หน่วยกิตสะสม และกราฟแนวโน้มผลการเรียนครับ";
+            return new FallbackOutcome("คุณสามารถตรวจสอบผลการเรียนรายภาคเรียนและเกรดเฉลี่ยสะสม (GPA) ได้ที่เมนู **'ผลการเรียน'** โดยระบบจะแสดงรายการวิชาที่ผ่าน หน่วยกิตสะสม และกราฟแนวโน้มผลการเรียนครับ", false);
         } else if (q.contains("ตารางเรียน") || q.contains("ตารางสอบ") || q.contains("schedule")) {
-            return "ตารางเรียนและตารางสอบภาคเรียนปัจจุบัน สามารถดูได้ที่เมนู **'ตารางเรียน'** ในรูปแบบ Matrix Grid รายสัปดาห์ พร้อมทั้งสามารถเพิ่ม/ลบรายวิชาได้ครับ";
+            return new FallbackOutcome("ตารางเรียนและตารางสอบภาคเรียนปัจจุบัน สามารถดูได้ที่เมนู **'ตารางเรียน'** ในรูปแบบ Matrix Grid รายสัปดาห์ พร้อมทั้งสามารถเพิ่ม/ลบรายวิชาได้ครับ", false);
         } else if (q.contains("กิจกรรม") || q.contains("ปัจฉิม") || q.contains("จิตสาธารณะ") || q.contains("วันพิราลัย") || q.contains("ชั่วโมง")) {
             if (contextSessionId != null && contextSessionId.startsWith(StudentRecordTools.STUDENT_MEMORY_PREFIX)) {
                 try {
                     String actSummary = studentRecordTools.getMyActivities(contextSessionId);
                     if (actSummary != null && !actSummary.isBlank()) {
-                        return actSummary + "\n\n" + BSRU_ACTIVITY_CRITERIA_TEXT;
+                        return new FallbackOutcome(actSummary + "\n\n" + BSRU_ACTIVITY_CRITERIA_TEXT, false);
                     }
                 } catch (Exception ignored) {}
             }
-            return BSRU_ACTIVITY_CRITERIA_TEXT;
+            return new FallbackOutcome(BSRU_ACTIVITY_CRITERIA_TEXT, false);
         } else if (q.contains("อาจารย์") || q.contains("ที่ปรึกษา") || q.contains("advisor")) {
-            return "อาจารย์ประจำสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีรายนามดังนี้ครับ:\n- ผศ.ดร.วิชัย เทคโนโลยี (หัวหน้าสาขา/อาจารย์ที่ปรึกษา)\n- อ.สุภา โปรแกรม\n- ผศ.มานะ ดาต้า\n- ผศ.ดร.ณัฐ เน็ตเวิร์ค\n- อ.พิมพ์ เว็บเทค\nสามารถดูข้อมูลการติดต่อได้ที่หน้าประวัตินักศึกษาหรือหน้าผู้ดูแลระบบครับ";
+            return new FallbackOutcome("อาจารย์ประจำสาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีรายนามดังนี้ครับ:\n- ผศ.ดร.วิชัย เทคโนโลยี (หัวหน้าสาขา/อาจารย์ที่ปรึกษา)\n- อ.สุภา โปรแกรม\n- ผศ.มานะ ดาต้า\n- ผศ.ดร.ณัฐ เน็ตเวิร์ค\n- อ.พิมพ์ เว็บเทค\nสามารถดูข้อมูลการติดต่อได้ที่หน้าประวัตินักศึกษาหรือหน้าผู้ดูแลระบบครับ", false);
         } else if (q.contains("สายอาชีพ") || q.contains("อาชีพ") || q.contains("ทำงาน") || q.contains("บัณฑิต") || q.contains("career") || q.contains("งาน")) {
-            return "สาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีการสำรวจและรวบรวม **สถิติสายอาชีพของบัณฑิต** โดยส่วนใหญ่ประกอบอาชีพตรงสาย (IT & CS) เช่น **Full-Stack Developer**, **Data Analyst**, **DevOps Engineer**, **Cloud Architect**, **UX/UI Designer**, **Cybersecurity** รวมถึง **ธุรกิจส่วนตัว/สตาร์ทอัพ**\n\n📌 สำหรับนักศึกษาที่สำเร็จการศึกษา สามารถกดอัปเดตสายอาชีพและสถานะการทำงานได้ที่เมนู **'ตรวจสอบจบ'** หรือ **'ประวัตินักศึกษา'** เพื่อร่วมเป็นส่วนหนึ่งในการพัฒนาหลักสูตรครับ";
+            return new FallbackOutcome("สาขาวิชาวิทยาการคอมพิวเตอร์ BSRU มีการสำรวจและรวบรวม **สถิติสายอาชีพของบัณฑิต** โดยส่วนใหญ่ประกอบอาชีพตรงสาย (IT & CS) เช่น **Full-Stack Developer**, **Data Analyst**, **DevOps Engineer**, **Cloud Architect**, **UX/UI Designer**, **Cybersecurity** รวมถึง **ธุรกิจส่วนตัว/สตาร์ทอัพ**\n\n📌 สำหรับนักศึกษาที่สำเร็จการศึกษา สามารถกดอัปเดตสายอาชีพและสถานะการทำงานได้ที่เมนู **'ตรวจสอบจบ'** หรือ **'ประวัตินักศึกษา'** เพื่อร่วมเป็นส่วนหนึ่งในการพัฒนาหลักสูตรครับ", false);
         } else if (q.contains("สวัสดี") || q.contains("hello") || q.contains("hi")) {
-            return "สวัสดีครับ! ผมคือ **BSRU CS AI Assistant** ยินดีให้คำแนะนำและตอบคำถามเกี่ยวกับระบบสารสนเทศนักศึกษา การลงทะเบียนเรียน ตารางเรียน ผลการเรียน สถิติสายอาชีพ และการยื่นคำร้องวิชาการครับ มีอะไรให้ผมช่วยเหลือไหมครับ?";
+            return new FallbackOutcome("สวัสดีครับ! ผมคือ **BSRU CS AI Assistant** ยินดีให้คำแนะนำและตอบคำถามเกี่ยวกับระบบสารสนเทศนักศึกษา การลงทะเบียนเรียน ตารางเรียน ผลการเรียน สถิติสายอาชีพ และการยื่นคำร้องวิชาการครับ มีอะไรให้ผมช่วยเหลือไหมครับ?", false);
         } else {
-            return DEFAULT_FALLBACK_REPLY;
+            return new FallbackOutcome(DEFAULT_FALLBACK_REPLY, false);
         }
     }
 
