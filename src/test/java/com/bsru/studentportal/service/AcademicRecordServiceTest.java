@@ -495,5 +495,45 @@ class AcademicRecordServiceTest {
             assertEquals("CS3101", sem.courses().get(0).code());
             assertNull(sem.courses().get(0).grade());
         }
+
+        @Test
+        @DisplayName("gradesOf: averages every graded attempt across all semesters including retakes")
+        void testMultiSemesterRetakeWeightedAverage() {
+            when(graduationAudits.auditOf(studentId)).thenReturn(Optional.empty());
+            List<CourseGrade> grades = List.of(
+                    createCourseGrade(2567, 1, "CS101", "Intro to CS", 3, "B", 3.0),
+                    createCourseGrade(2566, 1, "CS101", "Intro to CS", 3, "F", 0.0),
+                    createCourseGrade(2566, 1, "GE101", "Thai", 2, "A", 4.0)
+            );
+            when(courseGradeRepository.findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId))
+                    .thenReturn(grades);
+
+            AcademicRecordService.GradeReport report = academicRecordService.gradesOf(studentId);
+
+            // (3*3.0 + 3*0.0 + 2*4.0) / (3 + 3 + 2) = 17.0 / 8 = 2.125 -> 2.13
+            assertEquals(8, report.gradedCredits());
+            assertEquals(2.13, report.gpa());
+        }
+
+        @Test
+        @DisplayName("syncStudentGpa: sets students.gpa from grades across all semesters, or 0.0 when no graded courses")
+        void testSyncStudentGpaResetsWhenNoGrades() {
+            com.bsru.studentportal.repository.StudentRepository studentRepo =
+                    mock(com.bsru.studentportal.repository.StudentRepository.class);
+            org.springframework.test.util.ReflectionTestUtils.setField(
+                    academicRecordService, "studentRepository", studentRepo);
+
+            student.setGpa(3.50);
+            when(graduationAudits.auditOf(studentId)).thenReturn(Optional.empty());
+            when(courseGradeRepository.findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId))
+                    .thenReturn(Collections.emptyList());
+            when(enrollmentRepository.findByStudentStudentId(studentId)).thenReturn(Collections.emptyList());
+            when(studentRepo.findById(studentId)).thenReturn(Optional.of(student));
+
+            academicRecordService.syncStudentGpa(studentId);
+
+            assertEquals(0.0, student.getGpa(), 0.001);
+            verify(studentRepo).save(student);
+        }
     }
 }

@@ -12,6 +12,7 @@ import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,15 @@ public class StudentAdminService {
     private final CohortAdvisorService cohortAdvisorService;
     private final com.bsru.studentportal.repository.InstructorGradeRepository instructorGradeRepository;
 
+    @Autowired(required = false)
+    private AcademicRecordService academicRecordService;
+
+    private double resolvedGpaFromGrades(String studentId) {
+        if (academicRecordService == null) return 0.0;
+        Double calculated = academicRecordService.gradesOf(studentId).gpa();
+        return calculated != null ? calculated : 0.0;
+    }
+
     @Transactional
     public Student create(StudentRequest req) {
         String id = req.getStudentId() == null ? "" : req.getStudentId().trim();
@@ -76,6 +86,7 @@ public class StudentAdminService {
         }
         s.setFaculty("คณะวิทยาศาสตร์และเทคโนโลยี");
         s.setDepartment("สาขาวิทยาการคอมพิวเตอร์");
+        s.setGpa(resolvedGpaFromGrades(id));
         Student saved = studentRepository.save(s);
         // Login account for real students: username = student id, first password = initials + national ID
         // (e.g. SJ1101700203450), must be changed at the first login. Sent back once so the admin can hand it over.
@@ -113,6 +124,9 @@ public class StudentAdminService {
         applyCohortAdvisor(s);
         if (isBlank(s.getNameTh())) {
             throw new StudentAdminException(HttpStatus.BAD_REQUEST, "กรุณากรอกชื่อ-สกุล (ไทย)");
+        }
+        if (academicRecordService != null) {
+            s.setGpa(resolvedGpaFromGrades(studentId));
         }
         return studentRepository.save(s);
     }

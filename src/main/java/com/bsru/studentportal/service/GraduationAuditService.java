@@ -215,10 +215,7 @@ public class GraduationAuditService {
 
     private void syncProfileGpa(String studentId, AuditResult result) {
         int graded = result.audit().path("summary").path("gradedCredits").asInt(0);
-        if (graded <= 0) {
-            return;
-        }
-        double gpa = result.audit().path("summary").path("currentGpa").asDouble();
+        double gpa = graded > 0 ? result.audit().path("summary").path("currentGpa").asDouble() : 0.0;
         studentRepository.findById(studentId).ifPresent(s -> {
             if (s.getGpa() == null || Math.abs(s.getGpa() - gpa) > 0.001) {
                 s.setGpa(gpa);
@@ -390,7 +387,6 @@ public class GraduationAuditService {
         if (year2 <= 0) return 1;
         int index = (year2 - admissionBatch) * 2 + (term > 0 ? term : 1);
         if (index < 1) return 1;
-        if (index > 8) return 8;
         return index;
     }
 

@@ -158,6 +158,15 @@ public class TimetableService {
     private final AdvisorRepository advisorRepository;
     private final CourseGradeRepository courseGradeRepository;
 
+    @Autowired(required = false)
+    private AcademicRecordService academicRecordService;
+
+    private void syncStudentGpa(String studentId) {
+        if (academicRecordService != null) {
+            academicRecordService.syncStudentGpa(studentId);
+        }
+    }
+
     public TimetableService(ClassSectionRepository sectionRepository,
                             SectionEnrollmentRepository enrollmentRepository,
                             RegistrationPeriodRepository periodRepository,
@@ -484,6 +493,7 @@ public class TimetableService {
             enrollmentRepository.flush();
             enrollmentRepository.save(new SectionEnrollment(null, student, section, LocalDateTime.now(), status, null));
         }
+        syncStudentGpa(studentId);
         return check;
     }
 
@@ -528,6 +538,7 @@ public class TimetableService {
             case ADMIN -> { }
         }
         enrollmentRepository.delete(enrollment);
+        syncStudentGpa(studentId);
         return toView(section);
     }
 
@@ -630,6 +641,7 @@ public class TimetableService {
         ClassSection saved = sectionRepository.save(s);
         enrollmentRepository.save(new SectionEnrollment(null, student, saved, LocalDateTime.now(),
                 EnrollmentStatus.CONFIRMED, null));
+        syncStudentGpa(studentId);
         return toView(saved, EnrollmentStatus.CONFIRMED);
     }
 
