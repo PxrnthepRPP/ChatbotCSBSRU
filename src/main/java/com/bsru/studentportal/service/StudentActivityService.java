@@ -1,7 +1,6 @@
 package com.bsru.studentportal.service;
 
 import com.bsru.studentportal.dto.ActivityRegisterRequest;
-import com.bsru.studentportal.model.GraduationProgress;
 import com.bsru.studentportal.model.Student;
 import com.bsru.studentportal.model.StudentActivity;
 import com.bsru.studentportal.repository.GraduationProgressRepository;

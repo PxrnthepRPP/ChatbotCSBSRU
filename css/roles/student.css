@@ -58,6 +58,8 @@
 #mod-finance .finance-summary {
     position: relative;
     overflow: hidden;
+    margin-bottom: 0;
+    min-width: 180px;
 }
 
 #mod-finance .finance-summary::before {
