@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -312,6 +313,20 @@ public class StudentCsvService {
     }
 
     public byte[] exportCsv() throws Exception {
+        return exportCsv(null, null);
+    }
+
+    public byte[] exportCsv(List<String> batches, String query) throws Exception {
+        Set<String> batchFilter = new HashSet<>();
+        if (batches != null) {
+            for (String b : batches) {
+                if (b != null && !b.isBlank()) {
+                    batchFilter.add(b.trim());
+                }
+            }
+        }
+        String q = query != null && !query.isBlank() ? query.trim().toLowerCase(Locale.ROOT) : null;
+
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             // Prepend UTF-8 BOM bytes (0xEF, 0xBB, 0xBF)
             baos.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
@@ -321,6 +336,21 @@ public class StudentCsvService {
 
                 List<Student> students = studentRepository.findAll(Sort.by(Sort.Direction.ASC, "studentId"));
                 for (Student s : students) {
+                    if (!batchFilter.isEmpty()) {
+                        String sid = s.getStudentId();
+                        String batch = (sid != null && sid.length() >= 2) ? sid.substring(0, 2) : "";
+                        if (!batchFilter.contains(batch)) {
+                            continue;
+                        }
+                    }
+                    if (q != null) {
+                        boolean matchId = s.getStudentId() != null && s.getStudentId().toLowerCase(Locale.ROOT).contains(q);
+                        boolean matchTh = s.getNameTh() != null && s.getNameTh().toLowerCase(Locale.ROOT).contains(q);
+                        boolean matchEn = s.getNameEn() != null && s.getNameEn().toLowerCase(Locale.ROOT).contains(q);
+                        if (!matchId && !matchTh && !matchEn) {
+                            continue;
+                        }
+                    }
                     String advisorId = s.getAdvisor() != null ? s.getAdvisor().getId() : "";
                     String gpaStr = s.getGpa() != null ? String.format("%.2f", s.getGpa()) : "0.00";
                     int year = s.getYear() != null ? s.getYear() : 1;

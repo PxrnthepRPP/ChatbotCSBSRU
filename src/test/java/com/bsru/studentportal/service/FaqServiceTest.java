@@ -83,6 +83,23 @@ class FaqServiceTest {
     }
 
     @Test
+    void exportCsvFiltersByCategoryAndQuery() {
+        when(repo.findAllByOrderByCategoryAscIdAsc()).thenReturn(List.of(
+                FaqEntry.builder().id(1L).category("ทุนการศึกษา").question("ขอทุน กยศ. ยังไง")
+                        .answer("ติดต่อกองพัฒนานักศึกษา").exactAnswer(true).active(true).build(),
+                FaqEntry.builder().id(2L).category("การลงทะเบียน").question("ลงทะเบียนได้ถึงวันไหน")
+                        .answer("ตามปฏิทินการศึกษา").exactAnswer(true).active(true).build(),
+                FaqEntry.builder().id(3L).category("ทุนการศึกษา").question("ทุนเรียนดีมีไหม")
+                        .answer("มีตามประกาศคณะ").exactAnswer(true).active(true).build()
+        ));
+
+        String csv = service.exportCsv("ทุนการศึกษา", "กยศ");
+        List<List<String>> rows = FaqService.parseCsv(csv.substring(1));
+        assertEquals(2, rows.size());
+        assertEquals("ขอทุน กยศ. ยังไง", rows.get(1).get(2));
+    }
+
+    @Test
     void importAddsNewRowsAndReportsBadOnes() {
         when(repo.existsById(any())).thenReturn(false);
         when(repo.save(any())).thenAnswer(i -> i.getArgument(0));

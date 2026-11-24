@@ -101,7 +101,7 @@ function draw(container) {
                     <input type="text" id="faqSearch" placeholder="ค้นหาคำถาม/คำตอบ..." value="${esc(faqSearch)}" aria-label="ค้นหาคำถามที่พบบ่อย">
                 </div>
                 <button type="button" class="btn btn-success" id="faqAddBtn">+ เพิ่มคำถาม</button>
-                <button type="button" class="btn btn-primary" id="faqExportBtn">ส่งออก CSV</button>
+                <button type="button" class="btn btn-primary" id="faqExportBtn" ${shown.length === 0 ? 'disabled title="ไม่มีข้อมูลตามเงื่อนไขที่กรองให้ส่งออก"' : 'title="ส่งออกคำถามตามที่กรองเป็นไฟล์ CSV"'}>ส่งออก CSV</button>
                 <button type="button" class="btn btn-secondary" id="faqImportBtn">นำเข้า CSV</button>
                 <input type="file" id="faqImportInput" accept=".csv,text/csv" hidden>
             </div>
@@ -127,7 +127,7 @@ function draw(container) {
         }, 300);
     });
     container.querySelector('#faqAddBtn').addEventListener('click', () => openFaqEditor());
-    container.querySelector('#faqExportBtn').addEventListener('click', exportCsv);
+    container.querySelector('#faqExportBtn').addEventListener('click', () => exportCsv(shown.length));
     const fileInput = container.querySelector('#faqImportInput');
     container.querySelector('#faqImportBtn').addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => importCsv(fileInput));
@@ -261,10 +261,18 @@ export function openFaqEditor(prefill = {}) {
     });
 }
 
-async function exportCsv() {
+async function exportCsv(count = faqs.length) {
+    if (!count) {
+        showToast('info', 'ไม่มีคำถามที่พบบ่อยตามเงื่อนไขที่กรองให้ส่งออก');
+        return;
+    }
     try {
         const token = localStorage.getItem('bsru_token') || sessionStorage.getItem('bsru_token');
-        const res = await fetch(`${API_BASE_URL}/admin/faqs/export`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        const params = new URLSearchParams();
+        if (faqCategory && faqCategory !== 'all') params.set('category', faqCategory);
+        if (faqSearch && faqSearch.trim()) params.set('q', faqSearch.trim());
+        const qs = params.toString();
+        const res = await fetch(`${API_BASE_URL}/admin/faqs/export${qs ? `?${qs}` : ''}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
         const a = document.createElement('a');
@@ -274,6 +282,7 @@ async function exportCsv() {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        showToast('success', `ส่งออกคำถามที่พบบ่อย ${count} รายการ เป็นไฟล์ CSV เรียบร้อย`);
     } catch (err) {
         showToast('error', esc('ส่งออกไม่สำเร็จ: ' + err.message));
     }

@@ -177,7 +177,7 @@ export function renderManageStudents() {
                 <input type="text" id="adminStudentSearch" aria-label="à¸à¹à¸à¸«à¸²à¸à¸±à¸à¸¨à¸¶à¸à¸©à¸²" placeholder="ค้นหารหัสนักศึกษา, ชื่อ..." value="${esc(adminSearchQuery)}">
             </div>
             <button class="btn btn-success" id="addStudentBtn">เพิ่มนักศึกษา</button>
-            <button class="btn btn-primary" id="exportStudentCsvBtn" title="ส่งออกข้อมูลนักศึกษาเป็นไฟล์ CSV (UTF-8 with BOM)">
+            <button class="btn btn-primary" id="exportStudentCsvBtn" ${filtered.length === 0 ? 'disabled' : ''} title="${filtered.length === 0 ? 'ไม่มีข้อมูลตามเงื่อนไขที่กรองให้ส่งออก' : 'ส่งออกข้อมูลนักศึกษาตามที่กรองเป็นไฟล์ CSV (UTF-8 with BOM)'}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:text-bottom;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 ส่งออก CSV
             </button>
@@ -265,13 +265,25 @@ export function renderManageStudents() {
     document.getElementById('addStudentBtn').addEventListener('click', () => openStudentModal('add'));
 
     document.getElementById('exportStudentCsvBtn')?.addEventListener('click', async () => {
+        if (!filtered.length) {
+            showToast('info', 'ไม่มีข้อมูลนักศึกษาตามเงื่อนไขที่กรองให้ส่งออก');
+            return;
+        }
         try {
             let blob;
             try {
                 const token = localStorage.getItem('bsru_token') || sessionStorage.getItem('bsru_token') || sessionStorage.getItem('token') || localStorage.getItem('token');
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
                 const baseUrl = (typeof API_BASE_URL !== 'undefined' && API_BASE_URL) ? API_BASE_URL : '/api';
-                const res = await fetch(`${baseUrl}/students/export-csv`, { headers });
+                const params = new URLSearchParams();
+                if (adminLastSelectedBatch !== 'all' && activeBatches.length) {
+                    params.set('batches', activeBatches.join(','));
+                }
+                if (adminSearchQuery) {
+                    params.set('q', adminSearchQuery);
+                }
+                const qs = params.toString();
+                const res = await fetch(`${baseUrl}/students/export-csv${qs ? `?${qs}` : ''}`, { headers });
                 if (res.ok) {
                     blob = await res.blob();
                 }
@@ -279,12 +291,7 @@ export function renderManageStudents() {
 
             if (!blob) {
                 let csv = 'studentId,nameTh,nameEn,email,phone,faculty,major,year,status,advisorId,gpa,careerPath\n';
-                const exportList = (typeof filtered !== 'undefined' && filtered && filtered.length)
-                    ? filtered
-                    : (typeof filteredStudents !== 'undefined' && filteredStudents && filteredStudents.length
-                        ? filteredStudents
-                        : (Array.isArray(MOCK_STUDENTS_POOL) ? MOCK_STUDENTS_POOL : []));
-                exportList.forEach(s => {
+                filtered.forEach(s => {
                     const escField = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
                     csv += `${s.studentId},${escField(s.nameTh)},${escField(s.nameEn)},${escField(s.email || `${s.studentId}@bsru.ac.th`)},${escField(s.phone)},${escField(s.faculty || 'คณะวิทยาศาสตร์และเทคโนโลยี')},${escField(s.department || 'สาขาวิทยาการคอมพิวเตอร์')},${s.year || 1},${escField(s.status || 'กำลังศึกษา')},${escField(s.advisor || '')},${s.gpa != null ? Number(s.gpa).toFixed(2) : '0.00'},${escField(s.careerPath || '')}\n`;
                 });
@@ -293,13 +300,14 @@ export function renderManageStudents() {
 
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            const filterTag = adminLastSelectedBatch !== 'all' ? `_${adminLastSelectedBatch}` : '';
             a.href = url;
-            a.download = `bsru_students_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `bsru_students${filterTag}_${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('success', 'ส่งออกข้อมูลนักศึกษาเป็นไฟล์ CSV (UTF-8 with BOM) เรียบร้อย');
+            showToast('success', `ส่งออกข้อมูลนักศึกษา ${filtered.length} คน เป็นไฟล์ CSV (UTF-8 with BOM) เรียบร้อย`);
         } catch (err) {
             showToast('error', 'ส่งออก CSV ล้มเหลว: ' + esc(err.message));
         }

@@ -207,6 +207,35 @@ class StudentCsvTest {
     }
 
     @Test
+    @DisplayName("CSV Export: Filters by batches and search query when provided")
+    void testExportCsv_filtersByBatchesAndQuery() throws Exception {
+        Student s1 = new Student();
+        s1.setStudentId("6621207042");
+        s1.setNameTh("สมชาย ใจดี");
+        s1.setNameEn("Somchai Jaidee");
+
+        Student s2 = new Student();
+        s2.setStudentId("6521207099");
+        s2.setNameTh("สมหญิง มุ่งมั่น");
+        s2.setNameEn("Somying Mungman");
+
+        Student s3 = new Student();
+        s3.setStudentId("6621207055");
+        s3.setNameTh("กิตติศักดิ์ พรหมดี");
+        s3.setNameEn("Kittisak Promdee");
+
+        when(studentRepository.findAll(any(Sort.class))).thenReturn(List.of(s1, s2, s3));
+
+        ResponseEntity<byte[]> response = studentAdminController.exportCsv("66", "somchai", adminAuth);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        String content = new String(response.getBody(), StandardCharsets.UTF_8);
+        assertTrue(content.contains("6621207042"));
+        assertFalse(content.contains("6521207099"));
+        assertFalse(content.contains("6621207055"));
+    }
+
+    @Test
     @DisplayName("CSV Export: Non-admin caller receives 403 Forbidden")
     void testExportCsv_nonAdmin_throws403Forbidden() {
         StudentAdminException ex = assertThrows(StudentAdminException.class, () ->
