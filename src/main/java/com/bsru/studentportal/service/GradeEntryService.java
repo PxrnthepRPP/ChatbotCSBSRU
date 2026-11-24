@@ -208,10 +208,10 @@ public class GradeEntryService {
     private void syncGpas(Set<String> studentIds) {
         for (String id : studentIds) {
             Double gpa = academicRecords.gradesOf(id).gpa();
-            if (gpa == null) continue;
+            double resolvedGpa = gpa != null ? gpa : 0.0;
             studentRepository.findById(id).ifPresent(s -> {
-                if (s.getGpa() == null || Math.abs(s.getGpa() - gpa) > 0.001) {
-                    s.setGpa(gpa);
+                if (s.getGpa() == null || Math.abs(s.getGpa() - resolvedGpa) > 0.001) {
+                    s.setGpa(resolvedGpa);
                     studentRepository.save(s);
                 }
             });

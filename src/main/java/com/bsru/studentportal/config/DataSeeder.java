@@ -19,6 +19,7 @@ import com.bsru.studentportal.repository.RegistrationPeriodRepository;
 import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import com.bsru.studentportal.security.CurrentUser;
+import com.bsru.studentportal.service.AcademicRecordService;
 import com.bsru.studentportal.service.AccountService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class DataSeeder implements CommandLineRunner {
     private final GraduationProgressRepository graduationProgressRepository;
     private final GraduationAuditRepository graduationAuditRepository;
     private final GraduationAuditService graduationAuditService;
+    private final AcademicRecordService academicRecordService;
     private final AccountService accountService;
     private final ClassSectionRepository classSectionRepository;
     private final SectionEnrollmentRepository sectionEnrollmentRepository;
@@ -112,6 +114,7 @@ public class DataSeeder implements CommandLineRunner {
         seedLegacySamples();
         seedGraduationAudits();
         graduationAuditService.syncAllProfileGpas();
+        academicRecordService.syncAllStudentGpas();
         fillProfileDefaults();
         accountService.ensureAccounts();
 

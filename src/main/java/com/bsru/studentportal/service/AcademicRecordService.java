@@ -10,7 +10,9 @@ import com.bsru.studentportal.repository.CourseGradeScheduleRepository;
 import com.bsru.studentportal.repository.GraduationProgressRepository;
 import com.bsru.studentportal.repository.InstructorGradeRepository;
 import com.bsru.studentportal.repository.SectionEnrollmentRepository;
+import com.bsru.studentportal.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +57,30 @@ public class AcademicRecordService {
     private final InstructorGradeRepository instructorGradeRepository;
     private final CourseGradeScheduleRepository gradeScheduleRepository;
     private final SectionEnrollmentRepository enrollmentRepository;
+
+    @Autowired(required = false)
+    private StudentRepository studentRepository;
+
+    /** Keeps students.gpa equal to the weighted GPA computed from all graded semesters on the grades page (0.00 if none). */
+    @Transactional
+    public void syncStudentGpa(String studentId) {
+        if (studentRepository == null || studentId == null) return;
+        Double calculated = gradesOf(studentId).gpa();
+        double targetGpa = calculated != null ? calculated : 0.0;
+        studentRepository.findById(studentId).ifPresent(s -> {
+            if (s.getGpa() == null || Math.abs(s.getGpa() - targetGpa) > 0.001) {
+                s.setGpa(targetGpa);
+                studentRepository.save(s);
+            }
+        });
+    }
+
+    /** Syncs every student's stored GPA from their grades across all semesters. */
+    @Transactional
+    public void syncAllStudentGpas() {
+        if (studentRepository == null) return;
+        studentRepository.findAll().forEach(s -> syncStudentGpa(s.getStudentId()));
+    }
 
     /**
      * Grades by semester. The graduation audit holds every course the student took, so when a student

@@ -196,8 +196,9 @@ export function updateTopbarAvatar(avatarUrl) {
     }
 }
 
-export function applyDbProfile(target, db, audit, timetable) {
+export function applyDbProfile(target, db, audit, timetable, gradesReport = null) {
     const term = (timetable || []).find(t => t.registration) || (timetable || [])[0];
+    const resolvedGpa = gradesReport ? (gradesReport.gpa ?? 0) : (db.gpa ?? target.gpa);
     Object.assign(target, {
         fromDb: true,
         studentId: db.studentId,
@@ -205,7 +206,7 @@ export function applyDbProfile(target, db, audit, timetable) {
         nameEn: db.nameEn,
         year: db.year,
         status: db.status,
-        gpa: db.gpa ?? target.gpa,
+        gpa: resolvedGpa,
         advisor: db.advisor?.nameTh || '-',
         faculty: db.faculty || target.faculty,
         department: db.department || target.department,
@@ -231,18 +232,19 @@ export function applyDbProfile(target, db, audit, timetable) {
  * the advisor's view and the chatbot show the same data. The avatar stays in this browser.
  */
 export async function loadProfileFromDb(student, studentId, onUpdate) {
-    let db, audit, timetable;
+    let db, audit, timetable, gradesReport;
     try {
-        [db, audit, timetable] = await Promise.all([
+        [db, audit, timetable, gradesReport] = await Promise.all([
             fetchAPI(`/students/${encodeURIComponent(studentId)}`),
             fetchAPI(`/students/${encodeURIComponent(studentId)}/graduation-audit`).catch(() => null),
             fetchAPI(`/students/${encodeURIComponent(studentId)}/timetable`).catch(() => null),
+            fetchAPI(`/students/${encodeURIComponent(studentId)}/grades`).catch(() => null),
         ]);
     } catch (err) {
         console.warn('[Profile] Backend unavailable, showing sample profile:', err.message);
         return;
     }
-    applyDbProfile(student, db, audit, timetable);
+    applyDbProfile(student, db, audit, timetable, gradesReport);
     renderBibliography(student);
     if (typeof onUpdate === 'function') {
         onUpdate();
