@@ -116,10 +116,25 @@ export function gradesFromApi(report) {
     return { semesters, gpa: report.gpa ?? 0, earnedCredits };
 }
 
+let _lastGradesStudent = null;
+let _lastGradesStudentId = null;
+let _gradesSyncBound = false;
+
 export function renderGrades(student, studentId = student.studentId) {
+    _lastGradesStudent = student;
+    _lastGradesStudentId = studentId;
+
+    if (!_gradesSyncBound) {
+        _gradesSyncBound = true;
+        window.addEventListener('bsru:enrollment-updated', () => {
+            if (_lastGradesStudent && _lastGradesStudentId) {
+                renderGrades(_lastGradesStudent, _lastGradesStudentId);
+            }
+        });
+    }
+
     const container = document.getElementById('gradesContent');
     let currentIdx = 0; // default to most recent semester
-    // Show the offline sample first, then replace it with the database records when the backend answers
     let grades = { semesters: MOCK_GRADES.semesters, gpa: cumulativeGpa(MOCK_GRADES.semesters) };
 
     fetchAPI(`/students/${encodeURIComponent(studentId)}/grades`)
@@ -132,7 +147,20 @@ export function renderGrades(student, studentId = student.studentId) {
 
     function render(idx) {
         if (grades.semesters.length === 0) {
-            container.innerHTML = `<div class="card"><div class="card-title">📖 ผลการเรียนรายภาคเรียน (Studied Result)</div><p>ยังไม่มีข้อมูลผลการเรียนในระบบ</p></div>`;
+            container.innerHTML = `
+                <div class="stat-row">
+                    <div class="stat-card"><div class="stat-icon purple">📊</div><div><div class="stat-value">0.00</div><div class="stat-label">GPA สะสม</div></div></div>
+                    <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${student?.credits ?? 0}</div><div class="stat-label">หน่วยกิตสะสม</div></div></div>
+                    <div class="stat-card"><div class="stat-icon amber">📋</div><div><div class="stat-value">0</div><div class="stat-label">ภาคเรียนทั้งหมด</div></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">📖 ผลการเรียนรายภาคเรียน (Studied Result)</div>
+                    <div style="text-align:center;padding:36px 16px;color:var(--text-muted)">
+                        <div style="font-size:2rem;margin-bottom:8px">📋</div>
+                        <p style="font-size:0.95rem;margin:0">ยังไม่มีข้อมูลการลงทะเบียนหรือผลการเรียนในระบบ</p>
+                        <p style="font-size:0.85rem;margin-top:4px">เมื่อลงทะเบียนวิชาในเมนู "ตารางเรียน" รายวิชาและภาคเรียนจะบันทึกมาแสดงที่นี่โดยอัตโนมัติ</p>
+                    </div>
+                </div>`;
             return;
         }
         const sem = grades.semesters[idx];

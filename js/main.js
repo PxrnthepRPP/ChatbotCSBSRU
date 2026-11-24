@@ -251,6 +251,9 @@ function initApp() {
         requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 
         // Load component CSS on demand
+        if (modId === 'grades') {
+            window.dispatchEvent(new CustomEvent('bsru:enrollment-updated'));
+        }
         if (modId === 'timetable') {
             loadComponentCSS('timetable');
         }

@@ -67,10 +67,18 @@ export function renderManageAdvisors() {
     }));
     document.querySelectorAll('.del-advisor-btn').forEach(b => b.addEventListener('click', async () => {
         const idx = parseInt(b.dataset.idx);
-        if (await confirmDialog(`ต้องการลบ "${MOCK_ADVISORS[idx].nameTh}" หรือไม่?`)) {
-            MOCK_ADVISORS.splice(idx, 1);
-            renderManageAdvisors();
-            renderAdminDashboard();
+        const adv = MOCK_ADVISORS[idx];
+        if (!adv) return;
+        if (await confirmDialog(`ต้องการลบ "${adv.nameTh}" (${adv.id}) หรือไม่?`)) {
+            try {
+                await fetchAPI(`/advisors/${encodeURIComponent(adv.id)}`, 'DELETE', null, 8000);
+                MOCK_ADVISORS.splice(idx, 1);
+                showToast('success', `ลบอาจารย์ ${esc(adv.nameTh)} เรียบร้อยแล้ว`);
+                renderManageAdvisors();
+                renderAdminDashboard();
+            } catch (err) {
+                showToast('error', esc(apiErrorText(err)));
+            }
         }
     }));
 }
@@ -160,34 +168,84 @@ function openAdvisorModal(mode, idx) {
     const a = mode === 'edit' ? MOCK_ADVISORS[idx] : {};
     modalTitle.textContent = mode === 'edit' ? 'แก้ไขอาจารย์ที่ปรึกษา' : 'เพิ่มอาจารย์ที่ปรึกษาใหม่';
     modalBody.innerHTML = `
-        <div class="modal-field"><label>รหัส</label><input id="mfId" value="${esc(a.id || '')}" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (ไทย)</label><input id="mfNameTh" value="${esc(a.nameTh || '')}"></div>
-        <div class="modal-field"><label>ชื่อ-สกุล (Eng)</label><input id="mfNameEn" value="${esc(a.nameEn || '')}"></div>
-        <div class="modal-field"><label>Email</label><input id="mfEmail" value="${esc(a.email || '')}"></div>
-        <div class="modal-field"><label>โทรศัพท์</label><input id="mfPhone" value="${esc(a.phone || '')}"></div>
+        <div class="modal-field">
+            <label>รหัสอาจารย์ <span style="color:var(--red-500)">*</span></label>
+            <input id="mfId" value="${esc(a.id || '')}" placeholder="เช่น ADV-08" ${mode === 'edit' ? 'readonly style="opacity:0.6"' : ''}>
+        </div>
+        <div class="modal-field">
+            <label>ชื่อ-สกุล (ไทย) <span style="color:var(--red-500)">*</span></label>
+            <input id="mfNameTh" value="${esc(a.nameTh || '')}" placeholder="เช่น ผศ.ดร.วรรณภา สมบูรณ์">
+        </div>
+        <div class="modal-field">
+            <label>ชื่อ-สกุล (Eng)</label>
+            <input id="mfNameEn" value="${esc(a.nameEn || '')}" placeholder="เช่น Wannapha Somboon">
+        </div>
+        <div class="modal-field">
+            <label>Email</label>
+            <input id="mfEmail" value="${esc(a.email || '')}" placeholder="เช่น wannapha.s@bsru.ac.th">
+        </div>
+        <div class="modal-field">
+            <label>โทรศัพท์ (ใช้เป็นรหัสผ่านแรกเข้า) <span style="color:var(--red-500)">*</span></label>
+            <input id="mfPhone" value="${esc(a.phone || '')}" placeholder="เช่น 0891234567">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">⚠️ เบอร์โทรศัพท์นี้จะถูกใช้เป็นรหัสผ่านเริ่มต้นสำหรับเข้าสู่ระบบ <strong>(ไม่ต้องใส่ขีดหรือ - เช่น 0891234567)</strong> และระบบจะให้อาจารย์เปลี่ยนรหัสผ่านใหม่ทันทีเมื่อเข้าสู่ระบบสำเร็จ</div>
+        </div>
     `;
     
     const saveBtn = document.getElementById('modalSave');
     const newSaveBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
     
-    newSaveBtn.addEventListener('click', () => {
-        const data = {
-            id: document.getElementById('mfId').value.trim(),
-            nameTh: document.getElementById('mfNameTh').value.trim(),
-            nameEn: titleCaseEn(document.getElementById('mfNameEn').value.trim()),
-            email: document.getElementById('mfEmail').value.trim(),
-            phone: document.getElementById('mfPhone').value.trim(),
+    newSaveBtn.addEventListener('click', async () => {
+        const id = document.getElementById('mfId').value.trim();
+        const nameTh = document.getElementById('mfNameTh').value.trim();
+        const nameEn = titleCaseEn(document.getElementById('mfNameEn').value.trim());
+        const email = document.getElementById('mfEmail').value.trim();
+        const phone = document.getElementById('mfPhone').value.trim();
+        
+        if (!id || !nameTh) {
+            showToast('error', 'กรุณากรอกรหัสและชื่ออาจารย์');
+            return;
+        }
+        if (!phone) {
+            showToast('error', 'กรุณาระบุเบอร์โทรศัพท์สำหรับใช้เป็นรหัสผ่านแรกเข้า');
+            return;
+        }
+
+        const payload = {
+            id,
+            nameTh,
+            nameEn,
+            email,
+            phone,
             department: a.department || 'วิทยาการคอมพิวเตอร์',
-            studentsCount: a.studentsCount || 0,
+            canAdmin: !!a.canAdmin,
         };
-        if (!data.id || !data.nameTh) return alert('กรุณากรอกข้อมูลที่จำเป็น');
-        if (mode === 'edit') { MOCK_ADVISORS[idx] = data; }
-        else { MOCK_ADVISORS.push(data); }
-        advisorDraft.clear();   // saved: the draft is no longer needed
-        crudModal.classList.remove('open');
-        renderManageAdvisors();
-        renderAdminDashboard();
+
+        try {
+            newSaveBtn.disabled = true;
+            newSaveBtn.textContent = 'กำลังบันทึก...';
+            if (mode === 'edit') {
+                const updated = await fetchAPI(`/advisors/${encodeURIComponent(id)}`, 'PUT', payload, 10000);
+                const item = { ...a, ...payload, ...updated };
+                MOCK_ADVISORS[idx] = item;
+                showToast('success', `แก้ไขข้อมูลอาจารย์ ${esc(nameTh)} เรียบร้อยแล้ว`);
+            } else {
+                const created = await fetchAPI('/advisors', 'POST', payload, 10000);
+                const item = { ...payload, ...created, studentsCount: 0 };
+                MOCK_ADVISORS.push(item);
+                const phoneDigits = phone.replace(/\D/g, '') || phone;
+                showToast('success', `เพิ่มอาจารย์ ${esc(nameTh)} สำเร็จ! รหัสผ่านแรกเข้า: ${esc(phoneDigits)} (ไม่ต้องใส่ขีดหรือ -)`);
+            }
+            advisorDraft.clear();
+            crudModal.classList.remove('open');
+            renderManageAdvisors();
+            renderAdminDashboard();
+        } catch (err) {
+            showToast('error', esc(apiErrorText(err)));
+        } finally {
+            newSaveBtn.disabled = false;
+            newSaveBtn.textContent = 'บันทึก';
+        }
     });
 
     // Unsaved input survives closing the form by mistake; cleared once saved

@@ -65,8 +65,12 @@ public class AcademicRecordService {
     @Transactional(readOnly = true)
     public GradeReport gradesOf(String studentId) {
         Optional<JsonNode> audit = graduationAudits.auditOf(studentId).map(GraduationAuditService.AuditResult::audit);
-        GradeReport base = audit.isPresent() ? fromAudit(studentId, audit.get()) : fromCourseGrades(studentId);
-        return withReleasedGrades(base, releasedGradesOf(studentId));
+        GradeReport fromAuditReport = audit.map(a -> fromAudit(studentId, a)).orElse(null);
+        GradeReport base = (fromAuditReport != null && !fromAuditReport.isEmpty())
+                ? fromAuditReport
+                : fromCourseGrades(studentId);
+        GradeReport withReleased = withReleasedGrades(base, releasedGradesOf(studentId));
+        return withEnrolledSections(withReleased, studentId);
     }
 
     /** Teacher grades of a student whose course is released (release time passed) and who is still enrolled */
@@ -131,6 +135,69 @@ public class AcademicRecordService {
             totalGraded += graded;
         }
         return new GradeReport(base.studentId(), semesters, totalGraded, gpa(totalPoints, totalGraded));
+    }
+
+    /**
+     * Integrates sections the student registered in their timetable (section_enrollments).
+     * Courses appear in their registered semester; if grades are not released yet, grade and points
+     * are null (displayed as '-' with registered credits counted).
+     */
+    private GradeReport withEnrolledSections(GradeReport base, String studentId) {
+        if (enrollmentRepository == null || studentId == null) return base;
+        List<com.bsru.studentportal.model.SectionEnrollment> enrollments;
+        try {
+            enrollments = enrollmentRepository.findByStudentStudentId(studentId).stream()
+                    .filter(e -> e.getStatus() == EnrollmentStatus.CONFIRMED && e.getSection() != null)
+                    .toList();
+        } catch (Exception ignored) {
+            return base;
+        }
+        if (enrollments.isEmpty()) return base;
+
+        Map<Integer, List<Course>> byTerm = new TreeMap<>(Comparator.reverseOrder());
+        for (Semester sem : base.semesters()) {
+            byTerm.put(sem.academicYear() * 10 + sem.term(), new ArrayList<>(sem.courses()));
+        }
+
+        boolean addedAny = false;
+        for (com.bsru.studentportal.model.SectionEnrollment e : enrollments) {
+            ClassSection sec = e.getSection();
+            if (sec.getAcademicYear() == null || sec.getTerm() == null) continue;
+            int key = sec.getAcademicYear() * 10 + sec.getTerm();
+            List<Course> courses = byTerm.computeIfAbsent(key, k -> new ArrayList<>());
+            boolean exists = courses.stream()
+                    .anyMatch(c -> c.code() != null && c.code().equalsIgnoreCase(sec.getCourseCode()));
+            if (!exists) {
+                courses.add(new Course(sec.getCourseCode(), sec.getCourseName(), sec.getCredits(), null, null));
+                addedAny = true;
+            }
+        }
+        if (!addedAny && byTerm.size() == base.semesters().size()) {
+            return base;
+        }
+
+        List<Semester> semesters = new ArrayList<>();
+        double totalPoints = 0;
+        int totalGraded = 0;
+        for (Map.Entry<Integer, List<Course>> entry : byTerm.entrySet()) {
+            int year = entry.getKey() / 10;
+            int term = entry.getKey() % 10;
+            double points = 0;
+            int graded = 0;
+            int registered = 0;
+            for (Course c : entry.getValue()) {
+                registered += c.credits();
+                if (c.gradePoint() != null) {
+                    points += c.gradePoint() * c.credits();
+                    graded += c.credits();
+                }
+            }
+            semesters.add(new Semester("Term " + term + "/" + year, year, term, entry.getValue(), registered, graded, gpa(points, graded)));
+            totalPoints += points;
+            totalGraded += graded;
+        }
+        Double cumulativeGpa = totalGraded > 0 ? gpa(totalPoints, totalGraded) : base.gpa();
+        return new GradeReport(base.studentId() != null ? base.studentId() : studentId, semesters, totalGraded, cumulativeGpa);
     }
 
     private static final Map<String, Double> GRADE_POINTS = Map.of(

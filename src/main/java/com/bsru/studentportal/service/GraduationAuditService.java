@@ -1,7 +1,17 @@
 package com.bsru.studentportal.service;
 
+import com.bsru.studentportal.model.ClassSection;
+import com.bsru.studentportal.model.CourseGrade;
+import com.bsru.studentportal.model.CourseGradeSchedule;
 import com.bsru.studentportal.model.GraduationAudit;
+import com.bsru.studentportal.model.InstructorGrade;
+import com.bsru.studentportal.model.SectionEnrollment;
+import com.bsru.studentportal.model.SectionEnrollment.EnrollmentStatus;
+import com.bsru.studentportal.repository.CourseGradeRepository;
+import com.bsru.studentportal.repository.CourseGradeScheduleRepository;
 import com.bsru.studentportal.repository.GraduationAuditRepository;
+import com.bsru.studentportal.repository.InstructorGradeRepository;
+import com.bsru.studentportal.repository.SectionEnrollmentRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,12 +19,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,15 +49,92 @@ import java.util.Optional;
  * the summary counts units, credits and lists what is still missing.
  */
 @Service
-@RequiredArgsConstructor
 public class GraduationAuditService {
 
     private static final String PASS = "PASS";
     private static final String FAIL = "FAIL";
 
+    private static final Map<String, Double> GRADE_POINTS = Map.of(
+            "A", 4.0, "B+", 3.5, "B", 3.0, "C+", 2.5, "C", 2.0, "D+", 1.5, "D", 1.0, "F", 0.0);
+
     private final GraduationAuditRepository repository;
     private final StudentRepository studentRepository;
     private final ObjectMapper objectMapper;
+    private final CourseGradeRepository courseGradeRepository;
+    private final SectionEnrollmentRepository enrollmentRepository;
+    private final InstructorGradeRepository instructorGradeRepository;
+    private final CourseGradeScheduleRepository gradeScheduleRepository;
+
+    public GraduationAuditService(GraduationAuditRepository repository,
+                                  StudentRepository studentRepository,
+                                  ObjectMapper objectMapper) {
+        this(repository, studentRepository, objectMapper, null, null, null, null);
+    }
+
+    @Autowired
+    public GraduationAuditService(GraduationAuditRepository repository,
+                                  StudentRepository studentRepository,
+                                  ObjectMapper objectMapper,
+                                  @Autowired(required = false) CourseGradeRepository courseGradeRepository,
+                                  @Autowired(required = false) SectionEnrollmentRepository enrollmentRepository,
+                                  @Autowired(required = false) InstructorGradeRepository instructorGradeRepository,
+                                  @Autowired(required = false) CourseGradeScheduleRepository gradeScheduleRepository) {
+        this.repository = repository;
+        this.studentRepository = studentRepository;
+        this.objectMapper = objectMapper;
+        this.courseGradeRepository = courseGradeRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.instructorGradeRepository = instructorGradeRepository;
+        this.gradeScheduleRepository = gradeScheduleRepository;
+    }
+
+    private String cleanCurriculumTemplate;
+    private String somchaiTemplate;
+
+    public synchronized String getCleanCurriculumTemplate() {
+        if (cleanCurriculumTemplate != null) return cleanCurriculumTemplate;
+        try {
+            ClassPathResource res = new ClassPathResource("graduation/curriculum-template.json");
+            if (res.exists()) {
+                try (InputStream in = res.getInputStream()) {
+                    cleanCurriculumTemplate = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                    return cleanCurriculumTemplate;
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
+    }
+
+    public synchronized String getSomchaiCurriculum() {
+        if (somchaiTemplate != null) return somchaiTemplate;
+        try {
+            ClassPathResource res = new ClassPathResource("graduation/6621207042.json");
+            if (!res.exists()) {
+                res = new ClassPathResource("graduation/6621207042.json.bak");
+            }
+            if (res.exists()) {
+                try (InputStream in = res.getInputStream()) {
+                    somchaiTemplate = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                    return somchaiTemplate;
+                }
+            }
+        } catch (IOException ignored) {}
+        return null;
+    }
+
+    public boolean isSomchai(String studentId) {
+        if (studentId == null) return false;
+        if ("6421100042".equals(studentId) || "6621207042".equals(studentId)) {
+            return true;
+        }
+        if (studentRepository != null) {
+            return studentRepository.findById(studentId)
+                    .map(s -> s.getNameTh() != null && s.getNameTh().contains("สมชาย"))
+                    .orElse(false);
+        }
+        return false;
+    }
 
     /** One category checked on its own, for the chatbot and the summary */
     public record Unit(String section, String title, String status, Integer minCr, int passCr, String note) {}
@@ -47,13 +143,38 @@ public class GraduationAuditService {
 
     @Transactional(readOnly = true)
     public Optional<AuditResult> auditOf(String studentId) {
-        return repository.findById(studentId).map(stored -> compute(stored.getData()));
+        if (isSomchai(studentId)) {
+            Optional<GraduationAudit> stored = repository.findById(studentId);
+            if (stored.isPresent()) {
+                return Optional.of(compute(stored.get().getData()));
+            }
+            String somchaiData = getSomchaiCurriculum();
+            if (somchaiData != null) {
+                return Optional.of(compute(somchaiData));
+            }
+        }
+
+        // For other students / real students: dynamic linking from real courses + curriculum template
+        String baseJson = repository.findById(studentId).map(GraduationAudit::getData).orElse(null);
+        if (baseJson == null) {
+            baseJson = getCleanCurriculumTemplate();
+        }
+        if (baseJson != null) {
+            return Optional.of(buildDynamicAudit(studentId, baseJson));
+        }
+        return Optional.empty();
     }
 
     /** The stored sheet as uploaded (no computed fields), e.g. to download as a template */
     @Transactional(readOnly = true)
     public Optional<String> rawOf(String studentId) {
-        return repository.findById(studentId).map(GraduationAudit::getData);
+        if (isSomchai(studentId)) {
+            Optional<String> stored = repository.findById(studentId).map(GraduationAudit::getData);
+            if (stored.isPresent()) return stored;
+            return Optional.ofNullable(getSomchaiCurriculum());
+        }
+        String template = getCleanCurriculumTemplate();
+        return Optional.ofNullable(template);
     }
 
     /**
@@ -94,6 +215,10 @@ public class GraduationAuditService {
     }
 
     private void syncProfileGpa(String studentId, AuditResult result) {
+        int graded = result.audit().path("summary").path("gradedCredits").asInt(0);
+        if (graded <= 0) {
+            return;
+        }
         double gpa = result.audit().path("summary").path("currentGpa").asDouble();
         studentRepository.findById(studentId).ifPresent(s -> {
             if (s.getGpa() == null || Math.abs(s.getGpa() - gpa) > 0.001) {
@@ -110,6 +235,255 @@ public class GraduationAuditService {
         } else if (node instanceof ArrayNode arr) {
             arr.forEach(GraduationAuditService::stripComputed);
         }
+    }
+
+    public static class StudentCourseRecord {
+        String code;
+        String name;
+        int credits = 3;
+        String latestGrade;
+        Double latestGradePoint;
+        Map<String, String> termEntries = new LinkedHashMap<>();
+
+        public void addAttempt(int academicYear, int term, String grade, Double point, int termIndex) {
+            int year2 = academicYear >= 2500 ? academicYear - 2500 : academicYear;
+            String termVal = (grade != null && !grade.isBlank())
+                    ? (grade.trim() + " " + term + "/" + year2)
+                    : ("-- " + term + "/" + year2);
+            termEntries.put(String.valueOf(termIndex), termVal);
+
+            if (grade != null && !grade.isBlank()) {
+                boolean isPass = !"F".equalsIgnoreCase(grade.trim());
+                if (latestGrade == null || "F".equalsIgnoreCase(latestGrade) || isPass) {
+                    latestGrade = grade.trim();
+                    latestGradePoint = point;
+                }
+            }
+        }
+    }
+
+    public AuditResult buildDynamicAudit(String studentId, String baseJson) {
+        ObjectNode root;
+        try {
+            root = (ObjectNode) objectMapper.readTree(baseJson);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Graduation audit JSON is invalid", e);
+        }
+
+        // Section 3: Ensure courses array is clean
+        ObjectNode sec3 = findSection(root, "sec-3");
+        ArrayNode sec3Courses = null;
+        if (sec3 != null) {
+            ArrayNode groups = sec3.withArray("groups");
+            ObjectNode g0 = groups.isEmpty() ? groups.addObject() : (ObjectNode) groups.get(0);
+            if (!g0.has("code")) g0.put("code", "3.");
+            if (!g0.has("title")) g0.put("title", "หมวดวิชาเลือกเสรี");
+            if (!g0.has("minCr")) g0.put("minCr", 6);
+            sec3Courses = g0.putArray("courses");
+        }
+
+        // Collect all course nodes from Sections 1, 2, and 4
+        Map<String, ObjectNode> criteriaCourses = new LinkedHashMap<>();
+        for (JsonNode sec : root.withArray("sections")) {
+            String secId = sec.path("id").asText();
+            if ("sec-3".equalsIgnoreCase(secId)) continue;
+            collectCriteriaCourses(sec, criteriaCourses);
+        }
+
+        // Gather real student courses
+        Map<String, StudentCourseRecord> studentCourses = getStudentCourses(studentId);
+
+        // Overlay student courses into criteria (Sections 1, 2, 4) or Free Electives (Section 3)
+        for (StudentCourseRecord scr : studentCourses.values()) {
+            String codeKey = scr.code.trim().toUpperCase();
+            if (criteriaCourses.containsKey(codeKey)) {
+                ObjectNode cNode = criteriaCourses.get(codeKey);
+                applyCourseRecord(cNode, scr);
+            } else if (sec3Courses != null) {
+                ObjectNode cNode = sec3Courses.addObject();
+                cNode.put("code", scr.code);
+                cNode.put("name", scr.name != null && !scr.name.isBlank() ? scr.name : scr.code);
+                cNode.put("credits", scr.credits + "(3-0-6)");
+                applyCourseRecord(cNode, scr);
+            }
+        }
+
+        return compute(root.toString());
+    }
+
+    private void collectCriteriaCourses(JsonNode node, Map<String, ObjectNode> map) {
+        if (node == null) return;
+        if (node.has("courses") && node.get("courses").isArray()) {
+            for (JsonNode c : node.get("courses")) {
+                if (c instanceof ObjectNode obj && obj.hasNonNull("code")) {
+                    map.put(obj.get("code").asText().trim().toUpperCase(), obj);
+                }
+            }
+        }
+        if (node.has("groups") && node.get("groups").isArray()) {
+            for (JsonNode g : node.get("groups")) {
+                collectCriteriaCourses(g, map);
+            }
+        }
+        if (node.has("subsections") && node.get("subsections").isArray()) {
+            for (JsonNode s : node.get("subsections")) {
+                collectCriteriaCourses(s, map);
+            }
+        }
+    }
+
+    private ObjectNode findSection(ObjectNode root, String secId) {
+        if (!root.has("sections")) return null;
+        for (JsonNode sec : root.get("sections")) {
+            if (secId.equalsIgnoreCase(sec.path("id").asText()) && sec instanceof ObjectNode obj) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    private void applyCourseRecord(ObjectNode cNode, StudentCourseRecord scr) {
+        int credits = scr.credits > 0 ? scr.credits : 3;
+        if (scr.latestGrade != null) {
+            if ("F".equalsIgnoreCase(scr.latestGrade)) {
+                cNode.put("ca", 0);
+                cNode.put("attempted", credits);
+                cNode.put("pt", 0.0);
+                cNode.put("avg", "0.00");
+                cNode.put("max", "0.00");
+                if (cNode.has("passed")) cNode.put("passed", false);
+            } else {
+                cNode.put("ca", credits);
+                cNode.put("attempted", credits);
+                double pt = scr.latestGradePoint != null ? scr.latestGradePoint * credits : 0.0;
+                cNode.put("pt", pt);
+                String gpaStr = scr.latestGradePoint != null
+                        ? String.format(Locale.ROOT, "%.2f", scr.latestGradePoint)
+                        : "0.00";
+                cNode.put("avg", gpaStr);
+                cNode.put("max", gpaStr);
+                if (cNode.has("passed")) cNode.put("passed", true);
+            }
+        } else {
+            cNode.putNull("ca");
+            cNode.putNull("pt");
+            cNode.putNull("avg");
+            cNode.putNull("max");
+            if (cNode.has("passed")) cNode.put("passed", false);
+        }
+
+        ObjectNode termsNode = cNode.has("terms") && cNode.get("terms").isObject()
+                ? (ObjectNode) cNode.get("terms")
+                : cNode.putObject("terms");
+        for (Map.Entry<String, String> entry : scr.termEntries.entrySet()) {
+            termsNode.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private int calculateTermIndex(String studentId, int academicYear, int term) {
+        int admissionBatch = 66;
+        if (studentId != null && studentId.length() >= 2) {
+            try {
+                admissionBatch = Integer.parseInt(studentId.substring(0, 2));
+            } catch (NumberFormatException ignored) {}
+        }
+        int year2 = academicYear >= 2500 ? academicYear - 2500 : academicYear;
+        if (year2 <= 0) return 1;
+        int index = (year2 - admissionBatch) * 2 + (term > 0 ? term : 1);
+        if (index < 1) return 1;
+        if (index > 8) return 8;
+        return index;
+    }
+
+    private Map<String, StudentCourseRecord> getStudentCourses(String studentId) {
+        Map<String, StudentCourseRecord> map = new LinkedHashMap<>();
+
+        // 1. Graded courses from courseGradeRepository
+        if (courseGradeRepository != null && studentId != null) {
+            List<CourseGrade> grades = courseGradeRepository
+                    .findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId);
+            List<CourseGrade> chronological = new ArrayList<>(grades);
+            chronological.sort(Comparator.comparing(CourseGrade::getAcademicYear, Comparator.nullsFirst(Comparator.naturalOrder()))
+                    .thenComparing(CourseGrade::getTerm, Comparator.nullsFirst(Comparator.naturalOrder())));
+            for (CourseGrade g : chronological) {
+                if (g.getCourseCode() == null) continue;
+                String codeKey = g.getCourseCode().trim().toUpperCase();
+                StudentCourseRecord scr = map.computeIfAbsent(codeKey, k -> {
+                    StudentCourseRecord r = new StudentCourseRecord();
+                    r.code = g.getCourseCode().trim();
+                    r.name = g.getCourseName();
+                    r.credits = g.getCredits() != null ? g.getCredits() : 3;
+                    return r;
+                });
+                if (g.getCourseName() != null && !g.getCourseName().isBlank()) scr.name = g.getCourseName();
+                if (g.getCredits() != null && g.getCredits() > 0) scr.credits = g.getCredits();
+                int termIdx = calculateTermIndex(studentId, g.getAcademicYear() != null ? g.getAcademicYear() : 0,
+                        g.getTerm() != null ? g.getTerm() : 1);
+                scr.addAttempt(g.getAcademicYear() != null ? g.getAcademicYear() : 0,
+                        g.getTerm() != null ? g.getTerm() : 1, g.getGrade(), g.getGradePoint(), termIdx);
+            }
+        }
+
+        // 2. Released grades from instructorGradeRepository
+        if (instructorGradeRepository != null && gradeScheduleRepository != null && enrollmentRepository != null && studentId != null) {
+            LocalDateTime now = LocalDateTime.now();
+            List<InstructorGrade> instructorGrades = instructorGradeRepository.findByStudentStudentId(studentId);
+            for (InstructorGrade ig : instructorGrades) {
+                ClassSection sec = ig.getSection();
+                if (sec == null || sec.getCourseCode() == null) continue;
+                boolean released = gradeScheduleRepository
+                        .findByAcademicYearAndTermAndCourseCodeIgnoreCase(sec.getAcademicYear(), sec.getTerm(), sec.getCourseCode())
+                        .map(CourseGradeSchedule::getReleaseAt)
+                        .filter(at -> !at.isAfter(now))
+                        .isPresent();
+                boolean enrolled = enrollmentRepository.findByStudentStudentIdAndSectionId(studentId, sec.getId())
+                        .filter(e -> e.getStatus() == EnrollmentStatus.CONFIRMED).isPresent();
+                if (released && enrolled) {
+                    String codeKey = sec.getCourseCode().trim().toUpperCase();
+                    StudentCourseRecord scr = map.computeIfAbsent(codeKey, k -> {
+                        StudentCourseRecord r = new StudentCourseRecord();
+                        r.code = sec.getCourseCode().trim();
+                        r.name = sec.getCourseName();
+                        r.credits = sec.getCredits() != null ? sec.getCredits() : 3;
+                        return r;
+                    });
+                    if (sec.getCourseName() != null && !sec.getCourseName().isBlank()) scr.name = sec.getCourseName();
+                    if (sec.getCredits() != null && sec.getCredits() > 0) scr.credits = sec.getCredits();
+                    int termIdx = calculateTermIndex(studentId, sec.getAcademicYear() != null ? sec.getAcademicYear() : 0,
+                            sec.getTerm() != null ? sec.getTerm() : 1);
+                    scr.addAttempt(sec.getAcademicYear() != null ? sec.getAcademicYear() : 0,
+                            sec.getTerm() != null ? sec.getTerm() : 1, ig.getGrade(), GRADE_POINTS.get(ig.getGrade()), termIdx);
+                }
+            }
+        }
+
+        // 3. Timetable enrollments from enrollmentRepository (in progress / pending)
+        if (enrollmentRepository != null && studentId != null) {
+            List<SectionEnrollment> enrollments = enrollmentRepository.findByStudentStudentId(studentId);
+            for (SectionEnrollment se : enrollments) {
+                if (se.getStatus() != EnrollmentStatus.CONFIRMED || se.getSection() == null) continue;
+                ClassSection sec = se.getSection();
+                if (sec.getCourseCode() == null) continue;
+                String codeKey = sec.getCourseCode().trim().toUpperCase();
+                StudentCourseRecord scr = map.computeIfAbsent(codeKey, k -> {
+                    StudentCourseRecord r = new StudentCourseRecord();
+                    r.code = sec.getCourseCode().trim();
+                    r.name = sec.getCourseName();
+                    r.credits = sec.getCredits() != null ? sec.getCredits() : 3;
+                    return r;
+                });
+                if (sec.getCourseName() != null && !sec.getCourseName().isBlank()) scr.name = sec.getCourseName();
+                if (sec.getCredits() != null && sec.getCredits() > 0) scr.credits = sec.getCredits();
+                int termIdx = calculateTermIndex(studentId, sec.getAcademicYear() != null ? sec.getAcademicYear() : 0,
+                        sec.getTerm() != null ? sec.getTerm() : 1);
+                if (!scr.termEntries.containsKey(String.valueOf(termIdx))) {
+                    scr.addAttempt(sec.getAcademicYear() != null ? sec.getAcademicYear() : 0,
+                            sec.getTerm() != null ? sec.getTerm() : 1, null, null, termIdx);
+                }
+            }
+        }
+
+        return map;
     }
 
     AuditResult compute(String json) {
@@ -144,6 +518,7 @@ public class GraduationAuditService {
         ObjectNode summary = root.putObject("summary");
         summary.put("totalRequiredCredits", required);
         summary.put("totalEarnedCredits", earned);
+        summary.put("gradedCredits", all.gpaCredits());
         summary.put("currentGpa", round2(all.gpa()));
         summary.put("minGpa", minGpa);
         summary.put("status", graduated ? "ผ่านเงื่อนไข" : "ยังไม่ผ่านเงื่อนไข");

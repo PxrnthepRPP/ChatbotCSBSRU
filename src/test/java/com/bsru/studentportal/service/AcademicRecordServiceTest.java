@@ -35,6 +35,9 @@ class AcademicRecordServiceTest {
     @Mock
     private GraduationAuditService graduationAudits;
 
+    @Mock
+    private com.bsru.studentportal.repository.SectionEnrollmentRepository enrollmentRepository;
+
     @InjectMocks
     private AcademicRecordService academicRecordService;
 
@@ -449,6 +452,48 @@ class AcademicRecordServiceTest {
 
             assertTrue(result.isEmpty());
             verify(graduationProgressRepository).findById("UNKNOWN");
+        }
+    }
+
+    @Nested
+    @DisplayName("Timetable Enrolled Sections Integration")
+    class EnrolledSectionsTests {
+
+        @Test
+        @DisplayName("gradesOf: includes confirmed timetable registered courses in grades report")
+        void testEnrolledSectionsIncludedInGradesReport() {
+            when(graduationAudits.auditOf(studentId)).thenReturn(Optional.empty());
+            when(courseGradeRepository.findByStudentStudentIdOrderByAcademicYearDescTermDescCourseCodeAsc(studentId))
+                    .thenReturn(Collections.emptyList());
+
+            com.bsru.studentportal.model.ClassSection section = new com.bsru.studentportal.model.ClassSection();
+            section.setId(101L);
+            section.setAcademicYear(2569);
+            section.setTerm(2);
+            section.setCourseCode("CS3101");
+            section.setCourseName("ปัญญาประดิษฐ์");
+            section.setCredits(3);
+
+            com.bsru.studentportal.model.SectionEnrollment enrollment = new com.bsru.studentportal.model.SectionEnrollment(
+                    1L, student, section, java.time.LocalDateTime.now(),
+                    com.bsru.studentportal.model.SectionEnrollment.EnrollmentStatus.CONFIRMED, null);
+
+            when(enrollmentRepository.findByStudentStudentId(studentId)).thenReturn(List.of(enrollment));
+
+            AcademicRecordService.GradeReport report = academicRecordService.gradesOf(studentId);
+
+            assertNotNull(report);
+            assertEquals(1, report.semesters().size());
+            AcademicRecordService.Semester sem = report.semesters().get(0);
+            assertEquals("Term 2/2569", sem.label());
+            assertEquals(2569, sem.academicYear());
+            assertEquals(2, sem.term());
+            assertEquals(3, sem.registeredCredits());
+            assertEquals(0, sem.gradedCredits());
+            assertNull(sem.gpa());
+            assertEquals(1, sem.courses().size());
+            assertEquals("CS3101", sem.courses().get(0).code());
+            assertNull(sem.courses().get(0).grade());
         }
     }
 }

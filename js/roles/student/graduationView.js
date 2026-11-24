@@ -21,304 +21,1110 @@ export const MOCK_GRADUATION = {
 };
 
 export const MOCK_GRADUATION_AUDIT = {
-    summary: {
-        totalRequiredCredits: 127,
-        totalEarnedCredits: 115,
-        currentGpa: 3.96,
-        minGpa: 2.00,
-        status: 'ยังไม่ผ่านเงื่อนไข',
-        passedCategories: 6,
-        totalCategories: 9,
-        pendingRequirements: [
-            '2.2.2 หมวดวิชาเฉพาะด้าน (เลือก) — ขาดอีก 6 หน่วยกิต (ผ่านแล้ว 15/21 CR)',
-            '2.3 วิชาพื้นฐานวิชาชีพ — ขาดโครงงาน 2 (SC17402) และฝึกงาน (SC17411/12) ขาดอีก 6 หน่วยกิต',
-            '4. กลุ่มทักษะ — รอผลการทดสอบ CEFR และทักษะดิจิทัล DL',
-        ],
-    },
-    sections: [
+    "curriculum": "วท.บ. วิทยาการคอมพิวเตอร์ (หลักสูตรปรับปรุง)",
+    "minGpa": 2,
+    "sections": [
         {
-            id: 'sec-1',
-            title: '1. หมวดวิชาศึกษาทั่วไป',
-            subsections: [
+            "id": "sec-1",
+            "title": "1. หมวดวิชาศึกษาทั่วไป",
+            "subsections": [
                 {
-                    id: 'sec-1-1',
-                    title: '1.1 วิชาศึกษาทั่วไปบังคับ',
-                    status: 'PASS', minCr: 20, passCr: 20, gpa: '4.00',
-                    groups: [
+                    "id": "sec-1-1",
+                    "title": "1.1 วิชาศึกษาทั่วไปบังคับ",
+                    "minCr": 20,
+                    "groups": [
                         {
-                            code: '1.1.1', title: 'กลุ่มที่ 1 ศาสตร์พระราชาและวิถีแห่งสังคม',
-                            status: 'PASS', minCr: 3, passCr: 3, gpa: '4.00',
-                            courses: [
-                                { code: 'GE01101', name: 'ศาสตร์พระราชาสู่การพัฒนาท้องถิ่น', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } }
-                            ]
-                        },
-                        {
-                            code: '1.1.2', title: 'กลุ่มที่ 2 ภาษาและเทคโนโลยีทางการสื่อสาร',
-                            status: 'PASS', minCr: 6, passCr: 6, gpa: '4.00',
-                            courses: [
-                                { code: 'GE02101', name: 'ภาษาอังกฤษเพื่อการสื่อสารในยุคดิจิทัล', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } },
-                                { code: 'GE02102', name: 'ภาษาไทยเพื่อการสื่อสารร่วมสมัย', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } }
-                            ]
-                        },
-                        {
-                            code: '1.1.3', title: 'กลุ่มที่ 3 คุณภาพชีวิตและคุณค่าของความเป็นมนุษย์',
-                            status: 'PASS', minCr: 2, passCr: 2, gpa: '4.00',
-                            courses: [
-                                { code: 'GE03101', name: 'ชีวิตดีมีความสุข', credits: '2(1-2-3)', ca: 2, pt: 8.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } }
-                            ]
-                        },
-                        {
-                            code: '1.1.4', title: 'กลุ่มที่ 4 ศิลปะแห่งการจัดการและการเป็นผู้ประกอบการ',
-                            status: 'PASS', minCr: 3, passCr: 3, gpa: '4.00',
-                            courses: [
-                                { code: 'GE04101', name: 'ประกอบการธุรกิจเชิงสร้างสรรค์', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } }
-                            ]
-                        },
-                        {
-                            code: '1.1.5', title: 'กลุ่มที่ 5 ศาสตร์แห่งการคิดและการสร้างสรรค์นวัตกรรม',
-                            status: 'PASS', minCr: 6, passCr: 6, gpa: '4.00',
-                            courses: [
-                                { code: 'GE05101', name: 'รู้คิดชีวิตก้าวหน้า', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } },
-                                { code: 'GE05102', name: 'ทักษะการใช้เทคโนโลยีดิจิทัล', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: 'sec-1-2',
-                    title: '1.2 วิชาศึกษาทั่วไปเลือกกลุ่มละ 1 วิชา จำนวน 3 รายวิชา จาก 5 กลุ่มและเลือกเรียนได้กลุ่มละ 1 วิชาเท่านั้น',
-                    status: 'PASS', minCr: 9, passCr: 9, gpa: '4.00',
-                    groups: [
-                        {
-                            code: '1.2.1', title: 'กลุ่มที่ 1 ศาสตร์พระราชาและวิถีแห่งสังคม',
-                            status: 'PASS', minCr: null, passCr: null, gpa: '0.00',
-                            courses: [
-                                { code: 'GE01201', name: 'วิถีพลเมืองและกฎหมายในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE01202', name: 'พลวัตสังคมไทยและสังคมโลก', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
-                        },
-                        {
-                            code: '1.2.2', title: 'กลุ่มที่ 2 ภาษาและเทคโนโลยีทางการสื่อสาร',
-                            status: 'PASS', minCr: null, passCr: null, gpa: '0.00',
-                            courses: [
-                                { code: 'GE02201', name: 'การรู้เท่าทันสื่อและสารสนเทศ', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02202', name: 'ภาษาเกาหลีในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02203', name: 'ภาษาเขมรในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02204', name: 'ภาษาจีนในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02205', name: 'ภาษาญี่ปุ่นในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02206', name: 'ภาษามลายูในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02207', name: 'ภาษาลาวในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02208', name: 'ภาษาเวียดนามในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE02209', name: 'ภาษาสเปนในชีวิตประจำวัน', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
-                        },
-                        {
-                            code: '1.2.3', title: 'กลุ่มที่ 3 คุณภาพชีวิตและคุณค่าของความเป็นมนุษย์',
-                            status: 'PASS', minCr: null, passCr: 3, gpa: '4.00',
-                            courses: [
-                                { code: 'GE03201', name: 'ศิลปะและความงามของชีวิต', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE03202', name: 'ศิลปะการใช้ชีวิต', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } }
-                            ]
-                        },
-                        {
-                            code: '1.2.4', title: 'กลุ่มที่ 4 ศิลปะแห่งการจัดการและการเป็นผู้ประกอบการ',
-                            status: 'PASS', minCr: null, passCr: 3, gpa: '4.00',
-                            courses: [
-                                { code: 'GE04201', name: 'การวางแผนทางการเงินเพื่อความมั่นคง', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } },
-                                { code: 'GE04202', name: 'การทำงานอย่างมีความสุข', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
-                        },
-                        {
-                            code: '1.2.5', title: 'กลุ่มที่ 5 ศาสตร์แห่งการคิดและการสร้างสรรค์นวัตกรรม',
-                            status: 'PASS', minCr: null, passCr: 3, gpa: '4.00',
-                            courses: [
-                                { code: 'GE05201', name: 'เทคโนโลยีดิจิทัลสำหรับนักธุรกิจมือใหม่', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                { code: 'GE05202', name: 'รักษ์โลกรักเรา', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: 'sec-1-3',
-                    title: '1.3 วิชาศึกษาทั่วไปบังคับเลือก',
-                    status: 'PASS', minCr: 1, passCr: 1, gpa: '4.00',
-                    groups: [
-                        {
-                            code: '1.3', title: 'วิชาศึกษาทั่วไปบังคับเลือก',
-                            status: 'PASS', minCr: 1, passCr: 1, gpa: '4.00',
-                            courses: [
-                                { code: 'GE03301', name: 'จังหวะของชีวิต', credits: '1(0-2-1)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'GE03302', name: 'การออกกำลังกายเพื่อสุขภาพ', credits: '1(0-2-1)', ca: 1, pt: 4.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                { code: 'GE03303', name: 'การเต้นสมัยใหม่', credits: '1(0-2-1)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 'sec-2',
-            title: '2. หมวดวิชาเฉพาะไม่น้อยกว่า',
-            subsections: [
-                {
-                    id: 'sec-2-1',
-                    title: '2.1 วิชาแกน',
-                    status: 'PASS', minCr: 18, passCr: 18, gpa: '4.00',
-                    groups: [
-                        {
-                            code: '2.1', title: 'วิชาแกน', status: 'PASS', minCr: 18, passCr: 18, gpa: '4.00',
-                            courses: [
-                                { code: 'SC01001', name: 'คณิตศาสตร์เบื้องต้น', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } },
-                                { code: 'SC01002', name: 'แคลคูลัสเบื้องต้น', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } },
-                                { code: 'SC01012', name: 'เทคโนโลยีดิจิทัลสำหรับนักวิทยาศาสตร์', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } },
-                                { code: 'SC01013', name: 'ภาษาอังกฤษสำหรับนักวิทยาศาสตร์', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } },
-                                { code: 'SC17205', name: 'คณิตศาสตร์ดิสครีตและทฤษฎีการคำนวณ', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } },
-                                { code: 'SC17301', name: 'สถิติเพื่อการวิจัยทางวิทยาศาสตร์', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 5: 'A 1/68' } }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: 'sec-2-2',
-                    title: '2.2 วิชาเฉพาะด้าน',
-                    subsections: [
-                        {
-                            id: 'sec-2-2-1',
-                            title: '2.2.1 บังคับ',
-                            groups: [
+                            "code": "1.1.1",
+                            "title": "กลุ่มที่ 1 ศาสตร์พระราชาและวิถีแห่งสังคม",
+                            "minCr": 3,
+                            "courses": [
                                 {
-                                    code: '2.2.1.1', title: 'กลุ่มประเด็นด้านองค์กรและระบบสารสนเทศ', status: 'PASS', minCr: 6, passCr: 6, gpa: '3.50',
-                                    courses: [
-                                        { code: 'SC17204', name: 'การวิเคราะห์และออกแบบระบบ', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                        { code: 'SC17302', name: 'ภาษาอังกฤษสำหรับวิทยาการคอมพิวเตอร์', credits: '3(3-0-6)', ca: 3, pt: 9.0, avg: '3.00', max: '3.00', terms: { 5: 'B 1/68' } }
-                                    ]
-                                },
-                                {
-                                    code: '2.2.1.2', title: 'กลุ่มเทคโนโลยีเพื่องานประยุกต์', status: 'PASS', minCr: 12, passCr: 12, gpa: '4.00',
-                                    courses: [
-                                        { code: 'SC17207', name: 'ปฏิสัมพันธ์ระหว่างมนุษย์และคอมพิวเตอร์', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } },
-                                        { code: 'SC17208', name: 'การจัดการฐานข้อมูลและสารสนเทศ', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } },
-                                        { code: 'SC17304', name: 'ความมั่นคงปลอดภัยทางคอมพิวเตอร์', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 5: 'A 1/68' } },
-                                        { code: 'SC17306', name: 'สัมมนาทางคอมพิวเตอร์', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } }
-                                    ]
-                                },
-                                {
-                                    code: '2.2.1.3', title: 'กลุ่มเทคโนโลยีและวิธีการทางซอฟต์แวร์', status: 'PASS', minCr: 12, passCr: 12, gpa: '4.00',
-                                    courses: [
-                                        { code: 'SC17101', name: 'การเขียนโปรแกรมคอมพิวเตอร์และอัลกอริทึม', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } },
-                                        { code: 'SC17102', name: 'โครงสร้างข้อมูลและการเขียนโปรแกรม', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 2: 'A 2/66' } },
-                                        { code: 'SC17202', name: 'การเขียนโปรแกรมเชิงวัตถุ', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                        { code: 'SC17206', name: 'วิศวกรรมซอฟต์แวร์', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 4: 'A 2/67' } }
-                                    ]
-                                },
-                                {
-                                    code: '2.2.1.4', title: 'กลุ่มโครงสร้างพื้นฐานของระบบ', status: 'PASS', minCr: 12, passCr: 12, gpa: '4.00',
-                                    courses: [
-                                        { code: 'SC17201', name: 'ระบบปฏิบัติการ', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                        { code: 'SC17203', name: 'เครือข่ายคอมพิวเตอร์และการสื่อสารข้อมูล', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 3: 'A 1/67' } },
-                                        { code: 'SC17303', name: 'คอมพิวเตอร์กราฟิก', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 5: 'A 1/68' } },
-                                        { code: 'SC17305', name: 'ปัญญาประดิษฐ์และระบบชาญฉลาด', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } }
-                                    ]
-                                },
-                                {
-                                    code: '2.2.1.5', title: 'กลุ่มฮาร์ดแวร์และสถาปัตยกรรมคอมพิวเตอร์', status: 'PASS', minCr: 3, passCr: 3, gpa: '4.00',
-                                    courses: [
-                                        { code: 'SC17103', name: 'สถาปัตยกรรมคอมพิวเตอร์', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 1: 'A 1/66' } }
-                                    ]
+                                    "code": "GE01101",
+                                    "name": "ศาสตร์พระราชาสู่การพัฒนาท้องถิ่น",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
                                 }
-                            ]
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
                         },
                         {
-                            id: 'sec-2-2-2',
-                            title: '2.2.2 เลือกไม่น้อยกว่า',
-                            status: 'FAIL', minCr: 21, passCr: 15, gpa: '3.90',
-                            groups: [
+                            "code": "1.1.2",
+                            "title": "กลุ่มที่ 2 ภาษาและเทคโนโลยีทางการสื่อสาร",
+                            "minCr": 6,
+                            "courses": [
                                 {
-                                    code: '2.2.2', title: 'เลือกไม่น้อยกว่า 21 หน่วยกิต', status: 'FAIL', minCr: 21, passCr: 15, gpa: '3.90',
-                                    courses: [
-                                        { code: 'SC17311', name: 'พื้นฐานอินเทอร์เน็ตทุกสรรพสิ่ง', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17312', name: 'การพัฒนาระบบอินเทอร์เน็ตทุกสรรพสิ่ง', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17321', name: 'วิทยาการข้อมูล', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17322', name: 'คลังข้อมูล', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17331', name: 'วิศวกรรมเว็บและการพัฒนาเว็บแอปพลิเคชัน', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 5: 'A 1/68' } },
-                                        { code: 'SC17332', name: 'การพัฒนาเว็บแอปพลิเคชันที่ประมวลผลทางฝั่งเครื่องลูกข่าย', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } },
-                                        { code: 'SC17333', name: 'การพัฒนาเว็บไซต์ด้วยระบบจัดการเนื้อหา', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17341', name: 'การพัฒนาแอปพลิเคชันบนอุปกรณ์เคลื่อนที่ 1', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17342', name: 'การพัฒนาแอปพลิเคชันบนอุปกรณ์เคลื่อนที่ 2', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17351', name: 'การเป็นผู้ประกอบการด้านดิจิทัล', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: { 7: '-- 1/69' } },
-                                        { code: 'SC17352', name: 'ระบบสารสนเทศเพื่อการจัดการ', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17353', name: 'ธุรกิจดิจิทัล', credits: '3(3-0-6)', ca: null, pt: null, avg: null, max: null, terms: { 7: '-- 1/69' } },
-                                        { code: 'SC17354', name: 'การเขียนโปรแกรมคอมพิวเตอร์ขั้นสูง', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17355', name: 'วิจัยดำเนินงาน', credits: '3(3-0-6)', ca: 3, pt: 10.5, avg: '3.50', max: '3.50', terms: { 5: 'B+ 1/68' } },
-                                        { code: 'SC17356', name: 'การค้นคืนสารสนเทศ', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } },
-                                        { code: 'SC17361', name: 'การประยุกต์ใช้เทคโนโลยีคอมพิวเตอร์ในชีวิตประจำวัน', credits: '3(2-2-5)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } },
-                                        { code: 'SC17362', name: 'การจัดการเนื้อหาบนสื่อผสม', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                        { code: 'SC17363', name: 'การประยุกต์ใช้แอปพลิเคชันบนอุปกรณ์เคลื่อนที่', credits: '3(2-2-5)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                                    ]
+                                    "code": "GE02101",
+                                    "name": "ภาษาอังกฤษเพื่อการสื่อสารในยุคดิจิทัล",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02102",
+                                    "name": "ภาษาไทยเพื่อการสื่อสารร่วมสมัย",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
                                 }
-                            ]
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
+                        },
+                        {
+                            "code": "1.1.3",
+                            "title": "กลุ่มที่ 3 คุณภาพชีวิตและคุณค่าของความเป็นมนุษย์",
+                            "minCr": 2,
+                            "courses": [
+                                {
+                                    "code": "GE03101",
+                                    "name": "ชีวิตดีมีความสุข",
+                                    "credits": "2(1-2-3)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
+                        },
+                        {
+                            "code": "1.1.4",
+                            "title": "กลุ่มที่ 4 ศิลปะแห่งการจัดการและการเป็นผู้ประกอบการ",
+                            "minCr": 3,
+                            "courses": [
+                                {
+                                    "code": "GE04101",
+                                    "name": "ประกอบการธุรกิจเชิงสร้างสรรค์",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
+                        },
+                        {
+                            "code": "1.1.5",
+                            "title": "กลุ่มที่ 5 ศาสตร์แห่งการคิดและการสร้างสรรค์นวัตกรรม",
+                            "minCr": 6,
+                            "courses": [
+                                {
+                                    "code": "GE05101",
+                                    "name": "รู้คิดชีวิตก้าวหน้า",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE05102",
+                                    "name": "ทักษะการใช้เทคโนโลยีดิจิทัล",
+                                    "credits": "3(2-2-5)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
                         }
-                    ]
+                    ],
+                    "passCr": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
                 },
                 {
-                    id: 'sec-2-3',
-                    title: '2.3 วิชาพื้นฐานวิชาชีพ',
-                    status: 'FAIL', minCr: 7, passCr: 1, gpa: '4.00',
-                    groups: [
+                    "id": "sec-1-2",
+                    "title": "1.2 วิชาศึกษาทั่วไปเลือกกลุ่มละ 1 วิชา จำนวน 3 รายวิชา จาก 5 กลุ่มและเลือกเรียนได้กลุ่มละ 1 วิชาเท่านั้น",
+                    "minCr": 9,
+                    "groups": [
                         {
-                            code: '2.3.1', title: 'แผนฝึกประสบการณ์วิชาชีพ', status: 'FAIL', minCr: null, passCr: 1, gpa: '4.00',
-                            courses: [
-                                { code: 'SC17401', name: 'โครงงานคอมพิวเตอร์ 1', credits: '1(1-0-2)', ca: 1, pt: 4.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } },
-                                { code: 'SC17402', name: 'โครงงานคอมพิวเตอร์ 2', credits: '2(0-4-2)', ca: null, pt: null, avg: null, max: null, terms: { 7: '-- 1/69' } },
-                                { code: 'SC17411', name: 'เตรียมฝึกประสบการณ์วิชาชีพทางวิทยาการคอมพิวเตอร์', credits: '1(0-2-1)', ca: null, pt: null, avg: null, max: null, terms: { 7: '-- 1/69' } },
-                                { code: 'SC17412', name: 'ฝึกประสบการณ์วิชาชีพทางวิทยาการคอมพิวเตอร์', credits: '3(450)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
+                            "code": "1.2.1",
+                            "title": "กลุ่มที่ 1 ศาสตร์พระราชาและวิถีแห่งสังคม",
+                            "courses": [
+                                {
+                                    "code": "GE01201",
+                                    "name": "วิถีพลเมืองและกฎหมายในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE01202",
+                                    "name": "พลวัตสังคมไทยและสังคมโลก",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": null,
+                            "gpa": "0.00",
+                            "status": null
                         },
                         {
-                            code: '2.3.2', title: 'แผนสหกิจศึกษา', status: 'PASS', minCr: null, passCr: null, gpa: '0.00',
-                            courses: [
-                                { code: 'SC17421', name: 'เตรียมสหกิจศึกษาทางวิทยาการคอมพิวเตอร์', credits: '1(0-2-1)', ca: null, pt: null, avg: null, max: null, terms: {} },
-                                { code: 'SC17422', name: 'สหกิจศึกษาทางวิทยาการคอมพิวเตอร์', credits: '6(640)', ca: null, pt: null, avg: null, max: null, terms: {} }
-                            ]
+                            "code": "1.2.2",
+                            "title": "กลุ่มที่ 2 ภาษาและเทคโนโลยีทางการสื่อสาร",
+                            "courses": [
+                                {
+                                    "code": "GE02201",
+                                    "name": "การรู้เท่าทันสื่อและสารสนเทศ",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02202",
+                                    "name": "ภาษาเกาหลีในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02203",
+                                    "name": "ภาษาเขมรในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02204",
+                                    "name": "ภาษาจีนในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02205",
+                                    "name": "ภาษาญี่ปุ่นในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02206",
+                                    "name": "ภาษามลายูในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02207",
+                                    "name": "ภาษาลาวในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02208",
+                                    "name": "ภาษาเวียดนามในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE02209",
+                                    "name": "ภาษาสเปนในชีวิตประจำวัน",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": null,
+                            "gpa": "0.00",
+                            "status": null
+                        },
+                        {
+                            "code": "1.2.3",
+                            "title": "กลุ่มที่ 3 คุณภาพชีวิตและคุณค่าของความเป็นมนุษย์",
+                            "courses": [
+                                {
+                                    "code": "GE03201",
+                                    "name": "ศิลปะและความงามของชีวิต",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE03202",
+                                    "name": "ศิลปะการใช้ชีวิต",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": null,
+                            "gpa": "0.00",
+                            "status": null
+                        },
+                        {
+                            "code": "1.2.4",
+                            "title": "กลุ่มที่ 4 ศิลปะแห่งการจัดการและการเป็นผู้ประกอบการ",
+                            "courses": [
+                                {
+                                    "code": "GE04201",
+                                    "name": "การวางแผนทางการเงินเพื่อความมั่นคง",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE04202",
+                                    "name": "การทำงานอย่างมีความสุข",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": null,
+                            "gpa": "0.00",
+                            "status": null
+                        },
+                        {
+                            "code": "1.2.5",
+                            "title": "กลุ่มที่ 5 ศาสตร์แห่งการคิดและการสร้างสรรค์นวัตกรรม",
+                            "courses": [
+                                {
+                                    "code": "GE05201",
+                                    "name": "เทคโนโลยีดิจิทัลสำหรับนักธุรกิจมือใหม่",
+                                    "credits": "3(2-2-5)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE05202",
+                                    "name": "รักษ์โลกรักเรา",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": null,
+                            "gpa": "0.00",
+                            "status": null
                         }
-                    ]
+                    ],
+                    "rule": "ONE_PER_GROUP",
+                    "groupsRequired": 3,
+                    "passCr": 0,
+                    "groupsPassed": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
+                },
+                {
+                    "id": "sec-1-3",
+                    "title": "1.3 วิชาศึกษาทั่วไปบังคับเลือก",
+                    "minCr": 1,
+                    "groups": [
+                        {
+                            "code": "1.3",
+                            "title": "วิชาศึกษาทั่วไปบังคับเลือก",
+                            "minCr": 1,
+                            "courses": [
+                                {
+                                    "code": "GE03301",
+                                    "name": "จังหวะของชีวิต",
+                                    "credits": "1(0-2-1)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE03302",
+                                    "name": "การออกกำลังกายเพื่อสุขภาพ",
+                                    "credits": "1(0-2-1)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "GE03303",
+                                    "name": "การเต้นสมัยใหม่",
+                                    "credits": "1(0-2-1)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
+                        }
+                    ],
+                    "passCr": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
                 }
-            ]
+            ],
+            "minCr": 30,
+            "passCr": 0,
+            "status": "FAIL",
+            "gpa": "0.00"
         },
         {
-            id: 'sec-3',
-            title: '3. หมวดวิชาเลือกเสรี',
-            status: 'PASS', minCr: 6, passCr: 6, gpa: '4.00',
-            groups: [
+            "id": "sec-2",
+            "title": "2. หมวดวิชาเฉพาะไม่น้อยกว่า",
+            "subsections": [
                 {
-                    code: '3.', title: 'หมวดวิชาเลือกเสรี', status: 'PASS', minCr: 6, passCr: 6, gpa: '4.00',
-                    courses: [
-                        { code: '2101207', name: 'สารสนเทศสำหรับเด็กและเยาวชน', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 6: 'A 2/68' } },
-                        { code: 'ED16208', name: 'จิตวิทยาสังคม', credits: '3(3-0-6)', ca: 3, pt: 12.0, avg: '4.00', max: '4.00', terms: { 5: 'A 1/68' } }
-                    ]
+                    "id": "sec-2-1",
+                    "title": "2.1 วิชาแกน",
+                    "minCr": 18,
+                    "groups": [
+                        {
+                            "code": "2.1",
+                            "title": "วิชาแกน",
+                            "minCr": 18,
+                            "courses": [
+                                {
+                                    "code": "SC01001",
+                                    "name": "คณิตศาสตร์เบื้องต้น",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC01002",
+                                    "name": "แคลคูลัสเบื้องต้น",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC01012",
+                                    "name": "เทคโนโลยีดิจิทัลสำหรับนักวิทยาศาสตร์",
+                                    "credits": "3(2-2-5)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC01013",
+                                    "name": "ภาษาอังกฤษสำหรับนักวิทยาศาสตร์",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17205",
+                                    "name": "คณิตศาสตร์ดิสครีตและทฤษฎีการคำนวณ",
+                                    "credits": "3(3-0-6)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17301",
+                                    "name": "สถิติเพื่อการวิจัยทางวิทยาศาสตร์",
+                                    "credits": "3(2-2-5)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": "FAIL"
+                        }
+                    ],
+                    "passCr": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
+                },
+                {
+                    "id": "sec-2-2",
+                    "title": "2.2 วิชาเฉพาะด้าน",
+                    "subsections": [
+                        {
+                            "id": "sec-2-2-1",
+                            "title": "2.2.1 บังคับ",
+                            "groups": [
+                                {
+                                    "code": "2.2.1.1",
+                                    "title": "กลุ่มประเด็นด้านองค์กรและระบบสารสนเทศ",
+                                    "minCr": 6,
+                                    "courses": [
+                                        {
+                                            "code": "SC17204",
+                                            "name": "การวิเคราะห์และออกแบบระบบ",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17302",
+                                            "name": "ภาษาอังกฤษสำหรับวิทยาการคอมพิวเตอร์",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                },
+                                {
+                                    "code": "2.2.1.2",
+                                    "title": "กลุ่มเทคโนโลยีเพื่องานประยุกต์",
+                                    "minCr": 12,
+                                    "courses": [
+                                        {
+                                            "code": "SC17207",
+                                            "name": "ปฏิสัมพันธ์ระหว่างมนุษย์และคอมพิวเตอร์",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17208",
+                                            "name": "การจัดการฐานข้อมูลและสารสนเทศ",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17304",
+                                            "name": "ความมั่นคงปลอดภัยทางคอมพิวเตอร์",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17306",
+                                            "name": "สัมมนาทางคอมพิวเตอร์",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                },
+                                {
+                                    "code": "2.2.1.3",
+                                    "title": "กลุ่มเทคโนโลยีและวิธีการทางซอฟต์แวร์",
+                                    "minCr": 12,
+                                    "courses": [
+                                        {
+                                            "code": "SC17101",
+                                            "name": "การเขียนโปรแกรมคอมพิวเตอร์และอัลกอริทึม",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17102",
+                                            "name": "โครงสร้างข้อมูลและการเขียนโปรแกรม",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17202",
+                                            "name": "การเขียนโปรแกรมเชิงวัตถุ",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17206",
+                                            "name": "วิศวกรรมซอฟต์แวร์",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                },
+                                {
+                                    "code": "2.2.1.4",
+                                    "title": "กลุ่มโครงสร้างพื้นฐานของระบบ",
+                                    "minCr": 12,
+                                    "courses": [
+                                        {
+                                            "code": "SC17201",
+                                            "name": "ระบบปฏิบัติการ",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17203",
+                                            "name": "เครือข่ายคอมพิวเตอร์และการสื่อสารข้อมูล",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17303",
+                                            "name": "คอมพิวเตอร์กราฟิก",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17305",
+                                            "name": "ปัญญาประดิษฐ์และระบบชาญฉลาด",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                },
+                                {
+                                    "code": "2.2.1.5",
+                                    "title": "กลุ่มฮาร์ดแวร์และสถาปัตยกรรมคอมพิวเตอร์",
+                                    "minCr": 3,
+                                    "courses": [
+                                        {
+                                            "code": "SC17103",
+                                            "name": "สถาปัตยกรรมคอมพิวเตอร์",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                }
+                            ],
+                            "minCr": 45,
+                            "passCr": 0,
+                            "status": "FAIL",
+                            "gpa": "0.00"
+                        },
+                        {
+                            "id": "sec-2-2-2",
+                            "title": "2.2.2 เลือกไม่น้อยกว่า",
+                            "minCr": 21,
+                            "groups": [
+                                {
+                                    "code": "2.2.2",
+                                    "title": "เลือกไม่น้อยกว่า 21 หน่วยกิต",
+                                    "minCr": 21,
+                                    "courses": [
+                                        {
+                                            "code": "SC17311",
+                                            "name": "พื้นฐานอินเทอร์เน็ตทุกสรรพสิ่ง",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17312",
+                                            "name": "การพัฒนาระบบอินเทอร์เน็ตทุกสรรพสิ่ง",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17321",
+                                            "name": "วิทยาการข้อมูล",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17322",
+                                            "name": "คลังข้อมูล",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17331",
+                                            "name": "วิศวกรรมเว็บและการพัฒนาเว็บแอปพลิเคชัน",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17332",
+                                            "name": "การพัฒนาเว็บแอปพลิเคชันที่ประมวลผลทางฝั่งเครื่องลูกข่าย",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17333",
+                                            "name": "การพัฒนาเว็บไซต์ด้วยระบบจัดการเนื้อหา",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17341",
+                                            "name": "การพัฒนาแอปพลิเคชันบนอุปกรณ์เคลื่อนที่ 1",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17342",
+                                            "name": "การพัฒนาแอปพลิเคชันบนอุปกรณ์เคลื่อนที่ 2",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17351",
+                                            "name": "การเป็นผู้ประกอบการด้านดิจิทัล",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17352",
+                                            "name": "ระบบสารสนเทศเพื่อการจัดการ",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17353",
+                                            "name": "ธุรกิจดิจิทัล",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17354",
+                                            "name": "การเขียนโปรแกรมคอมพิวเตอร์ขั้นสูง",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17355",
+                                            "name": "วิจัยดำเนินงาน",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17356",
+                                            "name": "การค้นคืนสารสนเทศ",
+                                            "credits": "3(3-0-6)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17361",
+                                            "name": "การประยุกต์ใช้เทคโนโลยีคอมพิวเตอร์ในชีวิตประจำวัน",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17362",
+                                            "name": "การจัดการเนื้อหาบนสื่อผสม",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        },
+                                        {
+                                            "code": "SC17363",
+                                            "name": "การประยุกต์ใช้แอปพลิเคชันบนอุปกรณ์เคลื่อนที่",
+                                            "credits": "3(2-2-5)",
+                                            "ca": null,
+                                            "pt": null,
+                                            "avg": null,
+                                            "max": null,
+                                            "terms": {}
+                                        }
+                                    ],
+                                    "passCr": 0,
+                                    "gpa": "0.00",
+                                    "status": "FAIL"
+                                }
+                            ],
+                            "passCr": 0,
+                            "status": "FAIL",
+                            "gpa": "0.00"
+                        }
+                    ],
+                    "minCr": 66,
+                    "passCr": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
+                },
+                {
+                    "id": "sec-2-3",
+                    "title": "2.3 วิชาพื้นฐานวิชาชีพ",
+                    "minCr": 7,
+                    "groups": [
+                        {
+                            "code": "2.3.1",
+                            "title": "แผนฝึกประสบการณ์วิชาชีพ",
+                            "courses": [
+                                {
+                                    "code": "SC17401",
+                                    "name": "โครงงานคอมพิวเตอร์ 1",
+                                    "credits": "1(1-0-2)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17402",
+                                    "name": "โครงงานคอมพิวเตอร์ 2",
+                                    "credits": "2(0-4-2)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17411",
+                                    "name": "เตรียมฝึกประสบการณ์วิชาชีพทางวิทยาการคอมพิวเตอร์",
+                                    "credits": "1(0-2-1)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17412",
+                                    "name": "ฝึกประสบการณ์วิชาชีพทางวิทยาการคอมพิวเตอร์",
+                                    "credits": "3(450)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": null
+                        },
+                        {
+                            "code": "2.3.2",
+                            "title": "แผนสหกิจศึกษา",
+                            "courses": [
+                                {
+                                    "code": "SC17421",
+                                    "name": "เตรียมสหกิจศึกษาทางวิทยาการคอมพิวเตอร์",
+                                    "credits": "1(0-2-1)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                },
+                                {
+                                    "code": "SC17422",
+                                    "name": "สหกิจศึกษาทางวิทยาการคอมพิวเตอร์",
+                                    "credits": "6(640)",
+                                    "ca": null,
+                                    "pt": null,
+                                    "avg": null,
+                                    "max": null,
+                                    "terms": {}
+                                }
+                            ],
+                            "passCr": 0,
+                            "gpa": "0.00",
+                            "status": null
+                        }
+                    ],
+                    "rule": "CHOOSE_ONE",
+                    "passCr": 0,
+                    "status": "FAIL",
+                    "gpa": "0.00"
                 }
-            ]
+            ],
+            "minCr": 91,
+            "passCr": 0,
+            "status": "FAIL",
+            "gpa": "0.00"
         },
         {
-            id: 'sec-4',
-            title: '4. กลุ่มทักษะ',
-            status: 'FAIL', minCr: null, passCr: null, gpa: '0.00',
-            groups: [
+            "id": "sec-3",
+            "title": "3. หมวดวิชาเลือกเสรี",
+            "minCr": 6,
+            "groups": [
                 {
-                    code: '4.', title: 'กลุ่มทักษะความรู้ความสามารถ', status: 'FAIL', minCr: null, passCr: null, gpa: '0.00',
-                    courses: [
-                        { code: 'CEFR111', name: 'การพัฒนาทักษะภาษาอังกฤษ (การวัดสมิทธิภาพทางภาษาอังกฤษ)', credits: '0', ca: null, pt: null, avg: null, max: null, terms: { 6: '-- 2/68' } },
-                        { code: 'DL11111', name: 'ทักษะความเข้าใจและใช้เทคโนโลยีดิจิทัล', credits: '0', ca: null, pt: null, avg: null, max: null, terms: {} }
-                    ]
+                    "code": "3.",
+                    "title": "หมวดวิชาเลือกเสรี",
+                    "minCr": 6,
+                    "courses": [],
+                    "passCr": 0,
+                    "gpa": "0.00",
+                    "status": "FAIL"
                 }
-            ]
+            ],
+            "passCr": 0,
+            "status": "FAIL",
+            "gpa": "0.00"
+        },
+        {
+            "id": "sec-4",
+            "title": "4. กลุ่มทักษะ",
+            "groups": [
+                {
+                    "code": "4.",
+                    "title": "กลุ่มทักษะความรู้ความสามารถ",
+                    "courses": [
+                        {
+                            "code": "CEFR111",
+                            "name": "การพัฒนาทักษะภาษาอังกฤษ (การวัดสมิทธิภาพทางภาษาอังกฤษ)",
+                            "credits": "0",
+                            "ca": null,
+                            "pt": null,
+                            "avg": null,
+                            "max": null,
+                            "terms": {},
+                            "passed": false
+                        },
+                        {
+                            "code": "DL11111",
+                            "name": "ทักษะความเข้าใจและใช้เทคโนโลยีดิจิทัล",
+                            "credits": "0",
+                            "ca": null,
+                            "pt": null,
+                            "avg": null,
+                            "max": null,
+                            "terms": {},
+                            "passed": false
+                        }
+                    ],
+                    "rule": "REQUIREMENT",
+                    "passCr": null,
+                    "gpa": "0.00",
+                    "status": "FAIL"
+                }
+            ],
+            "passCr": 0,
+            "status": "FAIL",
+            "gpa": "0.00"
         }
-    ]
+    ],
+    "summary": {
+        "totalRequiredCredits": 127,
+        "totalEarnedCredits": 0,
+        "currentGpa": 0,
+        "minGpa": 2,
+        "status": "ยังไม่ผ่านเงื่อนไข",
+        "passedCategories": 0,
+        "totalCategories": 9,
+        "pendingRequirements": [
+            "1.1 วิชาศึกษาทั่วไปบังคับ — ได้ 0/20 หน่วยกิต (ขาดอีก 20)",
+            "1.2 วิชาศึกษาทั่วไปเลือกกลุ่มละ 1 วิชา จำนวน 3 รายวิชา จาก 5 กลุ่มและเลือกเรียนได้กลุ่มละ 1 วิชาเท่านั้น — ได้ 0/9 หน่วยกิต (ขาดอีก 9) จาก 0/3 กลุ่ม",
+            "1.3 วิชาศึกษาทั่วไปบังคับเลือก — ได้ 0/1 หน่วยกิต (ขาดอีก 1)",
+            "2.1 วิชาแกน — ได้ 0/18 หน่วยกิต (ขาดอีก 18)",
+            "2.2.1 บังคับ — ได้ 0/45 หน่วยกิต (ขาดอีก 45)",
+            "2.2.2 เลือกไม่น้อยกว่า — ได้ 0/21 หน่วยกิต (ขาดอีก 21)",
+            "2.3 วิชาพื้นฐานวิชาชีพ — ได้ 0/7 หน่วยกิต (ขาดอีก 7)",
+            "3. หมวดวิชาเลือกเสรี — ได้ 0/6 หน่วยกิต (ขาดอีก 6)",
+            "4. กลุ่มทักษะ — ยังไม่ผ่าน: CEFR111 การพัฒนาทักษะภาษาอังกฤษ (การวัดสมิทธิภาพทางภาษาอังกฤษ), DL11111 ทักษะความเข้าใจและใช้เทคโนโลยีดิจิทัล",
+            "GPA 0.00 ต่ำกว่าเกณฑ์ 2.00"
+        ]
+    }
 };
 
-/* ============================================================
-   GRADUATION STATE
-   ============================================================ */
 let graduationAudit = MOCK_GRADUATION_AUDIT;   // null = the backend has no sheet for this student
 let graduationAuditLoadedFor = null;
 let graduationStudentId = null;                // the logged-in student (the profile mock may be another student)
@@ -353,31 +1159,41 @@ export function buildAuditGroupHTML(secId, grp, hideHeader = false) {
         `;
     }
 
-    grp.courses.forEach(c => {
-        const termsCells = [1, 2, 3, 4, 5, 6, 7, 8].map(termNum => {
-            const val = c.terms && c.terms[termNum];
-            if (!val) return '<td class="term-col" style="color:var(--g-300)">-</td>';
-            if (val.startsWith('--')) {
-                return `<td class="term-col"><span class="audit-grade-wait">${esc(val)}</span></td>`;
-            }
-            return `<td class="term-col"><span class="audit-grade-pass">${esc(val)}</span></td>`;
-        }).join('');
-
+    if (!grp.courses || grp.courses.length === 0) {
         html += `
             <tr class="audit-course-row audit-row-${secId}">
-                <td style="padding-left:32px">
-                    <span class="audit-course-code">${esc(c.code)}:</span>
-                    <span class="audit-course-name">${esc(c.name)}</span>
+                <td colspan="14" style="padding:10px 32px;color:var(--g-400);font-size:0.8rem;font-style:italic">
+                    ยังไม่มีรายวิชาที่ลงทะเบียนในหมวดนี้
                 </td>
-                <td class="cr-col" style="color:var(--g-600)">${esc(c.credits || '-')}</td>
-                <td class="num-col" style="${c.ca ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.ca !== null && c.ca !== undefined ? c.ca : '-'}</td>
-                <td class="num-col" style="${c.pt ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.pt !== null && c.pt !== undefined ? c.pt.toFixed(1) : '-'}</td>
-                <td class="num-col" style="${c.avg ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.avg !== null && c.avg !== undefined ? c.avg : '-'}</td>
-                <td class="num-col" style="${c.max ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.max !== null && c.max !== undefined ? c.max : '-'}</td>
-                ${termsCells}
             </tr>
         `;
-    });
+    } else {
+        grp.courses.forEach(c => {
+            const termsCells = [1, 2, 3, 4, 5, 6, 7, 8].map(termNum => {
+                const val = c.terms && c.terms[termNum];
+                if (!val) return '<td class="term-col" style="color:var(--g-300)">-</td>';
+                if (val.startsWith('--')) {
+                    return `<td class="term-col"><span class="audit-grade-wait">${esc(val)}</span></td>`;
+                }
+                return `<td class="term-col"><span class="audit-grade-pass">${esc(val)}</span></td>`;
+            }).join('');
+
+            html += `
+                <tr class="audit-course-row audit-row-${secId}">
+                    <td style="padding-left:32px">
+                        <span class="audit-course-code">${esc(c.code)}:</span>
+                        <span class="audit-course-name">${esc(c.name)}</span>
+                    </td>
+                    <td class="cr-col" style="color:var(--g-600)">${esc(c.credits || '-')}</td>
+                    <td class="num-col" style="${c.ca ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.ca !== null && c.ca !== undefined ? c.ca : '-'}</td>
+                    <td class="num-col" style="${c.pt ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.pt !== null && c.pt !== undefined ? c.pt.toFixed(1) : '-'}</td>
+                    <td class="num-col" style="${c.avg ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.avg !== null && c.avg !== undefined ? c.avg : '-'}</td>
+                    <td class="num-col" style="${c.max ? 'color:var(--g-800);font-weight:600' : 'color:var(--g-300)'}">${c.max !== null && c.max !== undefined ? c.max : '-'}</td>
+                    ${termsCells}
+                </tr>
+            `;
+        });
+    }
 
     return html;
 }
@@ -648,9 +1464,13 @@ export function buildGraduationCardsHTML() {
             });
         } else if (sec.groups) {
             sec.groups.forEach(grp => {
-                grp.courses.forEach(c => {
-                    secContent += renderCourseCardItem(c);
-                });
+                if (!grp.courses || grp.courses.length === 0) {
+                    secContent += `<div style="padding:10px 16px;color:var(--g-400);font-size:0.8rem;font-style:italic">ยังไม่มีรายวิชาที่ลงทะเบียนในหมวดนี้</div>`;
+                } else {
+                    grp.courses.forEach(c => {
+                        secContent += renderCourseCardItem(c);
+                    });
+                }
             });
         }
 
@@ -676,14 +1496,8 @@ export function buildGraduationCardsHTML() {
 
 export function renderGraduation(student) {
     loadGraduationAudit(student);
-    if (graduationAudit === null) {
-        document.getElementById('graduationContent').innerHTML = `
-            <div class="card" style="text-align:center;padding:40px 20px">
-                <div style="font-size:2.4rem;margin-bottom:8px">📄</div>
-                <div class="card-title" style="justify-content:center">ยังไม่มีข้อมูลใบตรวจสอบจบ</div>
-                <p style="color:var(--text-muted);font-size:0.9rem">ผู้ดูแลระบบยังไม่ได้นำเข้าใบตรวจสอบจบของรหัส ${esc(graduationStudentId || '')} กรุณาติดต่อสำนักงานสาขา</p>
-            </div>`;
-        return;
+    if (!graduationAudit) {
+        graduationAudit = MOCK_GRADUATION_AUDIT;
     }
     const audit = graduationAudit;
     const s = audit.summary;
@@ -949,11 +1763,8 @@ export function loadGraduationAudit(student) {
             renderGraduation(student);
         })
         .catch(err => {
-            if (/HTTP 404/.test(err.message || '')) {
-                graduationAudit = null;
-                renderGraduation(student);
-            } else {
-                console.warn('[Graduation] Backend unavailable, showing sample audit:', err.message);
-            }
+            console.warn('[Graduation] Using universal graduation audit template:', err.message);
+            graduationAudit = MOCK_GRADUATION_AUDIT;
+            renderGraduation(student);
         });
 }

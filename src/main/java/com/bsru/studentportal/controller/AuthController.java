@@ -67,11 +67,14 @@ public class AuthController {
         Map<String, Object> claims = new HashMap<>();
 
         // Role & Identity Resolution
+        boolean isAdvisor = "advisor".equalsIgnoreCase(username)
+                || (account.getRole() != null && account.getRole().contains("ROLE_ADVISOR"))
+                || advisorRepository.existsById(username);
         if ("admin".equalsIgnoreCase(username)) {
             role = "ROLE_ADMIN";
             displayName = "ผู้ดูแลระบบ (System Admin)";
             canAdmin = true;
-        } else if ("advisor".equalsIgnoreCase(username) || username.startsWith("ADV")) {
+        } else if (isAdvisor) {
             role = "ROLE_ADVISOR";
             // The 'advisor' demo login is advisor ADV-01 (same mapping as CurrentUser.advisorId)
             String advisorId = "advisor".equalsIgnoreCase(username) ? CurrentUser.DEMO_ADVISOR_ID : username;
@@ -129,7 +132,8 @@ public class AuthController {
         if (!CurrentUser.isLoggedIn(authentication)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "กรุณาเข้าสู่ระบบก่อน"));
         }
-        accountService.changePassword(authentication.getName(), body.get("currentPassword"), body.get("newPassword"));
+        String currentPassword = body.get("currentPassword") != null ? body.get("currentPassword") : body.get("oldPassword");
+        accountService.changePassword(authentication.getName(), currentPassword, body.get("newPassword"));
         return ResponseEntity.ok(Map.of("message", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว"));
     }
 

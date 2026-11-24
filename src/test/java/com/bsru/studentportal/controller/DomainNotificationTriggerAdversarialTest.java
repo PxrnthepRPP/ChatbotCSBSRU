@@ -7,6 +7,7 @@ import com.bsru.studentportal.model.Advisor;
 import com.bsru.studentportal.model.Student;
 import com.bsru.studentportal.repository.*;
 import com.bsru.studentportal.service.AcademicRecordService;
+import com.bsru.studentportal.service.AccountService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,8 @@ class DomainNotificationTriggerAdversarialTest {
     private AcademicRecordService academicRecordService;
     @Mock
     private GraduationAuditService graduationAuditService;
+    @Mock
+    private AccountService accountService;
 
     private ApiController apiController;
 
@@ -77,7 +80,8 @@ class DomainNotificationTriggerAdversarialTest {
                 petitionRepository,
                 academicRecordService,
                 graduationAuditService,
-                notificationService
+                notificationService,
+                accountService
         );
 
         studentAuth = new UsernamePasswordAuthenticationToken(

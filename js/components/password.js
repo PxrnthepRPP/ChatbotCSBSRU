@@ -33,7 +33,11 @@ export function openChangePasswordModal({ forced = false, onChanged, onLogout } 
             </div>
             <div class="modal-body">
                 ${forced ? '<p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px">บัญชีนี้ใช้รหัสผ่านเริ่มต้น (หรือถูกรีเซ็ต) กรุณาตั้งรหัสผ่านใหม่ตามมาตรฐานความปลอดภัยขั้นสูง</p>' : ''}
-                <div class="modal-field"><label>รหัสผ่านปัจจุบัน</label><input type="password" id="pwCurrent" autocomplete="current-password"></div>
+                <div class="modal-field">
+                    <label>รหัสผ่านปัจจุบัน</label>
+                    <input type="password" id="pwCurrent" autocomplete="current-password" placeholder="${forced ? 'สำหรับอาจารย์: เบอร์โทรศัพท์ เช่น 0891234567' : ''}">
+                    ${forced ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">💡 อาจารย์เข้าใช้งานครั้งแรก: รหัสผ่านปัจจุบันคือเบอร์โทรศัพท์ <strong>(ไม่ต้องใส่ขีดหรือ -)</strong></div>' : ''}
+                </div>
                 <div class="modal-field"><label>รหัสผ่านใหม่</label><input type="password" id="pwNew" autocomplete="new-password"></div>
                 <div class="modal-field"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="pwConfirm" autocomplete="new-password"></div>
                 

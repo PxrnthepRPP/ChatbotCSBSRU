@@ -684,6 +684,7 @@ export function renderTimetable(studentId) {
                 const saved = await fetchAPI(`/students/${encodeURIComponent(studentId)}/self-registration`, 'POST', body, 10000);
                 showPetitionToast('success', esc(`ลงทะเบียน ${saved.courseCode} ${saved.courseName} แล้ว บันทึกลงตารางเรียนเรียบร้อย ✅`));
                 cartOpen = false;
+                window.dispatchEvent(new CustomEvent('bsru:enrollment-updated', { detail: { studentId } }));
                 await load(true);
             } catch (err) {
                 const parsed = apiErrorBody(err);
@@ -712,6 +713,7 @@ export function renderTimetable(studentId) {
                 try {
                     await fetchAPI(`/students/${encodeURIComponent(studentId)}/enrollments/${entry.sectionId}`, 'DELETE', null, 8000);
                     showPetitionToast('success', esc(pending ? `ยกเลิกคำขอ ${entry.subjectCode} แล้ว` : `ถอนวิชา ${entry.subjectCode} ออกจากตารางเรียนแล้ว`));
+                    window.dispatchEvent(new CustomEvent('bsru:enrollment-updated', { detail: { studentId } }));
                     await load(true);
                 } catch (err) {
                     showPetitionToast('error', apiErrorMessage(err));

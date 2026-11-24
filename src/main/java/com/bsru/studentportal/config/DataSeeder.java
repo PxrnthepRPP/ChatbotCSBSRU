@@ -297,16 +297,36 @@ public class DataSeeder implements CommandLineRunner {
             files = new PathMatchingResourcePatternResolver().getResources("classpath:graduation/*.json");
         } catch (IOException e) {
             log.warn("Could not list graduation audit files: {}", e.getMessage());
-            return;
+            files = new Resource[0];
         }
         for (Resource file : files) {
             String studentId = Objects.requireNonNull(file.getFilename()).replace(".json", "");
+            if ("curriculum-template".equalsIgnoreCase(studentId) || "default-curriculum".equalsIgnoreCase(studentId)) {
+                continue;
+            }
             if (!studentRepository.existsById(studentId) || graduationAuditRepository.existsById(studentId)) continue;
             try (InputStream in = file.getInputStream()) {
                 graduationAuditRepository.save(new GraduationAudit(studentId, new String(in.readAllBytes(), StandardCharsets.UTF_8)));
                 log.info("Seeded graduation audit for {}", studentId);
             } catch (IOException e) {
                 log.warn("Could not read graduation audit for {}: {}", studentId, e.getMessage());
+            }
+        }
+
+        // Seed universal clean curriculum criteria for all students in the system
+        String cleanTemplate = graduationAuditService.getCleanCurriculumTemplate();
+        if (cleanTemplate != null) {
+            for (Student s : studentRepository.findAll()) {
+                if (graduationAuditService.isSomchai(s.getStudentId())) {
+                    String somchaiJson = graduationAuditService.getSomchaiCurriculum();
+                    if (somchaiJson != null) {
+                        graduationAuditRepository.save(new GraduationAudit(s.getStudentId(), somchaiJson));
+                        log.info("Seeded original graduation audit for Somchai Jaidee {}", s.getStudentId());
+                    }
+                } else if (!graduationAuditRepository.existsById(s.getStudentId())) {
+                    graduationAuditRepository.save(new GraduationAudit(s.getStudentId(), cleanTemplate));
+                    log.info("Seeded universal clean graduation audit for {}", s.getStudentId());
+                }
             }
         }
     }

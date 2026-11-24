@@ -811,5 +811,62 @@ class GraduationAuditServiceTest {
             verify(studentRepository).save(student);
             assertEquals(3.00, student.getGpa(), 0.001);
         }
+
+        @Test
+        @DisplayName("buildDynamicAudit: non-Somchai student places non-1/2/4 courses into Section 3")
+        void testBuildDynamicAudit_PlacesNonBaseCoursesIntoSection3() {
+            String template = """
+                {
+                  "minGpa": 2.0,
+                  "sections": [
+                    {
+                      "id": "sec-1",
+                      "title": "1. หมวดวิชาศึกษาทั่วไป",
+                      "groups": [
+                        {
+                          "code": "1.1",
+                          "title": "วิชาศึกษาทั่วไป",
+                          "minCr": 3,
+                          "courses": [
+                            { "code": "GE01101", "name": "GE Course 1", "ca": null, "pt": null, "terms": {} }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "sec-3",
+                      "title": "3. หมวดวิชาเลือกเสรี",
+                      "minCr": 6,
+                      "groups": [
+                        {
+                          "code": "3.",
+                          "title": "หมวดวิชาเลือกเสรี",
+                          "minCr": 6,
+                          "courses": [
+                            { "code": "2101207", "name": "Hardcoded 1" },
+                            { "code": "ED16208", "name": "Hardcoded 2" }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+            GraduationAuditService.AuditResult result = auditService.buildDynamicAudit("6721207999", template);
+            assertNotNull(result);
+            JsonNode sec3 = null;
+            for (JsonNode s : result.audit().path("sections")) {
+                if ("sec-3".equals(s.path("id").asText())) {
+                    sec3 = s;
+                    break;
+                }
+            }
+            assertNotNull(sec3);
+            assertEquals("3. หมวดวิชาเลือกเสรี", sec3.path("title").asText());
+            // Section 3 hardcoded courses must be stripped out for non-Somchai
+            JsonNode sec3Courses = sec3.path("groups").path(0).path("courses");
+            assertEquals(0, sec3Courses.size());
+        }
     }
 }

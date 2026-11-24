@@ -20,13 +20,11 @@
                   "code": "GE01101",
                   "name": "ศาสตร์พระราชาสู่การพัฒนาท้องถิ่น",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 4.5,
-                  "avg": "1.50",
-                  "max": "1.50",
-                  "terms": {
-                    "2": "D+ 2/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             },
@@ -39,25 +37,21 @@
                   "code": "GE02101",
                   "name": "ภาษาอังกฤษเพื่อการสื่อสารในยุคดิจิทัล",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 6,
-                  "avg": "2.00",
-                  "max": "2.00",
-                  "terms": {
-                    "2": "C 2/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "GE02102",
                   "name": "ภาษาไทยเพื่อการสื่อสารร่วมสมัย",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 6,
-                  "avg": "2.00",
-                  "max": "2.00",
-                  "terms": {
-                    "1": "C 1/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             },
@@ -70,13 +64,11 @@
                   "code": "GE03101",
                   "name": "ชีวิตดีมีความสุข",
                   "credits": "2(1-2-3)",
-                  "ca": 2,
-                  "pt": 2,
-                  "avg": "1.00",
-                  "max": "1.00",
-                  "terms": {
-                    "3": "D 1/68"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             },
@@ -89,13 +81,11 @@
                   "code": "GE04101",
                   "name": "ประกอบการธุรกิจเชิงสร้างสรรค์",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 7.5,
-                  "avg": "2.50",
-                  "max": "2.50",
-                  "terms": {
-                    "1": "C+ 1/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             },
@@ -108,25 +98,21 @@
                   "code": "GE05101",
                   "name": "รู้คิดชีวิตก้าวหน้า",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 4.5,
-                  "avg": "1.50",
-                  "max": "1.50",
-                  "terms": {
-                    "1": "D+ 1/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "GE05102",
                   "name": "ทักษะการใช้เทคโนโลยีดิจิทัล",
                   "credits": "3(2-2-5)",
-                  "ca": 3,
-                  "pt": 4.5,
-                  "avg": "1.50",
-                  "max": "1.50",
-                  "terms": {
-                    "2": "D+ 2/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             }
@@ -277,14 +263,11 @@
                   "code": "GE03202",
                   "name": "ศิลปะการใช้ชีวิต",
                   "credits": "3(3-0-6)",
-                  "ca": 0,
-                  "pt": 0,
-                  "avg": "0.00",
-                  "max": "0.00",
-                  "terms": {
-                    "4": "F 2/68"
-                  },
-                  "attempted": 3
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 }
               ]
             },
@@ -296,14 +279,11 @@
                   "code": "GE04201",
                   "name": "การวางแผนทางการเงินเพื่อความมั่นคง",
                   "credits": "3(3-0-6)",
-                  "ca": 0,
-                  "pt": 0,
-                  "avg": "0.00",
-                  "max": "0.00",
-                  "terms": {
-                    "4": "F 2/68"
-                  },
-                  "attempted": 3
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "GE04202",
@@ -325,13 +305,11 @@
                   "code": "GE05201",
                   "name": "เทคโนโลยีดิจิทัลสำหรับนักธุรกิจมือใหม่",
                   "credits": "3(2-2-5)",
-                  "ca": 3,
-                  "pt": 3,
-                  "avg": "1.00",
-                  "max": "1.00",
-                  "terms": {
-                    "3": "D 1/68"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "GE05202",
@@ -373,13 +351,11 @@
                   "code": "GE03302",
                   "name": "การออกกำลังกายเพื่อสุขภาพ",
                   "credits": "1(0-2-1)",
-                  "ca": 1,
-                  "pt": 1,
-                  "avg": "1.00",
-                  "max": "1.00",
-                  "terms": {
-                    "3": "D 1/68"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "GE03303",
@@ -415,63 +391,51 @@
                   "code": "SC01001",
                   "name": "คณิตศาสตร์เบื้องต้น",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 7.5,
-                  "avg": "2.50",
-                  "max": "2.50",
-                  "terms": {
-                    "1": "C+ 1/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "SC01002",
                   "name": "แคลคูลัสเบื้องต้น",
                   "credits": "3(3-0-6)",
-                  "ca": 3,
-                  "pt": 6,
-                  "avg": "2.00",
-                  "max": "2.00",
-                  "terms": {
-                    "2": "C 2/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "SC01012",
                   "name": "เทคโนโลยีดิจิทัลสำหรับนักวิทยาศาสตร์",
                   "credits": "3(2-2-5)",
-                  "ca": 3,
-                  "pt": 3,
-                  "avg": "1.00",
-                  "max": "1.00",
-                  "terms": {
-                    "2": "D 2/67"
-                  }
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "SC01013",
                   "name": "ภาษาอังกฤษสำหรับนักวิทยาศาสตร์",
                   "credits": "3(3-0-6)",
-                  "ca": 0,
-                  "pt": 0,
-                  "avg": "0.00",
-                  "max": "0.00",
-                  "terms": {
-                    "4": "F 2/68"
-                  },
-                  "attempted": 3
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "SC17205",
                   "name": "คณิตศาสตร์ดิสครีตและทฤษฎีการคำนวณ",
                   "credits": "3(3-0-6)",
-                  "ca": 0,
-                  "pt": 0,
-                  "avg": "0.00",
-                  "max": "0.00",
-                  "terms": {
-                    "4": "F 2/68"
-                  },
-                  "attempted": 3
+                  "ca": null,
+                  "pt": null,
+                  "avg": null,
+                  "max": null,
+                  "terms": {}
                 },
                 {
                   "code": "SC17301",
@@ -481,9 +445,7 @@
                   "pt": null,
                   "avg": null,
                   "max": null,
-                  "terms": {
-                    "5": "-- 1/69"
-                  }
+                  "terms": {}
                 }
               ]
             }
@@ -506,13 +468,11 @@
                       "code": "SC17204",
                       "name": "การวิเคราะห์และออกแบบระบบ",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 6,
-                      "avg": "2.00",
-                      "max": "2.00",
-                      "terms": {
-                        "3": "C 1/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17302",
@@ -522,9 +482,7 @@
                       "pt": null,
                       "avg": null,
                       "max": null,
-                      "terms": {
-                        "5": "-- 1/69"
-                      }
+                      "terms": {}
                     }
                   ]
                 },
@@ -537,25 +495,21 @@
                       "code": "SC17207",
                       "name": "ปฏิสัมพันธ์ระหว่างมนุษย์และคอมพิวเตอร์",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 4.5,
-                      "avg": "1.50",
-                      "max": "1.50",
-                      "terms": {
-                        "4": "D+ 2/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17208",
                       "name": "การจัดการฐานข้อมูลและสารสนเทศ",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 4.5,
-                      "avg": "1.50",
-                      "max": "1.50",
-                      "terms": {
-                        "4": "D+ 2/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17304",
@@ -565,9 +519,7 @@
                       "pt": null,
                       "avg": null,
                       "max": null,
-                      "terms": {
-                        "5": "-- 1/69"
-                      }
+                      "terms": {}
                     },
                     {
                       "code": "SC17306",
@@ -590,49 +542,41 @@
                       "code": "SC17101",
                       "name": "การเขียนโปรแกรมคอมพิวเตอร์และอัลกอริทึม",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 6,
-                      "avg": "2.00",
-                      "max": "2.00",
-                      "terms": {
-                        "1": "C 1/67"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17102",
                       "name": "โครงสร้างข้อมูลและการเขียนโปรแกรม",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 7.5,
-                      "avg": "2.50",
-                      "max": "2.50",
-                      "terms": {
-                        "2": "C+ 2/67"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17202",
                       "name": "การเขียนโปรแกรมเชิงวัตถุ",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 6,
-                      "avg": "2.00",
-                      "max": "2.00",
-                      "terms": {
-                        "3": "C 1/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17206",
                       "name": "วิศวกรรมซอฟต์แวร์",
                       "credits": "3(2-2-5)",
-                      "ca": 3,
-                      "pt": 3,
-                      "avg": "1.00",
-                      "max": "1.00",
-                      "terms": {
-                        "4": "D 2/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     }
                   ]
                 },
@@ -645,26 +589,21 @@
                       "code": "SC17201",
                       "name": "ระบบปฏิบัติการ",
                       "credits": "3(3-0-6)",
-                      "ca": 3,
-                      "pt": 3,
-                      "avg": "1.00",
-                      "max": "1.00",
-                      "terms": {
-                        "3": "D 1/68"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17203",
                       "name": "เครือข่ายคอมพิวเตอร์และการสื่อสารข้อมูล",
                       "credits": "3(2-2-5)",
-                      "ca": 0,
-                      "pt": 0,
-                      "avg": "0.00",
-                      "max": "0.00",
-                      "terms": {
-                        "3": "F 1/68"
-                      },
-                      "attempted": 3
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     },
                     {
                       "code": "SC17303",
@@ -674,9 +613,7 @@
                       "pt": null,
                       "avg": null,
                       "max": null,
-                      "terms": {
-                        "5": "-- 1/69"
-                      }
+                      "terms": {}
                     },
                     {
                       "code": "SC17305",
@@ -699,13 +636,11 @@
                       "code": "SC17103",
                       "name": "สถาปัตยกรรมคอมพิวเตอร์",
                       "credits": "3(3-0-6)",
-                      "ca": 3,
-                      "pt": 7.5,
-                      "avg": "2.50",
-                      "max": "2.50",
-                      "terms": {
-                        "1": "C+ 1/67"
-                      }
+                      "ca": null,
+                      "pt": null,
+                      "avg": null,
+                      "max": null,
+                      "terms": {}
                     }
                   ]
                 }
@@ -769,9 +704,7 @@
                       "pt": null,
                       "avg": null,
                       "max": null,
-                      "terms": {
-                        "5": "-- 1/69"
-                      }
+                      "terms": {}
                     },
                     {
                       "code": "SC17332",
@@ -861,9 +794,7 @@
                       "pt": null,
                       "avg": null,
                       "max": null,
-                      "terms": {
-                        "5": "-- 1/69"
-                      }
+                      "terms": {}
                     },
                     {
                       "code": "SC17356",
@@ -1021,9 +952,7 @@
               "pt": null,
               "avg": null,
               "max": null,
-              "terms": {
-                "5": "-- 1/69"
-              }
+              "terms": {}
             }
           ]
         }

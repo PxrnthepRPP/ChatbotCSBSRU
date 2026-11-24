@@ -12,6 +12,7 @@ import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import com.bsru.studentportal.security.CurrentUser;
 import com.bsru.studentportal.service.AcademicRecordService;
+import com.bsru.studentportal.service.AccountService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,6 +50,7 @@ public class ApiController {
     private final AcademicRecordService academicRecordService;
     private final GraduationAuditService graduationAuditService;
     private final NotificationService notificationService;
+    private final AccountService accountService;
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> healthCheck() {
@@ -181,6 +184,88 @@ public class ApiController {
     @GetMapping("/advisors")
     public List<Advisor> getAllAdvisors() {
         return advisorRepository.findAll();
+    }
+
+    @PostMapping("/advisors")
+    public ResponseEntity<?> createAdvisor(@RequestBody Map<String, Object> body, Authentication auth) {
+        if (!CurrentUser.isAdmin(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
+        }
+        String id = body.get("id") != null ? body.get("id").toString().trim() : "";
+        String nameTh = body.get("nameTh") != null ? body.get("nameTh").toString().trim()
+                : (body.get("name") != null ? body.get("name").toString().trim() : "");
+        String nameEn = body.get("nameEn") != null ? body.get("nameEn").toString().trim() : "";
+        String email = body.get("email") != null ? body.get("email").toString().trim() : "";
+        String phone = body.get("phone") != null ? body.get("phone").toString().trim() : "";
+        String department = body.get("department") != null ? body.get("department").toString().trim() : "วิทยาการคอมพิวเตอร์";
+        boolean canAdmin = Boolean.TRUE.equals(body.get("canAdmin"));
+
+        if (id.isBlank() || nameTh.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "กรุณาระบุรหัสและชื่ออาจารย์"));
+        }
+        if (phone.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "กรุณาระบุเบอร์โทรศัพท์สำหรับใช้เป็นรหัสผ่านแรกเข้า"));
+        }
+        if (advisorRepository.existsById(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "รหัสอาจารย์ " + id + " มีอยู่ในระบบแล้ว"));
+        }
+
+        Advisor adv = new Advisor(id, nameTh, nameEn, email, phone, department);
+        adv.setCanAdmin(canAdmin);
+        advisorRepository.save(adv);
+
+        if (accountService != null) {
+            accountService.createAdvisorAccount(id, phone);
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(adv);
+    }
+
+    @PutMapping("/advisors/{id}")
+    public ResponseEntity<?> updateAdvisor(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body,
+            Authentication auth) {
+        if (!CurrentUser.isAdmin(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
+        }
+        Advisor adv = advisorRepository.findById(id).orElse(null);
+        if (adv == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "ไม่พบอาจารย์รหัส " + id));
+        }
+        if (body.containsKey("nameTh")) adv.setNameTh(body.get("nameTh").toString().trim());
+        else if (body.containsKey("name")) adv.setNameTh(body.get("name").toString().trim());
+        if (body.containsKey("nameEn")) adv.setNameEn(body.get("nameEn").toString().trim());
+        if (body.containsKey("email")) adv.setEmail(body.get("email").toString().trim());
+        if (body.containsKey("phone")) {
+            String newPhone = body.get("phone").toString().trim();
+            adv.setPhone(newPhone);
+        }
+        if (body.containsKey("department")) adv.setDepartment(body.get("department").toString().trim());
+        if (body.containsKey("canAdmin")) adv.setCanAdmin(Boolean.TRUE.equals(body.get("canAdmin")));
+        advisorRepository.save(adv);
+        return ResponseEntity.ok(adv);
+    }
+
+    @DeleteMapping("/advisors/{id}")
+    public ResponseEntity<?> deleteAdvisor(@PathVariable String id, Authentication auth) {
+        if (!CurrentUser.isAdmin(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
+        }
+        Advisor adv = advisorRepository.findById(id).orElse(null);
+        if (adv == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "ไม่พบอาจารย์รหัส " + id));
+        }
+        long studentCount = studentRepository.countByAdvisorId(id);
+        if (studentCount > 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error",
+                    "ไม่สามารถลบอาจารย์ " + adv.getNameTh() + " ได้ เนื่องจากยังมีนักศึกษาในความดูแล " + studentCount + " คน"));
+        }
+        advisorRepository.delete(adv);
+        if (accountService != null) {
+            accountService.deleteAccount(id);
+        }
+        return ResponseEntity.ok(Map.of("message", "ลบอาจารย์เรียบร้อยแล้ว"));
     }
 
     @PutMapping("/advisors/{id}/admin-privilege")

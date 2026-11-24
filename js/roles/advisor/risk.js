@@ -4,6 +4,7 @@
 
 import { esc } from '../../utils.js';
 import { MOCK_STUDENTS_POOL } from '../admin.js';
+import { getAuthState } from '../../auth.js';
 
 /* ============================================================
    LIVE ADVISEES — real students of the logged-in advisor (GET /advisors/me/advisees)
@@ -30,7 +31,12 @@ export function currentAdvisees() {
             gpa: r.gpa ?? 0, status: r.status, risk: r,
         })).sort((a, b) => a.studentId.localeCompare(b.studentId));
     }
-    return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001')
+    const currentId = getAuthState?.()?.user?.userId || getAuthState?.()?.user?.username || 'ADV001';
+    if (currentId === 'advisor' || currentId === 'ADV-01' || currentId === 'ADV001') {
+        return MOCK_STUDENTS_POOL.filter(s => s.advisor === 'ADV001' || s.advisor === 'ADV-01')
+            .sort((a, b) => a.studentId.localeCompare(b.studentId));
+    }
+    return MOCK_STUDENTS_POOL.filter(s => s.advisor === currentId)
         .sort((a, b) => a.studentId.localeCompare(b.studentId));
 }
 

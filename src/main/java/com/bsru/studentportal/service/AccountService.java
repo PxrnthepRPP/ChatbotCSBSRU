@@ -98,9 +98,52 @@ public class AccountService {
      */
     private boolean passwordMatches(UserAccount account, String password) {
         if (passwordEncoder.matches(password, account.getPasswordHash())) return true;
-        boolean onDefaultPassword = account.isMustChangePassword() && "ROLE_STUDENT".equals(account.getRole());
-        String upper = password.toUpperCase();
-        return onDefaultPassword && !upper.equals(password) && passwordEncoder.matches(upper, account.getPasswordHash());
+        boolean onDefaultPassword = account.isMustChangePassword();
+        if (onDefaultPassword) {
+            if ("ROLE_STUDENT".equals(account.getRole())) {
+                String upper = password.toUpperCase();
+                return !upper.equals(password) && passwordEncoder.matches(upper, account.getPasswordHash());
+            } else if (account.getRole() != null && account.getRole().contains("ROLE_ADVISOR")) {
+                com.bsru.studentportal.model.Advisor adv = advisorRepository.findById(account.getUsername()).orElse(null);
+                if (adv != null && adv.getPhone() != null && password != null) {
+                    String enteredDigits = password.replaceAll("[^0-9]", "");
+                    String phoneDigits = adv.getPhone().replaceAll("[^0-9]", "");
+                    if (!enteredDigits.isEmpty() && enteredDigits.equals(phoneDigits)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Creates or resets an advisor account when an admin creates a new advisor.
+     * Username = advisorId, initial password = advisor's phone number,
+     * mustChangePassword = true (the advisor must change it upon first login).
+     */
+    @Transactional
+    public UserAccount createAdvisorAccount(String advisorId, String phone) {
+        if (advisorId == null || advisorId.isBlank()) {
+            throw new AccountException(HttpStatus.BAD_REQUEST, "รหัสอาจารย์ต้องไม่ว่างเปล่า");
+        }
+        String rawPhone = phone != null ? phone.trim() : "";
+        if (rawPhone.isBlank()) {
+            throw new AccountException(HttpStatus.BAD_REQUEST, "กรุณาระบุเบอร์โทรศัพท์สำหรับใช้เป็นรหัสผ่านแรกเข้า");
+        }
+        String phoneDigits = rawPhone.replaceAll("[^0-9]", "");
+        String initialPassword = !phoneDigits.isEmpty() ? phoneDigits : rawPhone;
+        UserAccount account = accounts.findByUsernameIgnoreCase(advisorId.trim()).orElse(null);
+        if (account == null) {
+            account = newAccount(advisorId.trim(), "ROLE_ADVISOR", initialPassword, true);
+        } else {
+            account.setRole("ROLE_ADVISOR");
+            account.setPasswordHash(passwordEncoder.encode(initialPassword));
+            account.setMustChangePassword(true);
+            account.setFailedAttempts(0);
+            account.setLockedUntil(null);
+        }
+        return accounts.save(account);
     }
 
     /** Admin reset: the password goes back to the default (see generateDefaultStudentPassword) and must be changed */

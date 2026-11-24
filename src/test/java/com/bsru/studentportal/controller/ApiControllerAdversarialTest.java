@@ -10,6 +10,7 @@ import com.bsru.studentportal.repository.AcademicPetitionRepository;
 import com.bsru.studentportal.repository.AdvisorRepository;
 import com.bsru.studentportal.repository.StudentRepository;
 import com.bsru.studentportal.service.AcademicRecordService;
+import com.bsru.studentportal.service.AccountService;
 import com.bsru.studentportal.service.GraduationAuditService;
 import com.bsru.studentportal.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,9 @@ class ApiControllerAdversarialTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private AccountService accountService;
 
     @InjectMocks
     private ApiController apiController;
